@@ -5,8 +5,9 @@ services:
     runtime: node
     plan: free
     rootDir: .
-    buildCommand: cd server && npm install
-    startCommand: cd server && npm start
+    # Repo root has package.json so Render's default "npm install" succeeds (cwd is .../project/src).
+    buildCommand: npm install
+    startCommand: npm start
     envVars:
       - key: NODE_VERSION
         value: 20
