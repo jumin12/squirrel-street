@@ -5951,15 +5951,6 @@
         }
       }
 
-      function generateChallengeCode() {
-        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-        let s = '';
-        for (let i = 0; i < 6; i += 1) {
-          s += chars[Math.floor(Math.random() * chars.length)];
-        }
-        return s;
-      }
-
       const SquirrelApi = (function createSquirrelApi() {
         function apiUrl(path) {
           const raw = (window.SQUIRREL_API && window.SQUIRREL_API.baseUrl) || '';
