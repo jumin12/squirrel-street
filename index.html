@@ -4476,7 +4476,7 @@
             </span>
         </div>
       </div>
-      <div id="menuVersion" style="text-align: right; margin-top: 8px; font-size: 0.6rem; color: rgba(255,255,255,0.3);">v2.0</div>
+      <div id="menuVersion" style="text-align: right; margin-top: 8px; font-size: 0.6rem; color: rgba(255,255,255,0.3);">v2.2</div>
     </div>
   </div>
 
@@ -8771,6 +8771,17 @@
       // Changelog Data
       const CHANGELOG = [
         {
+          version: '2.2',
+          date: '2026-05-12',
+          changes: [
+            'Global leaderboard and stats (online high scores on squirrel-street.onrender.com)',
+            'Challenge mode with codes — same seed for both players, score compared level-by-level',
+            'Invite a friend from the leaderboard or play a reserved challenge',
+            'Deployed app-ads.txt at the site root for AdMob / seller verification',
+            'Render deploy fixes so the web game and API build reliably',
+          ]
+        },
+        {
           version: '2.1',
           date: '2026-01-09',
           changes: [
@@ -8862,7 +8873,7 @@
         }
       ];
       
-      const CURRENT_VERSION = '2.1';
+      const CURRENT_VERSION = '2.2';
       const LAST_SEEN_VERSION_KEY = 'squirrelStreet.lastSeenVersion';
 
       function checkChangelogBadge() {
