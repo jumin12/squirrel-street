@@ -4398,9 +4398,10 @@
     }
   </style>
   <script>
-    window.SQUIRREL_API = window.SQUIRREL_API || {};
-    /* If the game is opened from GitHub Pages or file://, set your Render URL:
-       window.SQUIRREL_API = { baseUrl: 'https://your-app.onrender.com' }; */
+    window.SQUIRREL_ONLINE = window.SQUIRREL_ONLINE || {};
+    /* Live scores + challenges (Render). No trailing slash. Gameplay stays local; only scores/rounds hit the API.
+       Web: set here. Google Play (WebView): inject the same object before loading this page, or edit this file in your APK bundle.
+       Example: window.SQUIRREL_ONLINE = { apiBaseUrl: 'https://squirrel-street-api.onrender.com' }; */
   </script>
 </head>
 <body>
@@ -4492,14 +4493,16 @@
   <div id="challengeOverlay" class="overlay hidden">
     <div class="modal" style="max-width: 520px; width: 94vw;">
       <h2>Challenge mode</h2>
-      <p style="font-size: 0.5rem; margin-bottom: 12px; line-height: 1.5;">Host creates a code (saved on your Render API). Share it so a friend joins the same seeded run. After <strong>each level you clear</strong>, total score for that level is stored and compared. Gameplay stays on-device; only scores sync.</p>
+      <p style="font-size: 0.5rem; margin-bottom: 12px; line-height: 1.5;">Same seed per run. After <strong>each level</strong>, scores for that level are compared on the server; winner gets the round, then you both continue to the next level.</p>
       <div class="pill-buttons" style="margin-bottom: 12px;">
         <button type="button" id="challengeTabHost" class="pill-button selected">Host</button>
         <button type="button" id="challengeTabJoin" class="pill-button">Join</button>
       </div>
       <div id="challengeHostPanel">
+        <p id="challengeVersusHint" style="font-size: 0.48rem; color: #7dd3fc; min-height: 1.2em;"></p>
         <p style="font-size: 0.5rem;">Uses the starting level from your Biomes selector (open Biomes first if you want a specific level).</p>
-        <button id="createChallengeButton" class="button" style="width: 100%; margin-top: 8px;">Create code &amp; start</button>
+        <button id="createChallengeButton" class="button" style="width: 100%; margin-top: 8px;">Create code</button>
+        <button id="startHostedRunButton" class="button hidden" style="width: 100%; margin-top: 10px;">Start challenge run</button>
         <p id="challengeHostCodeDisplay" style="font-size: 0.75rem; color: #fcd34d; margin-top: 12px; text-align: center; min-height: 1.5em;"></p>
         <p id="challengeHostStatus" style="font-size: 0.45rem; color: #94a3b8; text-align: center;"></p>
       </div>
@@ -5711,7 +5714,9 @@
         challengeTabJoin: document.getElementById('challengeTabJoin'),
         challengeHostPanel: document.getElementById('challengeHostPanel'),
         challengeJoinPanel: document.getElementById('challengeJoinPanel'),
+        challengeVersusHint: document.getElementById('challengeVersusHint'),
         createChallengeButton: document.getElementById('createChallengeButton'),
+        startHostedRunButton: document.getElementById('startHostedRunButton'),
         challengeHostCodeDisplay: document.getElementById('challengeHostCodeDisplay'),
         challengeHostStatus: document.getElementById('challengeHostStatus'),
         challengeCodeInput: document.getElementById('challengeCodeInput'),
@@ -5905,6 +5910,9 @@
         });
       }
 
+      let leaderboardChallengeTarget = null;
+      let hostChallengePayload = null;
+
       const STORAGE_KEYS = {
         highScore: 'squirrelStreet.highScore',
         highestLevel: 'squirrelStreet.highestLevel',
@@ -5951,102 +5959,101 @@
         }
       }
 
+      function generateChallengeCode() {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let s = '';
+        for (let i = 0; i < 6; i += 1) {
+          s += chars[Math.floor(Math.random() * chars.length)];
+        }
+        return s;
+      }
+
       const SquirrelApi = (function createSquirrelApi() {
-        function apiUrl(path) {
-          const raw = (window.SQUIRREL_API && window.SQUIRREL_API.baseUrl) || '';
-          const base = String(raw).replace(/\/$/, '');
-          if (base) return `${base}${path}`;
-          return path;
+        function cfg() {
+          return window.SQUIRREL_ONLINE || {};
         }
-        function isConfigured() {
-          const raw = (window.SQUIRREL_API && window.SQUIRREL_API.baseUrl) || '';
-          if (String(raw).trim()) return true;
-          const h = typeof window !== 'undefined' ? window.location.hostname : '';
-          return h === 'localhost' || Boolean(h && h.endsWith('.onrender.com'));
+        function apiRoot() {
+          const base = (cfg().apiBaseUrl || '').replace(/\/$/, '');
+          return base ? `${base}/api` : '';
         }
-        const jsonHeaders = { 'Content-Type': 'application/json' };
         return {
-          apiUrl,
-          isConfigured,
+          isConfigured() {
+            return Boolean(apiRoot());
+          },
           async fetchLeaderboard(limit = 40) {
-            try {
-              const r = await fetch(apiUrl(`/api/leaderboard?limit=${limit}`));
-              if (!r.ok) return [];
-              return r.json();
-            } catch (e) {
-              return [];
-            }
+            const root = apiRoot();
+            if (!root) return [];
+            const r = await fetch(`${root}/leaderboard?limit=${limit}`);
+            if (!r.ok) return [];
+            return r.json();
           },
-          async submitLeaderboard(playerId, displayName, score, highestLevel) {
-            try {
-              const r = await fetch(apiUrl('/api/leaderboard'), {
-                method: 'POST',
-                headers: jsonHeaders,
-                body: JSON.stringify({
-                  player_id: playerId,
-                  display_name: (displayName || 'Anon').slice(0, 24),
-                  high_score: Math.round(score),
-                  highest_level: Math.max(1, Math.floor(highestLevel))
-                })
-              });
-              return r.ok;
-            } catch (e) {
-              return false;
-            }
+          async submitLeaderboardIfBetter(playerId, displayName, score, highestLevel) {
+            const root = apiRoot();
+            if (!root || !playerId) return;
+            const r = await fetch(`${root}/leaderboard`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                player_id: playerId,
+                display_name: (displayName || 'Player').slice(0, 24),
+                high_score: Math.round(score),
+                highest_level: Math.max(1, Math.floor(highestLevel) || 1)
+              })
+            });
+            if (!r.ok) console.warn('leaderboard submit failed', r.status);
           },
-          async createChallenge(startLevel, seed) {
-            try {
-              const r = await fetch(apiUrl('/api/challenges'), {
-                method: 'POST',
-                headers: jsonHeaders,
-                body: JSON.stringify({
-                  start_level: startLevel,
-                  seed: Math.floor(seed)
-                })
-              });
-              if (!r.ok) return null;
-              return r.json();
-            } catch (e) {
-              return null;
-            }
+          async createChallenge(hostId, hostName, startLevel, reservedGuestId) {
+            const root = apiRoot();
+            if (!root) return null;
+            const r = await fetch(`${root}/challenges`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                host_id: hostId,
+                host_name: (hostName || 'Host').slice(0, 24),
+                start_level: Math.max(1, Math.floor(startLevel) || 1),
+                reserved_guest_id: reservedGuestId || undefined
+              })
+            });
+            if (!r.ok) return null;
+            return r.json();
           },
-          async getChallengeByCode(code) {
-            try {
-              const c = encodeURIComponent(String(code || '').trim().toUpperCase());
-              const r = await fetch(apiUrl(`/api/challenges/${c}`));
-              if (!r.ok) return null;
-              return r.json();
-            } catch (e) {
-              return null;
-            }
+          async joinChallenge(code, guestId, guestName) {
+            const root = apiRoot();
+            if (!root) return null;
+            const r = await fetch(`${root}/challenges/join`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                code: code.trim().toUpperCase(),
+                guest_id: guestId,
+                guest_name: (guestName || 'Guest').slice(0, 24)
+              })
+            });
+            if (!r.ok) return null;
+            return r.json();
           },
-          async postChallengeLevel(code, role, level, score) {
-            try {
-              const c = encodeURIComponent(String(code || '').trim().toUpperCase());
-              const r = await fetch(apiUrl(`/api/challenges/${c}/level`), {
-                method: 'POST',
-                headers: jsonHeaders,
-                body: JSON.stringify({
-                  role,
-                  level: Math.floor(level),
-                  score: Math.round(score)
-                })
-              });
-              if (!r.ok) return null;
-              return r.json();
-            } catch (e) {
-              return null;
-            }
+          async getChallenge(code) {
+            const root = apiRoot();
+            if (!root || !code) return null;
+            const r = await fetch(`${root}/challenges/${encodeURIComponent(code.trim().toUpperCase())}`);
+            if (!r.ok) return null;
+            return r.json();
           },
-          async fetchChallengeLevels(code) {
-            try {
-              const c = encodeURIComponent(String(code || '').trim().toUpperCase());
-              const r = await fetch(apiUrl(`/api/challenges/${c}/levels`));
-              if (!r.ok) return { levels: [] };
-              return r.json();
-            } catch (e) {
-              return { levels: [] };
-            }
+          async postChallengeRound(code, playerId, level, levelScore) {
+            const root = apiRoot();
+            if (!root || !code || code === 'offline') return null;
+            const r = await fetch(`${root}/challenges/${encodeURIComponent(code.trim().toUpperCase())}/round`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                player_id: playerId,
+                level: Math.floor(level),
+                level_score: Math.round(levelScore)
+              })
+            });
+            if (!r.ok) return null;
+            return r.json();
           }
         };
       })();
@@ -9642,15 +9649,15 @@
         if (dom.statsDisplayNameInput) dom.statsDisplayNameInput.value = loadDisplayName();
         if (dom.statsOnlineMessage) {
           dom.statsOnlineMessage.textContent = SquirrelApi.isConfigured()
-            ? 'API reachable. High scores submit on game over; challenges update after each level you clear.'
-            : 'Use Render Web Service (npm start) or set window.SQUIRREL_API.baseUrl to your Render URL for shared leaderboards.';
+            ? 'Cloud sync is on. High scores and challenge rounds use your Render API. Gameplay stays on device.'
+            : 'Set window.SQUIRREL_ONLINE.apiBaseUrl in index.html to your Render service URL (see /server in this repo).';
         }
         if (!dom.statsLeaderboardList) return;
         if (!SquirrelApi.isConfigured()) {
           dom.statsLeaderboardList.textContent = '';
           const p = document.createElement('p');
           p.style.color = '#94a3b8';
-          p.textContent = 'Local stats are above. Connect the Render API to load global scores here.';
+          p.textContent = 'Local stats are above. Add apiBaseUrl to load other players’ scores.';
           dom.statsLeaderboardList.appendChild(p);
           return;
         }
@@ -9668,18 +9675,49 @@
           dom.statsLeaderboardList.appendChild(empty);
           return;
         }
+        const myId = getOrCreatePlayerId();
         list.forEach((row, i) => {
           const line = document.createElement('div');
           line.style.cssText =
-            'display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid rgba(255,255,255,0.1);padding:6px 0;';
+            'display:flex;justify-content:space-between;gap:8px;align-items:center;border-bottom:1px solid rgba(255,255,255,0.1);padding:6px 0;';
           const left = document.createElement('span');
-          left.textContent = `${i + 1}. ${row.display_name || 'Player'}`;
+          const nameBtn = document.createElement('button');
+          nameBtn.type = 'button';
+          nameBtn.textContent = `${i + 1}. ${row.display_name || 'Player'}`;
+          nameBtn.style.cssText =
+            'background:none;border:none;color:#7dd3fc;font:inherit;cursor:pointer;text-align:left;padding:0;text-decoration:underline;text-underline-offset:3px;';
+          nameBtn.title =
+            row.player_id === myId ? 'This is you' : 'Challenge this player (they must join with your code)';
+          nameBtn.disabled = row.player_id === myId;
+          if (row.player_id !== myId) {
+            nameBtn.addEventListener('click', () => {
+              leaderboardChallengeTarget = {
+                id: row.player_id,
+                name: row.display_name || 'Player'
+              };
+              toggle(dom.achievementsOverlay, false);
+              toggle(dom.challengeOverlay, true);
+              if (dom.challengeTabHost) dom.challengeTabHost.click();
+              updateChallengeVersusHint();
+              showToast(`Challenge setup: ${row.display_name}. Create a code — only they can join.`);
+            });
+          }
+          left.appendChild(nameBtn);
           const right = document.createElement('span');
           right.textContent = `${row.high_score} pts · Lvl ${row.highest_level}`;
           line.appendChild(left);
           line.appendChild(right);
           dom.statsLeaderboardList.appendChild(line);
         });
+      }
+
+      function updateChallengeVersusHint() {
+        if (!dom.challengeVersusHint) return;
+        if (leaderboardChallengeTarget) {
+          dom.challengeVersusHint.textContent = `Target opponent: ${leaderboardChallengeTarget.name} (only this player can join your code).`;
+        } else {
+          dom.challengeVersusHint.textContent = '';
+        }
       }
 
       function beginGameFromMenu(startLevel, runOptions) {
@@ -9708,44 +9746,29 @@
       async function handlePostGameOverCloud(gameRef, challenge, finalScore, finalLevel) {
         try {
           if (SquirrelApi.isConfigured()) {
-            await SquirrelApi.submitLeaderboard(
+            await SquirrelApi.submitLeaderboardIfBetter(
               getOrCreatePlayerId(),
               loadDisplayName(),
               finalScore,
               finalLevel
             );
           }
-          if (
-            challenge &&
-            challenge.code &&
-            challenge.code !== 'offline' &&
-            SquirrelApi.isConfigured() &&
-            dom.challengeOutcomeBanner
-          ) {
-            const { levels } = await SquirrelApi.fetchChallengeLevels(challenge.code);
-            if (Array.isArray(levels) && levels.length > 0) {
-              const parts = levels.map((row) => {
-                const h = row.host_score != null ? row.host_score : '—';
-                const g = row.guest_score != null ? row.guest_score : '—';
-                let tag = '';
-                if (row.host_score != null && row.guest_score != null) {
-                  if (row.host_score > row.guest_score) tag = ' [Host]';
-                  else if (row.guest_score > row.host_score) tag = ' [Guest]';
-                  else tag = ' [Tie]';
-                }
-                return `L${row.level_num}: H${h} vs G${g}${tag}`;
-              });
-              dom.challengeOutcomeBanner.textContent =
-                `Challenge ${challenge.code} — ended at level ${finalLevel}, score ${finalScore}. By level: ${parts.join(' · ')}`;
-            } else {
-              dom.challengeOutcomeBanner.textContent =
-                `Challenge ${challenge.code} — run over (level ${finalLevel}, score ${finalScore}). Level-by-level scores appear as you clear stages.`;
+          if (challenge && SquirrelApi.isConfigured() && challenge.code && challenge.code !== 'offline') {
+            const start = Number.isFinite(gameRef.challengeScoreAtLevelStart)
+              ? gameRef.challengeScoreAtLevelStart
+              : 0;
+            const lvl = gameRef.level;
+            const pts = Math.max(0, Math.round(finalScore - start));
+            const updated = await SquirrelApi.postChallengeRound(
+              challenge.code,
+              getOrCreatePlayerId(),
+              lvl,
+              pts
+            );
+            if (updated && updated.last_round_summary && dom.challengeOutcomeBanner) {
+              dom.challengeOutcomeBanner.textContent = `${updated.last_round_summary} (Match: ${updated.host_wins || 0}–${updated.guest_wins || 0})`;
+              dom.challengeOutcomeBanner.classList.remove('hidden');
             }
-            dom.challengeOutcomeBanner.classList.remove('hidden');
-          } else if (challenge && dom.challengeOutcomeBanner) {
-            dom.challengeOutcomeBanner.textContent =
-              `Challenge run complete — score ${finalScore}. (Offline: compare manually with your friend.)`;
-            dom.challengeOutcomeBanner.classList.remove('hidden');
           }
         } catch (e) {
           console.warn('Online stats sync failed', e);
@@ -11078,6 +11101,8 @@
           this.autoScrollCompletedWords = false;
           this.runSeedBase = (Date.now() ^ (Math.random() * 0x7fffffff | 0)) >>> 0;
           this.challengeMeta = null;
+          this.challengeScoreAtLevelStart = 0;
+          this._pendingChallengeRound = null;
         }
 
         startLoop() {
@@ -11182,6 +11207,8 @@
           this.walkingOffScreen = false;
           this.walkingOffScreenTimer = 0;
           resetRunAchievementTracking();
+          this.challengeScoreAtLevelStart = 0;
+          this._pendingChallengeRound = null;
           this.updateHud();
         }
 
@@ -11211,34 +11238,6 @@
           this.runStartLevel = normalizedStartLevel;
           this.level = normalizedStartLevel;
           this.startLevelTransition();
-        }
-
-        syncChallengeLevelScore(completedLevel) {
-          if (!this.challengeMeta || this.challengeMeta.code === 'offline' || !SquirrelApi.isConfigured()) {
-            return;
-          }
-          const code = this.challengeMeta.code;
-          const role = this.challengeMeta.role;
-          const score = Math.round(this.score);
-          const lv = Math.floor(Number(completedLevel));
-          if (!code || !role || !Number.isFinite(lv) || lv < 1) {
-            return;
-          }
-          void SquirrelApi.postChallengeLevel(code, role, lv, score)
-            .then((row) => {
-              if (!row) return;
-              const h = row.host_score;
-              const g = row.guest_score;
-              if (h != null && g != null) {
-                const you = role === 'host' ? h : g;
-                const them = role === 'host' ? g : h;
-                const lead = you > them ? 'You lead' : them > you ? 'They lead' : 'Tied';
-                showToast(`Level ${lv} — You: ${you} · Them: ${them} (${lead})`);
-              } else {
-                showToast(`Level ${lv} saved (${score}). Waiting for opponent.`);
-              }
-            })
-            .catch(() => {});
         }
 
         loop(timestamp) {
@@ -12382,6 +12381,9 @@
         prepareLevel() {
           const levelLayoutSeed = mixSeed(this.runSeedBase || 1, this.level, 424242);
           this.rng = new RNG(levelLayoutSeed);
+          if (this.challengeMeta) {
+            this.challengeScoreAtLevelStart = Math.round(this.score);
+          }
           // Cap difficulty scaling at maxDifficultyLevel for balance
           const effectiveLevel = Math.min(this.level, CONFIG.maxDifficultyLevel);
           this.difficultyScale = 1 + Math.max(0, (effectiveLevel - 1)) * CONFIG.difficultyGrowth;
@@ -13787,6 +13789,7 @@
 
           this.wordsThisLevel = [];
           const previousLevel = this.level;
+          this.noteChallengeLevelCompleteIfNeeded();
           this.level += 1;
           saveHighestLevel(this.level);
           
@@ -13800,8 +13803,7 @@
           this.highScore = Math.max(this.highScore, this.score);
           this.highScore = Math.round(this.highScore);
           this.updateHud();
-          this.syncChallengeLevelScore(previousLevel);
-          this.startLevelTransition();
+          this.finishLevelTransition();
         }
 
         spawnExtraLifePowerup(availableCells, eligibleLetterCells) {
@@ -14107,6 +14109,7 @@
           };
           this.grantBossGemRewardIfNeeded();
           const previousLevel = this.level;
+          this.noteChallengeLevelCompleteIfNeeded();
           this.level += 1;
           saveHighestLevel(this.level);
           
@@ -14119,7 +14122,6 @@
           this.highScore = Math.max(this.highScore, this.score);
           this.highScore = Math.round(this.highScore);
           this.updateHud();
-          this.syncChallengeLevelScore(previousLevel);
           
           // Reset words for this level
           this.wordsThisLevel = [];
@@ -14521,6 +14523,7 @@
             this.grantBossGemRewardIfNeeded();
             this.wordsThisLevel = [];
             const previousLevel = this.level;
+            this.noteChallengeLevelCompleteIfNeeded();
             this.level += 1;
             if (dailyManager) dailyManager.incrementTask('surviveLevels');
             saveHighestLevel(this.level);
@@ -14535,7 +14538,6 @@
             this.highScore = Math.max(this.highScore, this.score);
             this.highScore = Math.round(this.highScore);
             this.updateHud();
-            this.syncChallengeLevelScore(previousLevel);
           }
           
           // Show stash letter selection overlay
@@ -14812,16 +14814,39 @@
         }
         
         finishLevelTransition() {
-          const prevLevel = this.level - 1;
-          const shouldShowAd = prevLevel > 0 && (prevLevel % 2 === 0 || isBossLevel(prevLevel));
-
-          if (shouldShowAd) {
-            showAd(() => {
+          const proceed = () => {
+            const prevLevel = this.level - 1;
+            const shouldShowAd = prevLevel > 0 && (prevLevel % 2 === 0 || isBossLevel(prevLevel));
+            if (shouldShowAd) {
+              showAd(() => {
+                this.startLevelTransition();
+              });
+            } else {
               this.startLevelTransition();
-            });
-          } else {
-            this.startLevelTransition();
+            }
+          };
+
+          const pending = this._pendingChallengeRound;
+          if (
+            pending &&
+            this.challengeMeta &&
+            SquirrelApi.isConfigured() &&
+            this.challengeMeta.code !== 'offline'
+          ) {
+            this._pendingChallengeRound = null;
+            this.phase = 'paused';
+            this.stopLoop();
+            this.syncChallengeRoundOnServer(pending)
+              .then((msg) => {
+                if (msg) showToast(msg);
+              })
+              .catch(() => {})
+              .finally(() => {
+                proceed();
+              });
+            return;
           }
+          proceed();
         }
 
         startLevelTransition(isRestart = false) {
@@ -15120,6 +15145,40 @@
         }
       }
 
+      Game.prototype.noteChallengeLevelCompleteIfNeeded = function () {
+        if (!this.challengeMeta) return;
+        if (!SquirrelApi.isConfigured() || this.challengeMeta.code === 'offline') return;
+        const finished = this.level;
+        const start = Number.isFinite(this.challengeScoreAtLevelStart) ? this.challengeScoreAtLevelStart : 0;
+        this._pendingChallengeRound = { level: finished, points: Math.max(0, Math.round(this.score - start)) };
+      };
+
+      Game.prototype.syncChallengeRoundOnServer = async function (round) {
+        const meta = this.challengeMeta;
+        if (!meta || !SquirrelApi.isConfigured() || meta.code === 'offline') return null;
+        const pid = getOrCreatePlayerId();
+        try {
+          let state = await SquirrelApi.postChallengeRound(meta.code, pid, round.level, round.points);
+          if (!state) return null;
+          if (state.last_resolved_level >= round.level && state.last_round_summary) {
+            return `${state.last_round_summary} (${state.host_wins ?? 0}–${state.guest_wins ?? 0})`;
+          }
+          const deadline = Date.now() + 180000;
+          while (Date.now() < deadline) {
+            await new Promise((r) => setTimeout(r, 1500));
+            state = await SquirrelApi.getChallenge(meta.code);
+            if (!state) break;
+            if (state.last_resolved_level >= round.level && state.last_round_summary) {
+              return `${state.last_round_summary} (${state.host_wins ?? 0}–${state.guest_wins ?? 0})`;
+            }
+          }
+          return 'Rival still on this level — continued. Check Stats later for the round.';
+        } catch (e) {
+          console.warn(e);
+          return null;
+        }
+      };
+
       const originalTriggerGameOver = Game.prototype.triggerGameOver;
       Game.prototype.triggerGameOver = function(message, fromDeath = true) {
         const eligibleForReward = this.rewardEligible !== false;
@@ -15177,10 +15236,15 @@
             toggle(dom.challengeOverlay, true);
             if (dom.challengeHostStatus) dom.challengeHostStatus.textContent = '';
             if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = '';
+            updateChallengeVersusHint();
           });
         }
         if (dom.closeChallengeOverlayButton) {
-          dom.closeChallengeOverlayButton.addEventListener('click', () => toggle(dom.challengeOverlay, false));
+          dom.closeChallengeOverlayButton.addEventListener('click', () => {
+            hostChallengePayload = null;
+            if (dom.startHostedRunButton) dom.startHostedRunButton.classList.add('hidden');
+            toggle(dom.challengeOverlay, false);
+          });
         }
         if (dom.challengeTabHost && dom.challengeTabJoin && dom.challengeHostPanel && dom.challengeJoinPanel) {
           dom.challengeTabHost.addEventListener('click', () => {
@@ -15188,6 +15252,7 @@
             dom.challengeTabJoin.classList.remove('selected');
             dom.challengeHostPanel.classList.remove('hidden');
             dom.challengeJoinPanel.classList.add('hidden');
+            updateChallengeVersusHint();
           });
           dom.challengeTabJoin.addEventListener('click', () => {
             dom.challengeTabJoin.classList.add('selected');
@@ -15200,32 +15265,70 @@
           dom.createChallengeButton.addEventListener('click', async () => {
             updateLevelDisplay();
             const startLevel = currentSelectedLevel;
-            const seed = ((Math.random() * 0x7fffffff) | 0) >>> 0;
-            let code = '';
             if (dom.challengeHostStatus) dom.challengeHostStatus.textContent = '';
+            hostChallengePayload = null;
+            if (dom.startHostedRunButton) dom.startHostedRunButton.classList.add('hidden');
+
             if (SquirrelApi.isConfigured()) {
-              if (dom.challengeHostStatus) dom.challengeHostStatus.textContent = 'Saving challenge…';
-              const row = await SquirrelApi.createChallenge(startLevel, seed);
-              if (!row) {
-                if (dom.challengeHostStatus) dom.challengeHostStatus.textContent = 'Could not create challenge (is the API running?).';
+              if (dom.challengeHostStatus) dom.challengeHostStatus.textContent = 'Creating…';
+              const reserved =
+                leaderboardChallengeTarget && leaderboardChallengeTarget.id
+                  ? leaderboardChallengeTarget.id
+                  : undefined;
+              const created = await SquirrelApi.createChallenge(
+                getOrCreatePlayerId(),
+                loadDisplayName(),
+                startLevel,
+                reserved
+              );
+              if (!created || !created.code) {
+                if (dom.challengeHostStatus) {
+                  dom.challengeHostStatus.textContent = 'Could not create challenge. Is the Render API up?';
+                }
                 return;
               }
-              code = row.code;
-              const useSeed = Number(row.seed) >>> 0;
-              if (dom.challengeHostCodeDisplay) dom.challengeHostCodeDisplay.textContent = `Code: ${code}`;
-              if (dom.challengeHostStatus) dom.challengeHostStatus.textContent = 'Share this code. Scores compare after each level.';
-              showToast(`Challenge code: ${code}`);
-              beginGameFromMenu(startLevel, { runSeed: useSeed, challenge: { code, role: 'host' } });
+              hostChallengePayload = {
+                startLevel,
+                seed: Number(created.seed),
+                code: created.code,
+                role: 'host'
+              };
+              if (dom.challengeHostCodeDisplay) {
+                dom.challengeHostCodeDisplay.textContent = `Code: ${created.code}`;
+              }
+              if (dom.challengeHostStatus) {
+                dom.challengeHostStatus.textContent = reserved
+                  ? 'Only your selected opponent can join. When they are ready, tap Start challenge run.'
+                  : 'Share the code. When your friend is ready to join, tap Start challenge run.';
+              }
+              if (dom.startHostedRunButton) dom.startHostedRunButton.classList.remove('hidden');
+              showToast(`Code: ${created.code}`);
+              leaderboardChallengeTarget = null;
+              updateChallengeVersusHint();
               return;
             }
+
+            const seed = ((Math.random() * 0x7fffffff) | 0) >>> 0;
             if (dom.challengeHostCodeDisplay) {
               dom.challengeHostCodeDisplay.textContent = `Offline — seed: ${seed} · start level: ${startLevel}`;
             }
             if (dom.challengeHostStatus) {
-              dom.challengeHostStatus.textContent = 'Friend uses seed below, or deploy the API for online codes.';
+              dom.challengeHostStatus.textContent = 'Friend uses offline seed below. No server — rounds are local only.';
             }
             showToast(`Offline challenge seed ${seed}, level ${startLevel}`);
             beginGameFromMenu(startLevel, { runSeed: seed, challenge: { code: 'offline', role: 'host' } });
+          });
+        }
+        if (dom.startHostedRunButton) {
+          dom.startHostedRunButton.addEventListener('click', () => {
+            if (!hostChallengePayload) {
+              showToast('Create a code first.');
+              return;
+            }
+            const p = hostChallengePayload;
+            beginGameFromMenu(p.startLevel, { runSeed: p.seed, challenge: { code: p.code, role: p.role } });
+            hostChallengePayload = null;
+            dom.startHostedRunButton.classList.add('hidden');
           });
         }
         if (dom.joinChallengeButton) {
@@ -15236,22 +15339,25 @@
               return;
             }
             if (!SquirrelApi.isConfigured()) {
-              if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = 'Online codes need the Render API. Use offline seed instead.';
+              if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = 'Online codes need apiBaseUrl. Use offline seed below.';
               return;
             }
-            if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = 'Loading…';
-            const row = await SquirrelApi.getChallengeByCode(code);
+            if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = 'Joining…';
+            const row = await SquirrelApi.joinChallenge(code, getOrCreatePlayerId(), loadDisplayName());
             if (!row) {
-              if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = 'Challenge not found.';
+              if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = 'Could not join (wrong code, full, or wrong account).';
               return;
             }
             const seedNum = Number(row.seed);
-            const sl = Math.max(1, Math.floor(Number(row.start_level) || 1));
+            const sl = Math.max(
+              1,
+              Math.floor(Number(row.current_level != null ? row.current_level : row.start_level) || 1)
+            );
             if (!Number.isFinite(seedNum)) {
               if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = 'Invalid challenge data.';
               return;
             }
-            showToast(`Joined challenge ${code} — good luck!`);
+            showToast(`Joined challenge ${code} — level ${sl}`);
             beginGameFromMenu(sl, { runSeed: seedNum, challenge: { code, role: 'guest' } });
           });
         }

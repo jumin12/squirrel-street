@@ -1,12 +1,12 @@
-# Render Blueprint — create Web Service from this repo (Root Directory: leave default /).
-# Optional: attach a Render PostgreSQL instance and set DATABASE_URL for persistent data.
+# Render Blueprint — Link a PostgreSQL instance in the dashboard and set DATABASE_URL on this service.
 services:
   - type: web
-    name: squirrel-street
+    name: squirrel-street-api
     runtime: node
     plan: free
+    rootDir: server
     buildCommand: npm install
     startCommand: npm start
     envVars:
       - key: NODE_VERSION
-        value: "20.12.2"
+        value: 20
