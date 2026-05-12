@@ -1,12 +1,12 @@
-# Render Blueprint — Link a PostgreSQL instance in the dashboard and set DATABASE_URL on this service.
+# Web service: use repo root so index.html, art/, dictionary.js are deployed with the API.
 services:
   - type: web
-    name: squirrel-street-api
+    name: squirrel-street
     runtime: node
     plan: free
-    rootDir: server
-    buildCommand: npm install
-    startCommand: npm start
+    rootDir: .
+    buildCommand: cd server && npm install
+    startCommand: cd server && npm start
     envVars:
       - key: NODE_VERSION
         value: 20

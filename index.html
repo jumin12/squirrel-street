@@ -4398,10 +4398,12 @@
     }
   </style>
   <script>
-    window.SQUIRREL_ONLINE = window.SQUIRREL_ONLINE || {};
-    /* Live scores + challenges (Render). No trailing slash. Gameplay stays local; only scores/rounds hit the API.
-       Web: set here. Google Play (WebView): inject the same object before loading this page, or edit this file in your APK bundle.
-       Example: window.SQUIRREL_ONLINE = { apiBaseUrl: 'https://squirrel-street-api.onrender.com' }; */
+    /* API for leaderboard + challenges (same host as this file on Render is fine). */
+    window.SQUIRREL_ONLINE = Object.assign(
+      { apiBaseUrl: 'https://squirrel-street.onrender.com' },
+      window.SQUIRREL_ONLINE || {}
+    );
+    /* Override: set window.SQUIRREL_ONLINE before this script (e.g. WebView) or edit apiBaseUrl above. */
   </script>
 </head>
 <body>

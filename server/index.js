@@ -1,6 +1,11 @@
 import express from 'express';
 import cors from 'cors';
 import pg from 'pg';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const staticRoot = path.join(__dirname, '..');
 
 const { Pool } = pg;
 const PORT = process.env.PORT || 8787;
@@ -358,6 +363,8 @@ app.post('/api/challenges/:code/round', async (req, res) => {
     client.release();
   }
 });
+
+app.use(express.static(staticRoot, { index: ['index.html'], maxAge: '1d', dotfiles: 'ignore' }));
 
 if (process.argv.includes('--migrate-only')) {
   migrate()
