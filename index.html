@@ -4398,12 +4398,9 @@
     }
   </style>
   <script>
-    window.SQUIRREL_ONLINE = window.SQUIRREL_ONLINE || {};
-    // Optional: online leaderboard + challenge codes (Supabase REST). Example:
-    // window.SQUIRREL_ONLINE = {
-    //   supabaseUrl: 'https://YOUR_PROJECT.supabase.co',
-    //   supabaseAnonKey: 'YOUR_ANON_KEY'
-    // };
+    window.SQUIRREL_API = window.SQUIRREL_API || {};
+    /* If the game is opened from GitHub Pages or file://, set your Render URL:
+       window.SQUIRREL_API = { baseUrl: 'https://your-app.onrender.com' }; */
   </script>
 </head>
 <body>
@@ -4495,7 +4492,7 @@
   <div id="challengeOverlay" class="overlay hidden">
     <div class="modal" style="max-width: 520px; width: 94vw;">
       <h2>Challenge mode</h2>
-      <p style="font-size: 0.5rem; margin-bottom: 12px; line-height: 1.5;">Host creates a code and starts a run. Share the code so a friend can play the same generated maps (matching seed). Compare scores after each run.</p>
+      <p style="font-size: 0.5rem; margin-bottom: 12px; line-height: 1.5;">Host creates a code (saved on your Render API). Share it so a friend joins the same seeded run. After <strong>each level you clear</strong>, total score for that level is stored and compared. Gameplay stays on-device; only scores sync.</p>
       <div class="pill-buttons" style="margin-bottom: 12px;">
         <button type="button" id="challengeTabHost" class="pill-button selected">Host</button>
         <button type="button" id="challengeTabJoin" class="pill-button">Join</button>
@@ -5963,126 +5960,102 @@
         return s;
       }
 
-      const SquirrelCloud = (function createSquirrelCloud() {
-        function cfg() {
-          return window.SQUIRREL_ONLINE || {};
+      const SquirrelApi = (function createSquirrelApi() {
+        function apiUrl(path) {
+          const raw = (window.SQUIRREL_API && window.SQUIRREL_API.baseUrl) || '';
+          const base = String(raw).replace(/\/$/, '');
+          if (base) return `${base}${path}`;
+          return path;
         }
-        function headers() {
-          const { supabaseAnonKey: key } = cfg();
-          return {
-            apikey: key,
-            Authorization: `Bearer ${key}`,
-            'Content-Type': 'application/json',
-            Prefer: 'return=representation'
-          };
+        function isConfigured() {
+          const raw = (window.SQUIRREL_API && window.SQUIRREL_API.baseUrl) || '';
+          if (String(raw).trim()) return true;
+          const h = typeof window !== 'undefined' ? window.location.hostname : '';
+          return h === 'localhost' || Boolean(h && h.endsWith('.onrender.com'));
         }
-        function baseUrl() {
-          const u = (cfg().supabaseUrl || '').replace(/\/$/, '');
-          return u ? `${u}/rest/v1` : '';
-        }
+        const jsonHeaders = { 'Content-Type': 'application/json' };
         return {
-          isConfigured() {
-            const c = cfg();
-            return Boolean(c.supabaseUrl && c.supabaseAnonKey);
-          },
+          apiUrl,
+          isConfigured,
           async fetchLeaderboard(limit = 40) {
-            const root = baseUrl();
-            if (!root) return [];
-            const r = await fetch(
-              `${root}/squirrel_leaderboard?select=player_id,display_name,high_score,highest_level,updated_at&order=high_score.desc&limit=${limit}`,
-              { headers: headers() }
-            );
-            if (!r.ok) return [];
-            return r.json();
-          },
-          async submitLeaderboardIfBetter(playerId, displayName, score, highestLevel) {
-            const root = baseUrl();
-            if (!root || !playerId) return;
-            const h = { ...headers() };
-            const q = `${root}/squirrel_leaderboard?player_id=eq.${encodeURIComponent(playerId)}&select=high_score,highest_level`;
-            const cur = await fetch(q, { headers: h });
-            if (!cur.ok) return;
-            const rows = await cur.json();
-            const prev = rows[0];
-            const nextHigh = prev ? Math.max(score, Number(prev.high_score) || 0) : score;
-            const nextLevel = prev ? Math.max(highestLevel, Number(prev.highest_level) || 0) : highestLevel;
-            if (
-              prev &&
-              nextHigh === Number(prev.high_score) &&
-              nextLevel === Number(prev.highest_level || 0)
-            ) {
-              return;
+            try {
+              const r = await fetch(apiUrl(`/api/leaderboard?limit=${limit}`));
+              if (!r.ok) return [];
+              return r.json();
+            } catch (e) {
+              return [];
             }
-            const payload = {
-              player_id: playerId,
-              display_name: (displayName || 'Anon').slice(0, 24),
-              high_score: nextHigh,
-              highest_level: nextLevel
-            };
-            if (prev) {
-              await fetch(`${root}/squirrel_leaderboard?player_id=eq.${encodeURIComponent(playerId)}`, {
-                method: 'PATCH',
-                headers: { ...h, Prefer: 'return=minimal' },
+          },
+          async submitLeaderboard(playerId, displayName, score, highestLevel) {
+            try {
+              const r = await fetch(apiUrl('/api/leaderboard'), {
+                method: 'POST',
+                headers: jsonHeaders,
                 body: JSON.stringify({
-                  display_name: payload.display_name,
-                  high_score: nextHigh,
-                  highest_level: nextLevel
+                  player_id: playerId,
+                  display_name: (displayName || 'Anon').slice(0, 24),
+                  high_score: Math.round(score),
+                  highest_level: Math.max(1, Math.floor(highestLevel))
                 })
               });
-            } else {
-              await fetch(`${root}/squirrel_leaderboard`, {
-                method: 'POST',
-                headers: { ...h, Prefer: 'return=minimal' },
-                body: JSON.stringify(payload)
-              });
+              return r.ok;
+            } catch (e) {
+              return false;
             }
           },
-          async createChallengeRow(startLevel, seed) {
-            const root = baseUrl();
-            if (!root) return null;
-            const code = generateChallengeCode();
-            const row = {
-              code,
-              seed,
-              start_level: startLevel,
-              host_done: false,
-              guest_done: false
-            };
-            const r = await fetch(`${root}/squirrel_challenges`, {
-              method: 'POST',
-              headers: headers(),
-              body: JSON.stringify(row)
-            });
-            if (r.ok) return row;
-            return null;
+          async createChallenge(startLevel, seed) {
+            try {
+              const r = await fetch(apiUrl('/api/challenges'), {
+                method: 'POST',
+                headers: jsonHeaders,
+                body: JSON.stringify({
+                  start_level: startLevel,
+                  seed: Math.floor(seed)
+                })
+              });
+              if (!r.ok) return null;
+              return r.json();
+            } catch (e) {
+              return null;
+            }
           },
           async getChallengeByCode(code) {
-            const root = baseUrl();
-            if (!root || !code) return null;
-            const c = code.trim().toUpperCase();
-            const r = await fetch(
-              `${root}/squirrel_challenges?code=eq.${encodeURIComponent(c)}&select=code,seed,start_level,host_score,guest_score,host_done,guest_done`,
-              { headers: headers() }
-            );
-            if (!r.ok) return null;
-            const rows = await r.json();
-            return rows[0] || null;
+            try {
+              const c = encodeURIComponent(String(code || '').trim().toUpperCase());
+              const r = await fetch(apiUrl(`/api/challenges/${c}`));
+              if (!r.ok) return null;
+              return r.json();
+            } catch (e) {
+              return null;
+            }
           },
-          async updateChallengeScores(code, role, score) {
-            const root = baseUrl();
-            if (!root || !code) return null;
-            const c = code.trim().toUpperCase();
-            const patch =
-              role === 'host'
-                ? { host_score: score, host_done: true }
-                : { guest_score: score, guest_done: true };
-            const r = await fetch(`${root}/squirrel_challenges?code=eq.${encodeURIComponent(c)}`, {
-              method: 'PATCH',
-              headers: headers(),
-              body: JSON.stringify(patch)
-            });
-            if (!r.ok) return null;
-            return this.getChallengeByCode(c);
+          async postChallengeLevel(code, role, level, score) {
+            try {
+              const c = encodeURIComponent(String(code || '').trim().toUpperCase());
+              const r = await fetch(apiUrl(`/api/challenges/${c}/level`), {
+                method: 'POST',
+                headers: jsonHeaders,
+                body: JSON.stringify({
+                  role,
+                  level: Math.floor(level),
+                  score: Math.round(score)
+                })
+              });
+              if (!r.ok) return null;
+              return r.json();
+            } catch (e) {
+              return null;
+            }
+          },
+          async fetchChallengeLevels(code) {
+            try {
+              const c = encodeURIComponent(String(code || '').trim().toUpperCase());
+              const r = await fetch(apiUrl(`/api/challenges/${c}/levels`));
+              if (!r.ok) return { levels: [] };
+              return r.json();
+            } catch (e) {
+              return { levels: [] };
+            }
           }
         };
       })();
@@ -9677,16 +9650,16 @@
         }
         if (dom.statsDisplayNameInput) dom.statsDisplayNameInput.value = loadDisplayName();
         if (dom.statsOnlineMessage) {
-          dom.statsOnlineMessage.textContent = SquirrelCloud.isConfigured()
-            ? 'Cloud sync is on. Scores are sent when a run ends (game over).'
-            : 'For a global leaderboard and online challenge codes, set window.SQUIRREL_ONLINE.supabaseUrl and supabaseAnonKey in the script at the top of index.html, then add the Supabase tables (see chat instructions).';
+          dom.statsOnlineMessage.textContent = SquirrelApi.isConfigured()
+            ? 'API reachable. High scores submit on game over; challenges update after each level you clear.'
+            : 'Use Render Web Service (npm start) or set window.SQUIRREL_API.baseUrl to your Render URL for shared leaderboards.';
         }
         if (!dom.statsLeaderboardList) return;
-        if (!SquirrelCloud.isConfigured()) {
+        if (!SquirrelApi.isConfigured()) {
           dom.statsLeaderboardList.textContent = '';
           const p = document.createElement('p');
           p.style.color = '#94a3b8';
-          p.textContent = 'Local stats are above. Connect Supabase to load everyone’s scores here.';
+          p.textContent = 'Local stats are above. Connect the Render API to load global scores here.';
           dom.statsLeaderboardList.appendChild(p);
           return;
         }
@@ -9695,12 +9668,12 @@
         loading.style.color = '#94a3b8';
         loading.textContent = 'Loading…';
         dom.statsLeaderboardList.appendChild(loading);
-        const list = await SquirrelCloud.fetchLeaderboard(30);
+        const list = await SquirrelApi.fetchLeaderboard(30);
         dom.statsLeaderboardList.textContent = '';
         if (!list.length) {
           const empty = document.createElement('p');
           empty.style.color = '#94a3b8';
-          empty.textContent = 'No rows yet — finish a run after creating the database tables.';
+          empty.textContent = 'No rows yet — finish a run after deploying the API.';
           dom.statsLeaderboardList.appendChild(empty);
           return;
         }
@@ -9743,8 +9716,8 @@
 
       async function handlePostGameOverCloud(gameRef, challenge, finalScore, finalLevel) {
         try {
-          if (SquirrelCloud.isConfigured()) {
-            await SquirrelCloud.submitLeaderboardIfBetter(
+          if (SquirrelApi.isConfigured()) {
+            await SquirrelApi.submitLeaderboard(
               getOrCreatePlayerId(),
               loadDisplayName(),
               finalScore,
@@ -9755,29 +9728,32 @@
             challenge &&
             challenge.code &&
             challenge.code !== 'offline' &&
-            SquirrelCloud.isConfigured()
+            SquirrelApi.isConfigured() &&
+            dom.challengeOutcomeBanner
           ) {
-            const row = await SquirrelCloud.updateChallengeScores(challenge.code, challenge.role, finalScore);
-            if (row && dom.challengeOutcomeBanner) {
-              const hs = row.host_score != null ? row.host_score : '—';
-              const gs = row.guest_score != null ? row.guest_score : '—';
-              let msg = `Challenge ${challenge.code} — Your score: ${finalScore}. Host: ${hs} · Guest: ${gs}.`;
-              if (row.host_done && row.guest_done) {
-                const h = Number(row.host_score);
-                const g = Number(row.guest_score);
-                if (h > g) msg += ' Host wins!';
-                else if (g > h) msg += ' Guest wins!';
-                else msg += ' Tie!';
-              } else if (challenge.role === 'host') {
-                msg += ' Waiting for guest to finish.';
-              } else {
-                msg += ' Challenge submitted.';
-              }
-              dom.challengeOutcomeBanner.textContent = msg;
-              dom.challengeOutcomeBanner.classList.remove('hidden');
+            const { levels } = await SquirrelApi.fetchChallengeLevels(challenge.code);
+            if (Array.isArray(levels) && levels.length > 0) {
+              const parts = levels.map((row) => {
+                const h = row.host_score != null ? row.host_score : '—';
+                const g = row.guest_score != null ? row.guest_score : '—';
+                let tag = '';
+                if (row.host_score != null && row.guest_score != null) {
+                  if (row.host_score > row.guest_score) tag = ' [Host]';
+                  else if (row.guest_score > row.host_score) tag = ' [Guest]';
+                  else tag = ' [Tie]';
+                }
+                return `L${row.level_num}: H${h} vs G${g}${tag}`;
+              });
+              dom.challengeOutcomeBanner.textContent =
+                `Challenge ${challenge.code} — ended at level ${finalLevel}, score ${finalScore}. By level: ${parts.join(' · ')}`;
+            } else {
+              dom.challengeOutcomeBanner.textContent =
+                `Challenge ${challenge.code} — run over (level ${finalLevel}, score ${finalScore}). Level-by-level scores appear as you clear stages.`;
             }
+            dom.challengeOutcomeBanner.classList.remove('hidden');
           } else if (challenge && dom.challengeOutcomeBanner) {
-            dom.challengeOutcomeBanner.textContent = `Challenge run complete — score ${finalScore}. (Offline challenge: compare scores with your friend manually.)`;
+            dom.challengeOutcomeBanner.textContent =
+              `Challenge run complete — score ${finalScore}. (Offline: compare manually with your friend.)`;
             dom.challengeOutcomeBanner.classList.remove('hidden');
           }
         } catch (e) {
@@ -11244,6 +11220,34 @@
           this.runStartLevel = normalizedStartLevel;
           this.level = normalizedStartLevel;
           this.startLevelTransition();
+        }
+
+        syncChallengeLevelScore(completedLevel) {
+          if (!this.challengeMeta || this.challengeMeta.code === 'offline' || !SquirrelApi.isConfigured()) {
+            return;
+          }
+          const code = this.challengeMeta.code;
+          const role = this.challengeMeta.role;
+          const score = Math.round(this.score);
+          const lv = Math.floor(Number(completedLevel));
+          if (!code || !role || !Number.isFinite(lv) || lv < 1) {
+            return;
+          }
+          void SquirrelApi.postChallengeLevel(code, role, lv, score)
+            .then((row) => {
+              if (!row) return;
+              const h = row.host_score;
+              const g = row.guest_score;
+              if (h != null && g != null) {
+                const you = role === 'host' ? h : g;
+                const them = role === 'host' ? g : h;
+                const lead = you > them ? 'You lead' : them > you ? 'They lead' : 'Tied';
+                showToast(`Level ${lv} — You: ${you} · Them: ${them} (${lead})`);
+              } else {
+                showToast(`Level ${lv} saved (${score}). Waiting for opponent.`);
+              }
+            })
+            .catch(() => {});
         }
 
         loop(timestamp) {
@@ -13805,6 +13809,7 @@
           this.highScore = Math.max(this.highScore, this.score);
           this.highScore = Math.round(this.highScore);
           this.updateHud();
+          this.syncChallengeLevelScore(previousLevel);
           this.startLevelTransition();
         }
 
@@ -14123,6 +14128,7 @@
           this.highScore = Math.max(this.highScore, this.score);
           this.highScore = Math.round(this.highScore);
           this.updateHud();
+          this.syncChallengeLevelScore(previousLevel);
           
           // Reset words for this level
           this.wordsThisLevel = [];
@@ -14538,6 +14544,7 @@
             this.highScore = Math.max(this.highScore, this.score);
             this.highScore = Math.round(this.highScore);
             this.updateHud();
+            this.syncChallengeLevelScore(previousLevel);
           }
           
           // Show stash letter selection overlay
@@ -15203,29 +15210,31 @@
             updateLevelDisplay();
             const startLevel = currentSelectedLevel;
             const seed = ((Math.random() * 0x7fffffff) | 0) >>> 0;
-            let code = 'offline';
+            let code = '';
             if (dom.challengeHostStatus) dom.challengeHostStatus.textContent = '';
-            if (SquirrelCloud.isConfigured()) {
+            if (SquirrelApi.isConfigured()) {
               if (dom.challengeHostStatus) dom.challengeHostStatus.textContent = 'Saving challenge…';
-              const row = await SquirrelCloud.createChallengeRow(startLevel, seed);
+              const row = await SquirrelApi.createChallenge(startLevel, seed);
               if (!row) {
-                if (dom.challengeHostStatus) dom.challengeHostStatus.textContent = 'Could not create challenge (check Supabase table squirrel_challenges).';
+                if (dom.challengeHostStatus) dom.challengeHostStatus.textContent = 'Could not create challenge (is the API running?).';
                 return;
               }
               code = row.code;
+              const useSeed = Number(row.seed) >>> 0;
               if (dom.challengeHostCodeDisplay) dom.challengeHostCodeDisplay.textContent = `Code: ${code}`;
-              if (dom.challengeHostStatus) dom.challengeHostStatus.textContent = 'Share this code. Starting your run…';
+              if (dom.challengeHostStatus) dom.challengeHostStatus.textContent = 'Share this code. Scores compare after each level.';
               showToast(`Challenge code: ${code}`);
-            } else {
-              if (dom.challengeHostCodeDisplay) {
-                dom.challengeHostCodeDisplay.textContent = `Offline — seed: ${seed} · start level: ${startLevel}`;
-              }
-              if (dom.challengeHostStatus) {
-                dom.challengeHostStatus.textContent = 'Friend joins via seed below, or enable Supabase for codes.';
-              }
-              showToast(`Offline challenge seed ${seed}, level ${startLevel}`);
+              beginGameFromMenu(startLevel, { runSeed: useSeed, challenge: { code, role: 'host' } });
+              return;
             }
-            beginGameFromMenu(startLevel, { runSeed: seed, challenge: { code, role: 'host' } });
+            if (dom.challengeHostCodeDisplay) {
+              dom.challengeHostCodeDisplay.textContent = `Offline — seed: ${seed} · start level: ${startLevel}`;
+            }
+            if (dom.challengeHostStatus) {
+              dom.challengeHostStatus.textContent = 'Friend uses seed below, or deploy the API for online codes.';
+            }
+            showToast(`Offline challenge seed ${seed}, level ${startLevel}`);
+            beginGameFromMenu(startLevel, { runSeed: seed, challenge: { code: 'offline', role: 'host' } });
           });
         }
         if (dom.joinChallengeButton) {
@@ -15235,12 +15244,12 @@
               if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = 'Enter the host’s code.';
               return;
             }
-            if (!SquirrelCloud.isConfigured()) {
-              if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = 'Online codes need Supabase. Use offline seed instead.';
+            if (!SquirrelApi.isConfigured()) {
+              if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = 'Online codes need the Render API. Use offline seed instead.';
               return;
             }
             if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = 'Loading…';
-            const row = await SquirrelCloud.getChallengeByCode(code);
+            const row = await SquirrelApi.getChallengeByCode(code);
             if (!row) {
               if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = 'Challenge not found.';
               return;
