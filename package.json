@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "postinstall": "cd server && npm install",
-    "start": "cd server && npm start"
+    "start": "cd server && npm start",
+    "android:sync": "node scripts/android-cap-sync.js"
   },
   "engines": {
     "node": ">=18"
