@@ -4259,9 +4259,8 @@
       border: none !important;
       justify-content: space-evenly !important; /* Distribute numbers across the bar */
       width: 90%; /* Restrict width to keep numbers centered in art */
-      margin-top: 0 !important; /* Reset margin */
-      padding-top: clamp(10px, 6.5vw, 42px) !important; /* Reduced max cap (42px) for tablets, responsive for phones */
-      /* height: 100% removed to allow margin to push content down freely */
+      margin-top: -6px !important;
+      padding-top: clamp(2px, 3.5vw, 22px) !important;
       align-items: flex-start;
     }
 
@@ -4302,8 +4301,8 @@
             background-position: center top !important;
         }
         .hud-stats {
-            margin-top: 0 !important;
-            padding-top: 39px !important; /* Adjusted to move stats down slightly on PC/Tablets landscape */
+            margin-top: -4px !important;
+            padding-top: 22px !important;
             width: 90% !important; /* 90% of the constrained 520px width */
         }
         .hud-card:nth-child(4) {
@@ -4396,6 +4395,49 @@
             width: 200px;
         }
     }
+
+    .leaderboard-chart-wrap {
+      border-radius: 12px;
+      background: rgba(15, 23, 42, 0.55);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      overflow: hidden;
+      margin-top: 12px;
+    }
+    .leaderboard-row {
+      display: grid;
+      grid-template-columns: 34px 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      font-size: 0.42rem;
+      line-height: 1.45;
+    }
+    .leaderboard-row:last-child { border-bottom: none; }
+    .leaderboard-row.you {
+      background: linear-gradient(90deg, rgba(250, 204, 21, 0.22), rgba(15,23,42,0));
+      box-shadow: inset 3px 0 0 0 #facc15;
+    }
+    .leaderboard-rank { color: #94a3b8; font-variant-numeric: tabular-nums; text-align: right; }
+    .leaderboard-name { color: #e2e8f0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .leaderboard-meta { color: #7dd3fc; font-size: 0.38rem; text-align: right; white-space: nowrap; }
+    #challengeBetweenLevelsOverlay .modal { max-width: 460px; text-align: center; }
+    #challengeBetweenLevelsBody { font-size: 0.48rem; line-height: 1.55; color: #e2e8f0; margin-top: 12px; }
+    .challenge-score-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+      text-align: left;
+      font-size: 0.42rem;
+    }
+    .challenge-score-card {
+      background: rgba(0,0,0,0.35);
+      border-radius: 10px;
+      padding: 10px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    #gameOverMatchSummary { margin-top: 10px; padding: 10px; background: rgba(34,197,94,0.15); border-radius: 8px; font-size: 0.42rem; color: #bbf7d0; }
   </style>
   <script>
     /* API for leaderboard + challenges (same host as this file on Render is fine). */
@@ -4403,6 +4445,8 @@
       { apiBaseUrl: 'https://squirrel-street.onrender.com' },
       window.SQUIRREL_ONLINE || {}
     );
+    /* Optional: Facebook Login app id for friends list + identity (create app at developers.facebook.com). */
+    window.SQUIRREL_FACEBOOK_APP_ID = window.SQUIRREL_FACEBOOK_APP_ID || '';
     /* Override: set window.SQUIRREL_ONLINE before this script (e.g. WebView) or edit apiBaseUrl above. */
   </script>
 </head>
@@ -4502,8 +4546,18 @@
       </div>
       <div id="challengeHostPanel">
         <p id="challengeVersusHint" style="font-size: 0.48rem; color: #7dd3fc; min-height: 1.2em;"></p>
+        <div id="challengeResumePanel" class="hidden" style="margin-bottom: 12px; padding: 10px; background: rgba(0,0,0,0.35); border-radius: 10px; border: 1px solid rgba(250, 204, 21, 0.35);">
+          <p id="challengeResumeHint" style="font-size: 0.45rem; color: #fcd34d; margin: 0 0 8px 0; line-height: 1.45;"></p>
+          <button type="button" id="challengeContinueButton" class="button" style="width: 100%;">Continue last match</button>
+        </div>
+        <button type="button" id="openChallengeProfileButton" class="pill-button ghost" style="width: 100%; margin-bottom: 10px; font-size: 0.42rem;">Multiplayer profile &amp; stats</button>
+        <div id="challengeFacebookSection" style="margin-bottom: 12px; padding: 10px; background: rgba(30,58,138,0.25); border-radius: 10px; border: 1px solid rgba(125,211,252,0.25);">
+          <p style="font-size: 0.42rem; color: #94a3b8; margin: 0 0 8px 0; line-height: 1.45;">Facebook links your name for challenges. Friends who also play appear below (Facebook only returns friends on this app).</p>
+          <button type="button" id="fbConnectButton" class="pill-button" style="width: 100%; font-size: 0.42rem;">Connect Facebook</button>
+          <div id="fbFriendsList" style="font-size: 0.4rem; margin-top: 10px; max-height: 120px; overflow-y: auto; color: #cbd5e1; line-height: 1.45;"></div>
+        </div>
         <p style="font-size: 0.5rem;">Uses the starting level from your Biomes selector (open Biomes first if you want a specific level).</p>
-        <button id="createChallengeButton" class="button" style="width: 100%; margin-top: 8px;">Create code</button>
+        <button type="button" id="regenerateChallengeCodeButton" class="pill-button ghost" style="width: 100%; margin-top: 8px; font-size: 0.42rem;">New room code</button>
         <button id="startHostedRunButton" class="button hidden" style="width: 100%; margin-top: 10px;">Start challenge run</button>
         <p id="challengeHostCodeDisplay" style="font-size: 0.75rem; color: #fcd34d; margin-top: 12px; text-align: center; min-height: 1.5em;"></p>
         <p id="challengeHostStatus" style="font-size: 0.45rem; color: #94a3b8; text-align: center;"></p>
@@ -4612,6 +4666,14 @@
     </div>
   </div>
 
+  <div id="challengeBetweenLevelsOverlay" class="overlay hidden challenge-between-overlay">
+    <div class="modal">
+      <h2 style="margin-bottom: 6px;">Waiting on rival</h2>
+      <p style="font-size: 0.45rem; color: #94a3b8; line-height: 1.5;">Scores update here while both runs sync for this level.</p>
+      <div id="challengeBetweenLevelsBody"></div>
+    </div>
+  </div>
+
   <div id="exitConfirmOverlay" class="overlay hidden">
     <div class="modal exit-confirm-modal">
       <div class="exit-confirm-header">
@@ -4696,6 +4758,7 @@
     <div class="modal">
       <h2>You Lose</h2>
       <p id="gameOverMessage">Your squirrel is resting.</p>
+      <p id="gameOverMatchSummary" class="hidden" style="font-size: 0.42rem; line-height: 1.5; color: #bbf7d0; margin-top: 8px;"></p>
       <p id="challengeOutcomeBanner" class="hidden" style="font-size: 0.48rem; line-height: 1.5; color: #a7f3d0; margin-top: 8px;"></p>
       <div class="stat-block">
         <div class="stat-card">
@@ -5043,6 +5106,7 @@
             <button type="button" id="statsSaveDisplayName" class="pill-button">Save</button>
           </div>
           <p id="statsOnlineMessage" style="font-size: 0.45rem; color: #94a3b8; margin-bottom: 8px;"></p>
+          <p id="statsMpOnlineRow" style="font-size: 0.46rem; color: #fcd34d; margin-bottom: 10px; line-height: 1.5;"></p>
           <h3 style="font-size: 0.6rem; color: #fcd34d; margin-bottom: 8px;">Global leaderboard</h3>
           <div id="statsLeaderboardList" style="font-size: 0.48rem; line-height: 1.5;"></div>
           <button type="button" id="statsRefreshLeaderboard" class="pill-button" style="margin-top: 12px;">Refresh list</button>
@@ -5717,7 +5781,13 @@
         challengeHostPanel: document.getElementById('challengeHostPanel'),
         challengeJoinPanel: document.getElementById('challengeJoinPanel'),
         challengeVersusHint: document.getElementById('challengeVersusHint'),
-        createChallengeButton: document.getElementById('createChallengeButton'),
+        challengeResumePanel: document.getElementById('challengeResumePanel'),
+        challengeResumeHint: document.getElementById('challengeResumeHint'),
+        challengeContinueButton: document.getElementById('challengeContinueButton'),
+        openChallengeProfileButton: document.getElementById('openChallengeProfileButton'),
+        fbConnectButton: document.getElementById('fbConnectButton'),
+        fbFriendsList: document.getElementById('fbFriendsList'),
+        regenerateChallengeCodeButton: document.getElementById('regenerateChallengeCodeButton'),
         startHostedRunButton: document.getElementById('startHostedRunButton'),
         challengeHostCodeDisplay: document.getElementById('challengeHostCodeDisplay'),
         challengeHostStatus: document.getElementById('challengeHostStatus'),
@@ -5728,6 +5798,8 @@
         offlineChallengeStart: document.getElementById('offlineChallengeStart'),
         offlineChallengeStartButton: document.getElementById('offlineChallengeStartButton'),
         closeChallengeOverlayButton: document.getElementById('closeChallengeOverlayButton'),
+        challengeBetweenLevelsOverlay: document.getElementById('challengeBetweenLevelsOverlay'),
+        challengeBetweenLevelsBody: document.getElementById('challengeBetweenLevelsBody'),
         levelSelectorButton: document.getElementById('levelSelectorButton'),
         achievementsButton: document.getElementById('achievementsButton'),
         dictionaryButton: document.getElementById('dictionaryButton'),
@@ -5809,6 +5881,7 @@
         closeDictionaryButton: document.getElementById('closeDictionaryButton'),
         gameOverOverlay: document.getElementById('gameOverOverlay'),
         gameOverMessage: document.getElementById('gameOverMessage'),
+        gameOverMatchSummary: document.getElementById('gameOverMatchSummary'),
         challengeOutcomeBanner: document.getElementById('challengeOutcomeBanner'),
         finalScore: document.getElementById('finalScore'),
         finalLevel: document.getElementById('finalLevel'),
@@ -5844,6 +5917,7 @@
         statsDisplayNameInput: document.getElementById('statsDisplayNameInput'),
         statsSaveDisplayName: document.getElementById('statsSaveDisplayName'),
         statsOnlineMessage: document.getElementById('statsOnlineMessage'),
+        statsMpOnlineRow: document.getElementById('statsMpOnlineRow'),
         statsLeaderboardList: document.getElementById('statsLeaderboardList'),
         statsRefreshLeaderboard: document.getElementById('statsRefreshLeaderboard'),
         toast: document.getElementById('toast'),
@@ -5914,6 +5988,7 @@
 
       let leaderboardChallengeTarget = null;
       let hostChallengePayload = null;
+      let hostChallengeCreating = false;
 
       const STORAGE_KEYS = {
         highScore: 'squirrelStreet.highScore',
@@ -5934,7 +6009,10 @@
         spelledWords: 'squirrelStreet.spelledWords',
         dailyState: 'squirrelStreet.dailyState',
         playerId: 'squirrelStreet.playerId',
-        displayName: 'squirrelStreet.displayName'
+        displayName: 'squirrelStreet.displayName',
+        challengeResume: 'squirrelStreet.challengeResume',
+        facebookId: 'squirrelStreet.facebookId',
+        facebookName: 'squirrelStreet.facebookName'
       };
 
       function getOrCreatePlayerId() {
@@ -5959,6 +6037,116 @@
         if (trimmed) {
           localStorage.setItem(STORAGE_KEYS.displayName, trimmed);
         }
+      }
+
+      const CHALLENGE_RESUME_MAX_MS = 24 * 60 * 60 * 1000;
+
+      function loadFacebookId() {
+        return localStorage.getItem(STORAGE_KEYS.facebookId) || '';
+      }
+
+      function loadFacebookName() {
+        return localStorage.getItem(STORAGE_KEYS.facebookName) || '';
+      }
+
+      function saveFacebookMeta(id, name) {
+        if (id) localStorage.setItem(STORAGE_KEYS.facebookId, id);
+        else localStorage.removeItem(STORAGE_KEYS.facebookId);
+        if (name) localStorage.setItem(STORAGE_KEYS.facebookName, name);
+        else localStorage.removeItem(STORAGE_KEYS.facebookName);
+      }
+
+      function persistChallengeResume(gameRef) {
+        try {
+          const ch = gameRef && gameRef.challengeMeta;
+          if (!ch || ch.code === 'offline' || !SquirrelApi.isConfigured()) return;
+          const payload = {
+            code: String(ch.code),
+            role: ch.role === 'guest' ? 'guest' : 'host',
+            savedAt: Date.now(),
+            playerId: getOrCreatePlayerId(),
+            level: gameRef.level,
+            runSeed: gameRef.runSeedBase
+          };
+          localStorage.setItem(STORAGE_KEYS.challengeResume, JSON.stringify(payload));
+          refreshChallengeResumeUi();
+        } catch (e) {
+          console.warn(e);
+        }
+      }
+
+      function clearChallengeResume() {
+        localStorage.removeItem(STORAGE_KEYS.challengeResume);
+        refreshChallengeResumeUi();
+      }
+
+      function readChallengeResumePayload() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEYS.challengeResume);
+          if (!raw) return null;
+          const o = JSON.parse(raw);
+          if (!o || !o.code || !o.savedAt || !o.playerId) return null;
+          return o;
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function refreshChallengeResumeUi() {
+        const payload = readChallengeResumePayload();
+        if (!dom.challengeResumePanel || !dom.challengeResumeHint) return;
+        if (!payload || Date.now() - payload.savedAt > CHALLENGE_RESUME_MAX_MS) {
+          dom.challengeResumePanel.classList.add('hidden');
+          return;
+        }
+        const left = CHALLENGE_RESUME_MAX_MS - (Date.now() - payload.savedAt);
+        const h = Math.floor(left / 3600000);
+        const m = Math.floor((left % 3600000) / 60000);
+        dom.challengeResumeHint.textContent = `Resume match ${payload.code} (${h}h ${m}m left). Same device & player id.`;
+        dom.challengeResumePanel.classList.remove('hidden');
+      }
+
+      function showChallengeBetweenLevelsOverlay() {
+        toggle(dom.challengeBetweenLevelsOverlay, true);
+      }
+
+      function hideChallengeBetweenLevelsOverlay() {
+        toggle(dom.challengeBetweenLevelsOverlay, false);
+      }
+
+      function paintChallengeWaitPanel(state, roundLevel, myPid) {
+        if (!dom.challengeBetweenLevelsBody || !state) return;
+        const hn = state.host_name || 'Host';
+        const gn = state.guest_name || 'Guest';
+        const hw = state.host_wins ?? 0;
+        const gw = state.guest_wins ?? 0;
+        const hs = state.round_host_score;
+        const gs = state.round_guest_score;
+        const hp = state.host_total_points ?? 0;
+        const gp = state.guest_total_points ?? 0;
+        const hel = state.host_eliminated;
+        const gel = state.guest_eliminated;
+        const hostRowYou = state.host_id === myPid;
+        const guestRowYou = state.guest_id === myPid;
+        const fmt = (v) => (v == null ? '—' : String(v));
+        const last = state.last_round_summary ? String(state.last_round_summary) : '';
+        dom.challengeBetweenLevelsBody.innerHTML = `
+          <div class="challenge-score-grid">
+            <div class="challenge-score-card" style="${hostRowYou ? 'box-shadow:0 0 0 2px #facc15;' : ''}">
+              <div style="color:#fcd34d;font-weight:bold;">${hn}${hostRowYou ? ' (you)' : ''}</div>
+              <div>Round pts (Lv ${roundLevel}): ${fmt(hs)}</div>
+              <div>Match pts: ${hp}</div>
+              <div>Levels won: ${hw}${hel ? ' · eliminated' : ''}</div>
+            </div>
+            <div class="challenge-score-card" style="${guestRowYou ? 'box-shadow:0 0 0 2px #facc15;' : ''}">
+              <div style="color:#7dd3fc;font-weight:bold;">${gn}${guestRowYou ? ' (you)' : ''}</div>
+              <div>Round pts (Lv ${roundLevel}): ${fmt(gs)}</div>
+              <div>Match pts: ${gp}</div>
+              <div>Levels won: ${gw}${gel ? ' · eliminated' : ''}</div>
+            </div>
+          </div>
+          ${last ? `<p style="margin-top:12px;font-size:0.4rem;color:#a7f3d0;">Last result: ${last}</p>` : '<p style="margin-top:12px;font-size:0.4rem;color:#94a3b8;">Syncing…</p>'}
+        `;
       }
 
       function generateChallengeCode() {
@@ -5989,18 +6177,21 @@
             if (!r.ok) return [];
             return r.json();
           },
-          async submitLeaderboardIfBetter(playerId, displayName, score, highestLevel) {
+          async submitLeaderboardIfBetter(playerId, displayName, score, highestLevel, wordsSpelled, facebookId) {
             const root = apiRoot();
             if (!root || !playerId) return;
+            const body = {
+              player_id: playerId,
+              display_name: (displayName || 'Player').slice(0, 24),
+              high_score: Math.round(score),
+              highest_level: Math.max(1, Math.floor(highestLevel) || 1),
+              words_spelled: Math.max(0, Math.floor(Number(wordsSpelled) || 0))
+            };
+            if (facebookId) body.facebook_id = String(facebookId).slice(0, 64);
             const r = await fetch(`${root}/leaderboard`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                player_id: playerId,
-                display_name: (displayName || 'Player').slice(0, 24),
-                high_score: Math.round(score),
-                highest_level: Math.max(1, Math.floor(highestLevel) || 1)
-              })
+              body: JSON.stringify(body)
             });
             if (!r.ok) console.warn('leaderboard submit failed', r.status);
           },
@@ -6052,6 +6243,22 @@
                 player_id: playerId,
                 level: Math.floor(level),
                 level_score: Math.round(levelScore)
+              })
+            });
+            if (!r.ok) return null;
+            return r.json();
+          },
+          async eliminateChallenge(code, playerId, level, levelScore, wordsSpelled) {
+            const root = apiRoot();
+            if (!root || !code || code === 'offline') return null;
+            const r = await fetch(`${root}/challenges/${encodeURIComponent(code.trim().toUpperCase())}/eliminate`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                player_id: playerId,
+                level: Math.floor(level),
+                level_score: Math.round(levelScore),
+                words_spelled: Math.max(0, Math.floor(Number(wordsSpelled) || 0))
               })
             });
             if (!r.ok) return null;
@@ -8771,6 +8978,18 @@
       // Changelog Data
       const CHANGELOG = [
         {
+          version: '2.3',
+          date: '2026-05-13',
+          changes: [
+            'Challenge host tab auto-generates a room code; new code button for refresh',
+            'Between-level multiplayer sync shows a waiting panel with both scores',
+            'Eliminated players end their run without blocking rivals; match history when both finish',
+            'Leaderboard stats: MP wins/losses/points, highlighted “you” row, optional Facebook login + friends list',
+            'Resume online challenge within 24h from Challenge mode',
+            'HUD numbers nudged upward into the top bar art',
+          ]
+        },
+        {
           version: '2.2',
           date: '2026-05-12',
           changes: [
@@ -8873,7 +9092,7 @@
         }
       ];
       
-      const CURRENT_VERSION = '2.2';
+      const CURRENT_VERSION = '2.3';
       const LAST_SEEN_VERSION_KEY = 'squirrelStreet.lastSeenVersion';
 
       function checkChangelogBadge() {
@@ -9666,6 +9885,7 @@
             : 'Set window.SQUIRREL_ONLINE.apiBaseUrl in index.html to your Render service URL (see /server in this repo).';
         }
         if (!dom.statsLeaderboardList) return;
+        if (dom.statsMpOnlineRow) dom.statsMpOnlineRow.textContent = '';
         if (!SquirrelApi.isConfigured()) {
           dom.statsLeaderboardList.textContent = '';
           const p = document.createElement('p');
@@ -9689,16 +9909,36 @@
           return;
         }
         const myId = getOrCreatePlayerId();
+        const selfRow = list.find((row) => row.player_id === myId);
+        if (dom.statsMpOnlineRow) {
+          if (selfRow) {
+            const mw = selfRow.mp_wins ?? 0;
+            const ml = selfRow.mp_losses ?? 0;
+            const mt = selfRow.mp_total_score ?? 0;
+            const ws = selfRow.words_spelled ?? 0;
+            dom.statsMpOnlineRow.innerHTML = `<strong>Online profile:</strong> MP wins ${mw} · losses ${ml} · challenge pts ${mt} · words spelled (synced) ${ws}`;
+          } else {
+            dom.statsMpOnlineRow.textContent =
+              'Finish an online challenge match to record multiplayer wins and losses on the server.';
+          }
+        }
+        const wrap = document.createElement('div');
+        wrap.className = 'leaderboard-chart-wrap';
+        dom.statsLeaderboardList.appendChild(wrap);
         list.forEach((row, i) => {
           const line = document.createElement('div');
-          line.style.cssText =
-            'display:flex;justify-content:space-between;gap:8px;align-items:center;border-bottom:1px solid rgba(255,255,255,0.1);padding:6px 0;';
-          const left = document.createElement('span');
+          line.className = 'leaderboard-row' + (row.player_id === myId ? ' you' : '');
+
+          const rank = document.createElement('div');
+          rank.className = 'leaderboard-rank';
+          rank.textContent = `${i + 1}`;
+
+          const nameCell = document.createElement('div');
           const nameBtn = document.createElement('button');
           nameBtn.type = 'button';
-          nameBtn.textContent = `${i + 1}. ${row.display_name || 'Player'}`;
+          nameBtn.textContent = row.display_name || 'Player';
           nameBtn.style.cssText =
-            'background:none;border:none;color:#7dd3fc;font:inherit;cursor:pointer;text-align:left;padding:0;text-decoration:underline;text-underline-offset:3px;';
+            'background:none;border:none;color:#7dd3fc;font:inherit;cursor:pointer;text-align:left;padding:0;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:underline;text-underline-offset:3px;';
           nameBtn.title =
             row.player_id === myId ? 'This is you' : 'Challenge this player (they must join with your code)';
           nameBtn.disabled = row.player_id === myId;
@@ -9712,15 +9952,25 @@
               toggle(dom.challengeOverlay, true);
               if (dom.challengeTabHost) dom.challengeTabHost.click();
               updateChallengeVersusHint();
-              showToast(`Challenge setup: ${row.display_name}. Create a code — only they can join.`);
+              showToast(`Challenge setup: ${row.display_name}. A room code is created on the Host tab.`);
             });
           }
-          left.appendChild(nameBtn);
-          const right = document.createElement('span');
-          right.textContent = `${row.high_score} pts · Lvl ${row.highest_level}`;
-          line.appendChild(left);
-          line.appendChild(right);
-          dom.statsLeaderboardList.appendChild(line);
+          nameCell.appendChild(nameBtn);
+          if (row.player_id === myId) {
+            const youLbl = document.createElement('div');
+            youLbl.style.cssText = 'font-size:0.36rem;color:#facc15;margin-top:2px;';
+            youLbl.textContent = 'You';
+            nameCell.appendChild(youLbl);
+          }
+
+          const meta = document.createElement('div');
+          meta.className = 'leaderboard-meta';
+          meta.innerHTML = `${row.high_score} pts · Lvl ${row.highest_level}<br>MP ${row.mp_wins ?? 0}W / ${row.mp_losses ?? 0}L`;
+
+          line.appendChild(rank);
+          line.appendChild(nameCell);
+          line.appendChild(meta);
+          wrap.appendChild(line);
         });
       }
 
@@ -9758,12 +10008,21 @@
 
       async function handlePostGameOverCloud(gameRef, challenge, finalScore, finalLevel) {
         try {
+          let wordsCount = 0;
+          try {
+            const w = loadSpelledWords();
+            wordsCount = Array.isArray(w) ? w.length : 0;
+          } catch (e) {
+            wordsCount = 0;
+          }
           if (SquirrelApi.isConfigured()) {
             await SquirrelApi.submitLeaderboardIfBetter(
               getOrCreatePlayerId(),
               loadDisplayName(),
               finalScore,
-              finalLevel
+              finalLevel,
+              wordsCount,
+              loadFacebookId() || undefined
             );
           }
           if (challenge && SquirrelApi.isConfigured() && challenge.code && challenge.code !== 'offline') {
@@ -9772,12 +10031,24 @@
               : 0;
             const lvl = gameRef.level;
             const pts = Math.max(0, Math.round(finalScore - start));
-            const updated = await SquirrelApi.postChallengeRound(
+            const wc =
+              typeof gameRef.wordsCompleted === 'number' && Number.isFinite(gameRef.wordsCompleted)
+                ? Math.max(0, Math.round(gameRef.wordsCompleted))
+                : wordsCount;
+            const updated = await SquirrelApi.eliminateChallenge(
               challenge.code,
               getOrCreatePlayerId(),
               lvl,
-              pts
+              pts,
+              wc
             );
+            if (updated && updated.status === 'completed' && updated.match_summary) {
+              clearChallengeResume();
+              if (dom.gameOverMatchSummary) {
+                dom.gameOverMatchSummary.textContent = updated.match_summary;
+                dom.gameOverMatchSummary.classList.remove('hidden');
+              }
+            }
             if (updated && updated.last_round_summary && dom.challengeOutcomeBanner) {
               dom.challengeOutcomeBanner.textContent = `${updated.last_round_summary} (Match: ${updated.host_wins || 0}–${updated.guest_wins || 0})`;
               dom.challengeOutcomeBanner.classList.remove('hidden');
@@ -14855,6 +15126,8 @@
               })
               .catch(() => {})
               .finally(() => {
+                persistChallengeResume(this);
+                hideChallengeBetweenLevelsOverlay();
                 proceed();
               });
             return;
@@ -15170,24 +15443,39 @@
         const meta = this.challengeMeta;
         if (!meta || !SquirrelApi.isConfigured() || meta.code === 'offline') return null;
         const pid = getOrCreatePlayerId();
+        showChallengeBetweenLevelsOverlay();
+        const refreshPaint = async () => {
+          const st = await SquirrelApi.getChallenge(meta.code);
+          if (st) paintChallengeWaitPanel(st, round.level, pid);
+        };
+        await refreshPaint();
         try {
           let state = await SquirrelApi.postChallengeRound(meta.code, pid, round.level, round.points);
-          if (!state) return null;
+          if (state) paintChallengeWaitPanel(state, round.level, pid);
+          if (!state) {
+            hideChallengeBetweenLevelsOverlay();
+            return null;
+          }
           if (state.last_resolved_level >= round.level && state.last_round_summary) {
+            hideChallengeBetweenLevelsOverlay();
             return `${state.last_round_summary} (${state.host_wins ?? 0}–${state.guest_wins ?? 0})`;
           }
           const deadline = Date.now() + 180000;
           while (Date.now() < deadline) {
-            await new Promise((r) => setTimeout(r, 1500));
+            await new Promise((r) => setTimeout(r, 1400));
+            await refreshPaint();
             state = await SquirrelApi.getChallenge(meta.code);
             if (!state) break;
             if (state.last_resolved_level >= round.level && state.last_round_summary) {
+              hideChallengeBetweenLevelsOverlay();
               return `${state.last_round_summary} (${state.host_wins ?? 0}–${state.guest_wins ?? 0})`;
             }
           }
-          return 'Rival still on this level — continued. Check Stats later for the round.';
+          hideChallengeBetweenLevelsOverlay();
+          return 'Rival still on this level — you can keep playing. Results sync when both finish.';
         } catch (e) {
           console.warn(e);
+          hideChallengeBetweenLevelsOverlay();
           return null;
         }
       };
@@ -15199,11 +15487,22 @@
         const challenge = this.challengeMeta;
         const finalScore = Math.round(this.score);
         const finalLevel = this.level;
+        const onlineCh = challenge && challenge.code && challenge.code !== 'offline';
         if (dom.challengeOutcomeBanner) {
           dom.challengeOutcomeBanner.classList.add('hidden');
           dom.challengeOutcomeBanner.textContent = '';
         }
+        if (dom.gameOverMatchSummary) {
+          dom.gameOverMatchSummary.textContent = '';
+          dom.gameOverMatchSummary.classList.add('hidden');
+        }
         originalTriggerGameOver.call(this, message, fromDeath);
+        if (onlineCh) {
+          if (dom.gameOverRestart) dom.gameOverRestart.classList.add('hidden');
+          if (dom.buyLifeButton) dom.buyLifeButton.style.display = 'none';
+        } else {
+          if (dom.gameOverRestart) dom.gameOverRestart.classList.remove('hidden');
+        }
         if (eligibleForReward && reward > 0) {
           this.addCurrency(reward, 'Run complete');
         }
@@ -15219,6 +15518,67 @@
       let currentSelectedLevel = 1;
       const biomeDifficultySelections = {};
       let settingsOpenedFrom = 'menu'; // Track where settings was opened from: 'menu' or 'game'
+
+      async function createHostedChallengeRoom(forceNew) {
+        updateLevelDisplay();
+        const startLevel = currentSelectedLevel;
+        if (dom.challengeHostStatus) dom.challengeHostStatus.textContent = '';
+        if (forceNew) hostChallengePayload = null;
+        if (dom.startHostedRunButton) dom.startHostedRunButton.classList.add('hidden');
+
+        if (!SquirrelApi.isConfigured()) {
+          if (dom.challengeHostCodeDisplay) dom.challengeHostCodeDisplay.textContent = '';
+          if (dom.challengeHostStatus) {
+            dom.challengeHostStatus.textContent =
+              'Offline: use the Join tab with a seed, or set apiBaseUrl for automatic room codes.';
+          }
+          hostChallengePayload = null;
+          return;
+        }
+
+        if (!forceNew && hostChallengePayload) return;
+        if (hostChallengeCreating) return;
+        hostChallengeCreating = true;
+        try {
+          if (dom.challengeHostStatus) dom.challengeHostStatus.textContent = 'Creating room…';
+          const reserved =
+            leaderboardChallengeTarget && leaderboardChallengeTarget.id
+              ? leaderboardChallengeTarget.id
+              : undefined;
+          const created = await SquirrelApi.createChallenge(
+            getOrCreatePlayerId(),
+            loadDisplayName(),
+            startLevel,
+            reserved
+          );
+          if (!created || !created.code) {
+            if (dom.challengeHostStatus) {
+              dom.challengeHostStatus.textContent = 'Could not create challenge. Is the API up?';
+            }
+            return;
+          }
+          hostChallengePayload = {
+            startLevel,
+            seed: Number(created.seed),
+            code: created.code,
+            role: 'host'
+          };
+          if (dom.challengeHostCodeDisplay) {
+            dom.challengeHostCodeDisplay.textContent = `Code: ${created.code}`;
+          }
+          if (dom.challengeHostStatus) {
+            dom.challengeHostStatus.textContent = reserved
+              ? 'Only your selected opponent can join. Tap Start when ready.'
+              : 'Share this code. Tap Start challenge run when you are ready.';
+          }
+          if (dom.startHostedRunButton) dom.startHostedRunButton.classList.remove('hidden');
+          showToast(`Room code: ${created.code}`);
+          leaderboardChallengeTarget = null;
+          updateChallengeVersusHint();
+        } finally {
+          hostChallengeCreating = false;
+        }
+      }
 
       function bindUI() {
         // Global button sound for all buttons that don't have their own specific sounds
@@ -15250,6 +15610,11 @@
             if (dom.challengeHostStatus) dom.challengeHostStatus.textContent = '';
             if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = '';
             updateChallengeVersusHint();
+            refreshChallengeResumeUi();
+            if (window.FB && loadFacebookId()) renderFbFriendsList();
+            if (dom.challengeTabHost && dom.challengeTabHost.classList.contains('selected')) {
+              void createHostedChallengeRoom(false);
+            }
           });
         }
         if (dom.closeChallengeOverlayButton) {
@@ -15266,6 +15631,7 @@
             dom.challengeHostPanel.classList.remove('hidden');
             dom.challengeJoinPanel.classList.add('hidden');
             updateChallengeVersusHint();
+            void createHostedChallengeRoom(false);
           });
           dom.challengeTabJoin.addEventListener('click', () => {
             dom.challengeTabJoin.classList.add('selected');
@@ -15274,68 +15640,137 @@
             dom.challengeHostPanel.classList.add('hidden');
           });
         }
-        if (dom.createChallengeButton) {
-          dom.createChallengeButton.addEventListener('click', async () => {
-            updateLevelDisplay();
-            const startLevel = currentSelectedLevel;
-            if (dom.challengeHostStatus) dom.challengeHostStatus.textContent = '';
-            hostChallengePayload = null;
-            if (dom.startHostedRunButton) dom.startHostedRunButton.classList.add('hidden');
-
-            if (SquirrelApi.isConfigured()) {
-              if (dom.challengeHostStatus) dom.challengeHostStatus.textContent = 'Creating…';
-              const reserved =
-                leaderboardChallengeTarget && leaderboardChallengeTarget.id
-                  ? leaderboardChallengeTarget.id
-                  : undefined;
-              const created = await SquirrelApi.createChallenge(
-                getOrCreatePlayerId(),
-                loadDisplayName(),
-                startLevel,
-                reserved
-              );
-              if (!created || !created.code) {
-                if (dom.challengeHostStatus) {
-                  dom.challengeHostStatus.textContent = 'Could not create challenge. Is the Render API up?';
-                }
-                return;
-              }
-              hostChallengePayload = {
-                startLevel,
-                seed: Number(created.seed),
-                code: created.code,
-                role: 'host'
-              };
-              if (dom.challengeHostCodeDisplay) {
-                dom.challengeHostCodeDisplay.textContent = `Code: ${created.code}`;
-              }
-              if (dom.challengeHostStatus) {
-                dom.challengeHostStatus.textContent = reserved
-                  ? 'Only your selected opponent can join. When they are ready, tap Start challenge run.'
-                  : 'Share the code. When your friend is ready to join, tap Start challenge run.';
-              }
-              if (dom.startHostedRunButton) dom.startHostedRunButton.classList.remove('hidden');
-              showToast(`Code: ${created.code}`);
-              leaderboardChallengeTarget = null;
-              updateChallengeVersusHint();
+        if (dom.regenerateChallengeCodeButton) {
+          dom.regenerateChallengeCodeButton.addEventListener('click', () => {
+            void createHostedChallengeRoom(true);
+          });
+        }
+        if (dom.openChallengeProfileButton) {
+          dom.openChallengeProfileButton.addEventListener('click', () => {
+            toggle(dom.challengeOverlay, false);
+            showAchievementsTab('stats');
+            refreshStatsPanel();
+            toggle(dom.achievementsOverlay, true);
+          });
+        }
+        if (dom.challengeContinueButton) {
+          dom.challengeContinueButton.addEventListener('click', async () => {
+            const payload = readChallengeResumePayload();
+            if (!payload || Date.now() - payload.savedAt > CHALLENGE_RESUME_MAX_MS) {
+              showToast('No saved match.');
               return;
             }
+            if (payload.playerId !== getOrCreatePlayerId()) {
+              showToast('This save belongs to another profile on this device.');
+              return;
+            }
+            const row = await SquirrelApi.getChallenge(payload.code);
+            if (!row || row.status !== 'active') {
+              clearChallengeResume();
+              showToast('That match has ended.');
+              return;
+            }
+            const pid = getOrCreatePlayerId();
+            const isHost = row.host_id === pid;
+            const isGuest = row.guest_id === pid;
+            if (!isHost && !isGuest) {
+              clearChallengeResume();
+              showToast('You are not part of that match anymore.');
+              return;
+            }
+            const seedNum = Number(row.seed);
+            const sl = Math.max(
+              1,
+              Math.floor(Number(row.current_level != null ? row.current_level : row.start_level) || 1)
+            );
+            if (!Number.isFinite(seedNum)) {
+              showToast('Invalid challenge data.');
+              return;
+            }
+            toggle(dom.challengeOverlay, false);
+            beginGameFromMenu(sl, {
+              runSeed: seedNum,
+              challenge: { code: payload.code, role: isHost ? 'host' : 'guest' }
+            });
+          });
+        }
 
-            const seed = ((Math.random() * 0x7fffffff) | 0) >>> 0;
-            if (dom.challengeHostCodeDisplay) {
-              dom.challengeHostCodeDisplay.textContent = `Offline — seed: ${seed} · start level: ${startLevel}`;
+        function ensureFbSdk(cb) {
+          const appId = window.SQUIRREL_FACEBOOK_APP_ID || '';
+          if (!appId) {
+            showToast('Add window.SQUIRREL_FACEBOOK_APP_ID with your Facebook app id.');
+            return;
+          }
+          if (window.FB) {
+            cb();
+            return;
+          }
+          window.fbAsyncInit = function () {
+            FB.init({ appId, cookie: true, xfbml: false, version: 'v19.0' });
+            cb();
+          };
+          const s = document.createElement('script');
+          s.async = true;
+          s.src = 'https://connect.facebook.net/en_US/sdk.js';
+          document.head.appendChild(s);
+        }
+
+        function renderFbFriendsList() {
+          if (!dom.fbFriendsList || !window.FB) return;
+          FB.api('/me/friends', { fields: 'name,id' }, (res) => {
+            if (!res || !res.data) {
+              dom.fbFriendsList.textContent =
+                'Friends list unavailable — Facebook only shows friends who also use this app.';
+              return;
             }
-            if (dom.challengeHostStatus) {
-              dom.challengeHostStatus.textContent = 'Friend uses offline seed below. No server — rounds are local only.';
+            if (!res.data.length) {
+              dom.fbFriendsList.textContent =
+                'No friends on this app yet. Invite friends so they appear here after connecting.';
+              return;
             }
-            showToast(`Offline challenge seed ${seed}, level ${startLevel}`);
-            beginGameFromMenu(startLevel, { runSeed: seed, challenge: { code: 'offline', role: 'host' } });
+            dom.fbFriendsList.innerHTML = res.data.map((f) => `<div>${f.name}</div>`).join('');
+          });
+        }
+
+        if (dom.fbConnectButton) {
+          dom.fbConnectButton.addEventListener('click', () => {
+            ensureFbSdk(() => {
+              FB.login(
+                (response) => {
+                  if (!response.authResponse) return;
+                  FB.api('/me', { fields: 'id,name' }, (me) => {
+                    if (!me || !me.id) return;
+                    saveFacebookMeta(me.id, me.name || '');
+                    if (me.name) saveDisplayName(me.name.slice(0, 24));
+                    if (dom.statsDisplayNameInput) dom.statsDisplayNameInput.value = loadDisplayName();
+                    showToast('Facebook connected');
+                    let wc = 0;
+                    try {
+                      const arr = loadSpelledWords();
+                      wc = Array.isArray(arr) ? arr.length : 0;
+                    } catch (e) {
+                      wc = 0;
+                    }
+                    void SquirrelApi.submitLeaderboardIfBetter(
+                      getOrCreatePlayerId(),
+                      loadDisplayName(),
+                      loadHighScore(),
+                      loadHighestLevel(),
+                      wc,
+                      loadFacebookId() || undefined
+                    );
+                    renderFbFriendsList();
+                  });
+                },
+                { scope: 'public_profile' }
+              );
+            });
           });
         }
         if (dom.startHostedRunButton) {
           dom.startHostedRunButton.addEventListener('click', () => {
             if (!hostChallengePayload) {
-              showToast('Create a code first.');
+              showToast('Generate a room code first (Host tab).');
               return;
             }
             const p = hostChallengePayload;
@@ -15525,6 +15960,21 @@
             const v = dom.statsDisplayNameInput ? dom.statsDisplayNameInput.value : '';
             saveDisplayName(v);
             showToast('Display name saved');
+            let wc = 0;
+            try {
+              const arr = loadSpelledWords();
+              wc = Array.isArray(arr) ? arr.length : 0;
+            } catch (e) {
+              wc = 0;
+            }
+            void SquirrelApi.submitLeaderboardIfBetter(
+              getOrCreatePlayerId(),
+              loadDisplayName(),
+              loadHighScore(),
+              loadHighestLevel(),
+              wc,
+              loadFacebookId() || undefined
+            );
           });
         }
         if (dom.statsRefreshLeaderboard) {
@@ -15914,6 +16364,7 @@
           levelPreviewRenderer.setDictionary(dictionaryWords);
         }
         bindUI();
+        refreshChallengeResumeUi();
         initCarSkinShop(true);
         renderCarProfiles();
         updateCarSkinShopUI(game.currency);
