@@ -4259,8 +4259,8 @@
       border: none !important;
       justify-content: space-evenly !important; /* Distribute numbers across the bar */
       width: 90%; /* Restrict width to keep numbers centered in art */
-      margin-top: -6px !important;
-      padding-top: clamp(2px, 3.5vw, 22px) !important;
+      margin-top: -12px !important;
+      padding-top: clamp(0px, 2.6vw, 16px) !important;
       align-items: flex-start;
     }
 
@@ -4301,8 +4301,8 @@
             background-position: center top !important;
         }
         .hud-stats {
-            margin-top: -4px !important;
-            padding-top: 22px !important;
+            margin-top: -10px !important;
+            padding-top: 15px !important;
             width: 90% !important; /* 90% of the constrained 520px width */
         }
         .hud-card:nth-child(4) {
@@ -4401,11 +4401,11 @@
       background: rgba(15, 23, 42, 0.55);
       border: 1px solid rgba(148, 163, 184, 0.35);
       overflow: hidden;
-      margin-top: 12px;
+      margin-top: 8px;
     }
     .leaderboard-row {
       display: grid;
-      grid-template-columns: 34px 1fr auto;
+      grid-template-columns: 34px minmax(0, 1fr) minmax(92px, 34%);
       gap: 8px;
       align-items: center;
       padding: 10px 12px;
@@ -4421,6 +4421,56 @@
     .leaderboard-rank { color: #94a3b8; font-variant-numeric: tabular-nums; text-align: right; }
     .leaderboard-name { color: #e2e8f0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .leaderboard-meta { color: #7dd3fc; font-size: 0.38rem; text-align: right; white-space: nowrap; }
+    .leaderboard-bar-track {
+      position: relative;
+      min-height: 28px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.85);
+      overflow: hidden;
+      border: 1px solid rgba(125, 211, 252, 0.18);
+    }
+    .leaderboard-bar-fill {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: var(--bar-width, 0%);
+      background: linear-gradient(90deg, rgba(56, 189, 248, 0.85), rgba(34, 197, 94, 0.72));
+    }
+    .leaderboard-row.you .leaderboard-bar-fill {
+      background: linear-gradient(90deg, rgba(250, 204, 21, 0.95), rgba(251, 146, 60, 0.8));
+    }
+    .leaderboard-bar-label {
+      position: relative;
+      z-index: 1;
+      display: block;
+      padding: 7px 8px;
+      color: #f8fafc;
+      text-align: right;
+      text-shadow: 1px 1px 0 rgba(0,0,0,0.65);
+      font-variant-numeric: tabular-nums;
+    }
+    .stats-hero-card {
+      margin-bottom: 10px;
+      padding: 12px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(30, 64, 175, 0.42), rgba(15, 23, 42, 0.72));
+      border: 1px solid rgba(125, 211, 252, 0.26);
+      font-size: 0.45rem;
+      line-height: 1.55;
+    }
+    .match-history-list {
+      margin-top: 10px;
+      display: grid;
+      gap: 8px;
+      font-size: 0.4rem;
+      line-height: 1.5;
+    }
+    .match-history-item {
+      padding: 9px 10px;
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      color: #cbd5e1;
+    }
     #challengeBetweenLevelsOverlay .modal { max-width: 460px; text-align: center; }
     #challengeBetweenLevelsBody { font-size: 0.48rem; line-height: 1.55; color: #e2e8f0; margin-top: 12px; }
     .challenge-score-grid {
@@ -4539,7 +4589,7 @@
   <div id="challengeOverlay" class="overlay hidden">
     <div class="modal" style="max-width: 520px; width: 94vw;">
       <h2>Challenge mode</h2>
-      <p style="font-size: 0.5rem; margin-bottom: 12px; line-height: 1.5;">Same seed per run. After <strong>each level</strong>, scores for that level are compared on the server; winner gets the round, then you both continue to the next level.</p>
+      <p style="font-size: 0.5rem; margin-bottom: 12px; line-height: 1.5;">Same seed per run. After <strong>each level</strong>, your score saves to the server and you can keep going while your rival catches up.</p>
       <div class="pill-buttons" style="margin-bottom: 12px;">
         <button type="button" id="challengeTabHost" class="pill-button selected">Host</button>
         <button type="button" id="challengeTabJoin" class="pill-button">Join</button>
@@ -4551,6 +4601,11 @@
           <button type="button" id="challengeContinueButton" class="button" style="width: 100%;">Continue last match</button>
         </div>
         <button type="button" id="openChallengeProfileButton" class="pill-button ghost" style="width: 100%; margin-bottom: 10px; font-size: 0.42rem;">Multiplayer profile &amp; stats</button>
+        <label style="font-size: 0.45rem; display: block; margin-bottom: 4px;">Challenge name</label>
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+          <input id="challengeDisplayNameInput" maxlength="24" style="flex: 1; min-width: 0; font-size: 0.52rem; padding: 8px;">
+          <button type="button" id="challengeSaveDisplayName" class="pill-button" style="font-size: 0.4rem;">Save</button>
+        </div>
         <div id="challengeFacebookSection" style="margin-bottom: 12px; padding: 10px; background: rgba(30,58,138,0.25); border-radius: 10px; border: 1px solid rgba(125,211,252,0.25);">
           <p style="font-size: 0.42rem; color: #94a3b8; margin: 0 0 8px 0; line-height: 1.45;">Facebook links your name for challenges. Friends who also play appear below (Facebook only returns friends on this app).</p>
           <button type="button" id="fbConnectButton" class="pill-button" style="width: 100%; font-size: 0.42rem;">Connect Facebook</button>
@@ -4783,7 +4838,7 @@
           <img src="art/acorns/acorn-diamond.png" alt="" class="currency-icon" style="width: 28px; height: 28px; vertical-align: middle; margin-right: 6px;">
           Buy Life (100)
         </button>
-        <button id="gameOverRestart" class="pill-button">Run Again</button>
+        <button id="gameOverRestart" class="pill-button hidden" style="display: none;">Run Again</button>
         <button id="gameOverMenu" class="pill-button ghost">Back To Menu</button>
       </div>
     </div>
@@ -5095,11 +5150,12 @@
       </div>
 
       <div id="statsTabPanel" class="hidden">
-        <div class="achievements-scroll" style="max-height: 55vh;">
-          <p style="font-size: 0.5rem; line-height: 1.6; margin-bottom: 10px;">
-            <strong>Your device</strong><br>
-            High score: <span id="statsLocalHighScore">0</span> · Highest level: <span id="statsLocalHighestLevel">1</span> · Words spelled: <span id="statsLocalWordCount">0</span>
-          </p>
+        <div class="achievements-scroll" style="max-height: 68vh; padding-top: 2px;">
+          <div class="stats-hero-card">
+            <strong>Your profile</strong><br>
+            High score: <span id="statsLocalHighScore">0</span> · Highest level: <span id="statsLocalHighestLevel">1</span> · Words spelled: <span id="statsLocalWordCount">0</span><br>
+            <span id="statsLocalMpRow">Challenge wins 0 · losses 0 · score 0</span>
+          </div>
           <label style="font-size: 0.5rem; display: block; margin-bottom: 4px;">Name on leaderboard (optional)</label>
           <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
             <input id="statsDisplayNameInput" maxlength="24" style="flex: 1; min-width: 160px; font-size: 0.55rem; padding: 8px;">
@@ -5107,9 +5163,11 @@
           </div>
           <p id="statsOnlineMessage" style="font-size: 0.45rem; color: #94a3b8; margin-bottom: 8px;"></p>
           <p id="statsMpOnlineRow" style="font-size: 0.46rem; color: #fcd34d; margin-bottom: 10px; line-height: 1.5;"></p>
-          <h3 style="font-size: 0.6rem; color: #fcd34d; margin-bottom: 8px;">Global leaderboard</h3>
+          <h3 style="font-size: 0.6rem; color: #fcd34d; margin-bottom: 6px;">Global score chart</h3>
           <div id="statsLeaderboardList" style="font-size: 0.48rem; line-height: 1.5;"></div>
           <button type="button" id="statsRefreshLeaderboard" class="pill-button" style="margin-top: 12px;">Refresh list</button>
+          <h3 style="font-size: 0.6rem; color: #fcd34d; margin: 14px 0 6px;">Challenge history</h3>
+          <div id="statsMatchHistoryList" class="match-history-list"></div>
         </div>
       </div>
       
@@ -5785,6 +5843,8 @@
         challengeResumeHint: document.getElementById('challengeResumeHint'),
         challengeContinueButton: document.getElementById('challengeContinueButton'),
         openChallengeProfileButton: document.getElementById('openChallengeProfileButton'),
+        challengeDisplayNameInput: document.getElementById('challengeDisplayNameInput'),
+        challengeSaveDisplayName: document.getElementById('challengeSaveDisplayName'),
         fbConnectButton: document.getElementById('fbConnectButton'),
         fbFriendsList: document.getElementById('fbFriendsList'),
         regenerateChallengeCodeButton: document.getElementById('regenerateChallengeCodeButton'),
@@ -5914,11 +5974,13 @@
         statsLocalHighScore: document.getElementById('statsLocalHighScore'),
         statsLocalHighestLevel: document.getElementById('statsLocalHighestLevel'),
         statsLocalWordCount: document.getElementById('statsLocalWordCount'),
+        statsLocalMpRow: document.getElementById('statsLocalMpRow'),
         statsDisplayNameInput: document.getElementById('statsDisplayNameInput'),
         statsSaveDisplayName: document.getElementById('statsSaveDisplayName'),
         statsOnlineMessage: document.getElementById('statsOnlineMessage'),
         statsMpOnlineRow: document.getElementById('statsMpOnlineRow'),
         statsLeaderboardList: document.getElementById('statsLeaderboardList'),
+        statsMatchHistoryList: document.getElementById('statsMatchHistoryList'),
         statsRefreshLeaderboard: document.getElementById('statsRefreshLeaderboard'),
         toast: document.getElementById('toast'),
         achievementRewardPopup: document.getElementById('achievementRewardPopup'),
@@ -6010,6 +6072,7 @@
         dailyState: 'squirrelStreet.dailyState',
         playerId: 'squirrelStreet.playerId',
         displayName: 'squirrelStreet.displayName',
+        localMpStats: 'squirrelStreet.localMpStats',
         challengeResume: 'squirrelStreet.challengeResume',
         facebookId: 'squirrelStreet.facebookId',
         facebookName: 'squirrelStreet.facebookName'
@@ -6039,6 +6102,48 @@
         }
       }
 
+      function loadLocalMpStats() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEYS.localMpStats);
+          const parsed = raw ? JSON.parse(raw) : null;
+          return {
+            wins: Math.max(0, Math.floor(Number(parsed && parsed.wins) || 0)),
+            losses: Math.max(0, Math.floor(Number(parsed && parsed.losses) || 0)),
+            score: Math.max(0, Math.floor(Number(parsed && parsed.score) || 0)),
+            words: Math.max(0, Math.floor(Number(parsed && parsed.words) || 0))
+          };
+        } catch (e) {
+          return { wins: 0, losses: 0, score: 0, words: 0 };
+        }
+      }
+
+      function saveLocalMpStats(stats) {
+        try {
+          localStorage.setItem(STORAGE_KEYS.localMpStats, JSON.stringify(loadLocalMpStatsFrom(stats)));
+        } catch (e) {
+          console.warn(e);
+        }
+      }
+
+      function loadLocalMpStatsFrom(stats) {
+        const s = stats || {};
+        return {
+          wins: Math.max(0, Math.floor(Number(s.wins) || 0)),
+          losses: Math.max(0, Math.floor(Number(s.losses) || 0)),
+          score: Math.max(0, Math.floor(Number(s.score) || 0)),
+          words: Math.max(0, Math.floor(Number(s.words) || 0))
+        };
+      }
+
+      function recordLocalMpResult(won, score, words) {
+        const cur = loadLocalMpStats();
+        cur.wins += won === true ? 1 : 0;
+        cur.losses += won === false ? 1 : 0;
+        cur.score += Math.max(0, Math.floor(Number(score) || 0));
+        cur.words = Math.max(cur.words, Math.max(0, Math.floor(Number(words) || 0)));
+        saveLocalMpStats(cur);
+      }
+
       const CHALLENGE_RESUME_MAX_MS = 24 * 60 * 60 * 1000;
 
       function loadFacebookId() {
@@ -6066,7 +6171,10 @@
             savedAt: Date.now(),
             playerId: getOrCreatePlayerId(),
             level: gameRef.level,
-            runSeed: gameRef.runSeedBase
+            runSeed: gameRef.runSeedBase,
+            score: Math.max(0, Math.round(Number(gameRef.score) || 0)),
+            lives: Math.max(0, Math.floor(Number(gameRef.lives) || 0)),
+            wordsCompleted: Math.max(0, Math.floor(Number(gameRef.wordsCompleted) || 0))
           };
           localStorage.setItem(STORAGE_KEYS.challengeResume, JSON.stringify(payload));
           refreshChallengeResumeUi();
@@ -6114,14 +6222,27 @@
         toggle(dom.challengeBetweenLevelsOverlay, false);
       }
 
+      function escapeHtml(value) {
+        return String(value == null ? '' : value).replace(/[&<>"']/g, (ch) => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;'
+        }[ch]));
+      }
+
       function paintChallengeWaitPanel(state, roundLevel, myPid) {
         if (!dom.challengeBetweenLevelsBody || !state) return;
-        const hn = state.host_name || 'Host';
-        const gn = state.guest_name || 'Guest';
+        const round = Array.isArray(state.rounds)
+          ? state.rounds.find((r) => Number(r.level) === Number(roundLevel))
+          : null;
+        const hn = escapeHtml(state.host_name || 'Host');
+        const gn = escapeHtml(state.guest_name || 'Guest');
         const hw = state.host_wins ?? 0;
         const gw = state.guest_wins ?? 0;
-        const hs = state.round_host_score;
-        const gs = state.round_guest_score;
+        const hs = round ? round.host_score : state.round_host_score;
+        const gs = round ? round.guest_score : state.round_guest_score;
         const hp = state.host_total_points ?? 0;
         const gp = state.guest_total_points ?? 0;
         const hel = state.host_eliminated;
@@ -6129,7 +6250,14 @@
         const hostRowYou = state.host_id === myPid;
         const guestRowYou = state.guest_id === myPid;
         const fmt = (v) => (v == null ? '—' : String(v));
-        const last = state.last_round_summary ? String(state.last_round_summary) : '';
+        const last = round && round.summary ? String(round.summary) : (state.last_round_summary ? String(state.last_round_summary) : '');
+        const history = Array.isArray(state.rounds)
+          ? state.rounds
+              .filter((r) => r.summary)
+              .slice(-3)
+              .map((r) => `<div>Lv ${escapeHtml(r.level)}: ${escapeHtml(r.summary)}</div>`)
+              .join('')
+          : '';
         dom.challengeBetweenLevelsBody.innerHTML = `
           <div class="challenge-score-grid">
             <div class="challenge-score-card" style="${hostRowYou ? 'box-shadow:0 0 0 2px #facc15;' : ''}">
@@ -6145,7 +6273,9 @@
               <div>Levels won: ${gw}${gel ? ' · eliminated' : ''}</div>
             </div>
           </div>
-          ${last ? `<p style="margin-top:12px;font-size:0.4rem;color:#a7f3d0;">Last result: ${last}</p>` : '<p style="margin-top:12px;font-size:0.4rem;color:#94a3b8;">Syncing…</p>'}
+          ${last ? `<p style="margin-top:12px;font-size:0.4rem;color:#a7f3d0;">Last result: ${escapeHtml(last)}</p>` : '<p style="margin-top:12px;font-size:0.4rem;color:#94a3b8;">Score saved. You can keep playing while your rival catches up.</p>'}
+          ${state.match_summary ? `<p style="margin-top:8px;font-size:0.4rem;color:#fcd34d;">${escapeHtml(state.match_summary)}</p>` : ''}
+          ${history ? `<div style="margin-top:10px;text-align:left;font-size:0.36rem;color:#cbd5e1;">${history}</div>` : ''}
         `;
       }
 
@@ -6231,6 +6361,14 @@
             if (!root || !code) return null;
             const r = await fetch(`${root}/challenges/${encodeURIComponent(code.trim().toUpperCase())}`);
             if (!r.ok) return null;
+            return r.json();
+          },
+          async fetchChallengeHistory(playerId, limit = 12) {
+            const root = apiRoot();
+            if (!root || !playerId) return [];
+            const url = `${root}/challenges/history/${encodeURIComponent(playerId)}?limit=${Math.max(1, Math.min(30, Math.floor(limit) || 12))}`;
+            const r = await fetch(url);
+            if (!r.ok) return [];
             return r.json();
           },
           async postChallengeRound(code, playerId, level, levelScore) {
@@ -8978,6 +9116,17 @@
       // Changelog Data
       const CHANGELOG = [
         {
+          version: '2.4',
+          date: '2026-05-14',
+          changes: [
+            'Challenge players can continue independently when a rival is behind, leaves, or is eliminated',
+            'Challenge reconnect keeps the saved player score, lives, and level for up to 24 hours',
+            'Stats profile now shows a highlighted score chart, multiplayer totals, and challenge history',
+            'Challenge setup adds profile name editing and Facebook friends uses the friends permission',
+            'Game over no longer shows Run Again and HUD numbers sit higher in the top bar'
+          ]
+        },
+        {
           version: '2.3',
           date: '2026-05-13',
           changes: [
@@ -9092,7 +9241,7 @@
         }
       ];
       
-      const CURRENT_VERSION = '2.3';
+      const CURRENT_VERSION = '2.4';
       const LAST_SEEN_VERSION_KEY = 'squirrelStreet.lastSeenVersion';
 
       function checkChangelogBadge() {
@@ -9872,6 +10021,11 @@
       async function refreshStatsPanel() {
         if (dom.statsLocalHighScore) dom.statsLocalHighScore.textContent = String(loadHighScore());
         if (dom.statsLocalHighestLevel) dom.statsLocalHighestLevel.textContent = String(loadHighestLevel());
+        const localMp = loadLocalMpStats();
+        if (dom.statsLocalMpRow) {
+          dom.statsLocalMpRow.textContent =
+            `Challenge wins ${localMp.wins} · losses ${localMp.losses} · score ${localMp.score} · words ${localMp.words}`;
+        }
         try {
           const words = loadSpelledWords();
           if (dom.statsLocalWordCount) dom.statsLocalWordCount.textContent = String(Array.isArray(words) ? words.length : 0);
@@ -9886,11 +10040,12 @@
         }
         if (!dom.statsLeaderboardList) return;
         if (dom.statsMpOnlineRow) dom.statsMpOnlineRow.textContent = '';
+        if (dom.statsMatchHistoryList) dom.statsMatchHistoryList.textContent = '';
         if (!SquirrelApi.isConfigured()) {
           dom.statsLeaderboardList.textContent = '';
           const p = document.createElement('p');
           p.style.color = '#94a3b8';
-          p.textContent = 'Local stats are above. Add apiBaseUrl to load other players’ scores.';
+          p.textContent = 'Local stats are above. Add apiBaseUrl to load other players scores.';
           dom.statsLeaderboardList.appendChild(p);
           return;
         }
@@ -9901,22 +10056,49 @@
         dom.statsLeaderboardList.appendChild(loading);
         const list = await SquirrelApi.fetchLeaderboard(30);
         dom.statsLeaderboardList.textContent = '';
+        const myId = getOrCreatePlayerId();
+        let rows = Array.isArray(list) ? list.slice() : [];
+        let selfRow = rows.find((row) => row.player_id === myId);
+        if (!selfRow) {
+          let wc = 0;
+          try {
+            const words = loadSpelledWords();
+            wc = Array.isArray(words) ? words.length : 0;
+          } catch (e) {
+            wc = 0;
+          }
+          selfRow = {
+            player_id: myId,
+            display_name: loadDisplayName(),
+            high_score: loadHighScore(),
+            highest_level: loadHighestLevel(),
+            words_spelled: wc,
+            mp_wins: localMp.wins,
+            mp_losses: localMp.losses,
+            mp_total_score: localMp.score,
+            mp_words_spelled: localMp.words,
+            local_only: true
+          };
+          rows.push(selfRow);
+        }
+        rows.sort((a, b) => {
+          const scoreDiff = (Number(b.high_score) || 0) - (Number(a.high_score) || 0);
+          if (scoreDiff) return scoreDiff;
+          return (Number(b.highest_level) || 0) - (Number(a.highest_level) || 0);
+        });
         if (!list.length) {
           const empty = document.createElement('p');
           empty.style.color = '#94a3b8';
-          empty.textContent = 'No rows yet — finish a run after deploying the API.';
+          empty.textContent = 'No cloud rows yet. Your profile is shown below until the first online score syncs.';
           dom.statsLeaderboardList.appendChild(empty);
-          return;
         }
-        const myId = getOrCreatePlayerId();
-        const selfRow = list.find((row) => row.player_id === myId);
         if (dom.statsMpOnlineRow) {
           if (selfRow) {
             const mw = selfRow.mp_wins ?? 0;
             const ml = selfRow.mp_losses ?? 0;
             const mt = selfRow.mp_total_score ?? 0;
-            const ws = selfRow.words_spelled ?? 0;
-            dom.statsMpOnlineRow.innerHTML = `<strong>Online profile:</strong> MP wins ${mw} · losses ${ml} · challenge pts ${mt} · words spelled (synced) ${ws}`;
+            const ws = selfRow.mp_words_spelled ?? selfRow.words_spelled ?? 0;
+            dom.statsMpOnlineRow.innerHTML = `<strong>Online profile:</strong> MP wins ${mw} · losses ${ml} · challenge pts ${mt} · words spelled ${ws}${selfRow.local_only ? ' (waiting to sync)' : ''}`;
           } else {
             dom.statsMpOnlineRow.textContent =
               'Finish an online challenge match to record multiplayer wins and losses on the server.';
@@ -9925,13 +10107,15 @@
         const wrap = document.createElement('div');
         wrap.className = 'leaderboard-chart-wrap';
         dom.statsLeaderboardList.appendChild(wrap);
-        list.forEach((row, i) => {
+        const maxScore = Math.max(1, ...rows.map((row) => Number(row.high_score) || 0));
+        rows.slice(0, 30).forEach((row) => {
+          const absoluteRank = rows.findIndex((r) => r.player_id === row.player_id) + 1;
           const line = document.createElement('div');
           line.className = 'leaderboard-row' + (row.player_id === myId ? ' you' : '');
 
           const rank = document.createElement('div');
           rank.className = 'leaderboard-rank';
-          rank.textContent = `${i + 1}`;
+          rank.textContent = `${absoluteRank || ''}`;
 
           const nameCell = document.createElement('div');
           const nameBtn = document.createElement('button');
@@ -9959,19 +10143,49 @@
           if (row.player_id === myId) {
             const youLbl = document.createElement('div');
             youLbl.style.cssText = 'font-size:0.36rem;color:#facc15;margin-top:2px;';
-            youLbl.textContent = 'You';
+            youLbl.textContent = row.local_only ? 'You - syncing after next online run' : 'You';
             nameCell.appendChild(youLbl);
           }
 
-          const meta = document.createElement('div');
-          meta.className = 'leaderboard-meta';
-          meta.innerHTML = `${row.high_score} pts · Lvl ${row.highest_level}<br>MP ${row.mp_wins ?? 0}W / ${row.mp_losses ?? 0}L`;
+          const bar = document.createElement('div');
+          bar.className = 'leaderboard-bar-track';
+          const fill = document.createElement('div');
+          fill.className = 'leaderboard-bar-fill';
+          fill.style.setProperty('--bar-width', `${Math.max(4, Math.round(((Number(row.high_score) || 0) / maxScore) * 100))}%`);
+          const label = document.createElement('span');
+          label.className = 'leaderboard-bar-label';
+          label.innerHTML = `${Number(row.high_score) || 0} pts · L${Number(row.highest_level) || 1}<br><span style="font-size:0.34rem;color:#bfdbfe;">${row.words_spelled ?? 0} words · ${row.mp_wins ?? 0}W/${row.mp_losses ?? 0}L</span>`;
+          bar.appendChild(fill);
+          bar.appendChild(label);
 
           line.appendChild(rank);
           line.appendChild(nameCell);
-          line.appendChild(meta);
+          line.appendChild(bar);
           wrap.appendChild(line);
         });
+        if (dom.statsMatchHistoryList) {
+          const history = await SquirrelApi.fetchChallengeHistory(myId, 8);
+          dom.statsMatchHistoryList.textContent = '';
+          if (!history.length) {
+            const empty = document.createElement('div');
+            empty.className = 'match-history-item';
+            empty.textContent = 'No completed challenge matches yet.';
+            dom.statsMatchHistoryList.appendChild(empty);
+          } else {
+            history.forEach((match) => {
+              const item = document.createElement('div');
+              item.className = 'match-history-item';
+              const hostName = match.host_name || 'Host';
+              const guestName = match.guest_name || 'Guest';
+              const hostPts = match.host_total_points ?? 0;
+              const guestPts = match.guest_total_points ?? 0;
+              const won = match.winner_id === myId;
+              const tied = !match.winner_id;
+              item.textContent = `${tied ? 'Tie' : won ? 'Win' : 'Loss'} - ${hostName} ${hostPts} vs ${guestName} ${guestPts}. ${match.match_summary || ''}`;
+              dom.statsMatchHistoryList.appendChild(item);
+            });
+          }
+        }
       }
 
       function updateChallengeVersusHint() {
@@ -10042,12 +10256,23 @@
               pts,
               wc
             );
+            clearChallengeResume();
             if (updated && updated.status === 'completed' && updated.match_summary) {
-              clearChallengeResume();
+              const myId = getOrCreatePlayerId();
+              const tied = !updated.winner_id;
+              recordLocalMpResult(tied ? null : updated.winner_id === myId, finalScore, wc);
               if (dom.gameOverMatchSummary) {
                 dom.gameOverMatchSummary.textContent = updated.match_summary;
                 dom.gameOverMatchSummary.classList.remove('hidden');
               }
+            } else if (updated && dom.gameOverMatchSummary) {
+              const otherStillPlaying =
+                (updated.host_id === getOrCreatePlayerId() && !updated.guest_eliminated) ||
+                (updated.guest_id === getOrCreatePlayerId() && !updated.host_eliminated);
+              dom.gameOverMatchSummary.textContent = otherStillPlaying
+                ? 'You are out of this challenge. Your rival can keep playing; the final winner appears in Challenge history when both players are out.'
+                : 'Challenge result saved. Final history appears when both players are out.';
+              dom.gameOverMatchSummary.classList.remove('hidden');
             }
             if (updated && updated.last_round_summary && dom.challengeOutcomeBanner) {
               dom.challengeOutcomeBanner.textContent = `${updated.last_round_summary} (Match: ${updated.host_wins || 0}–${updated.guest_wins || 0})`;
@@ -11521,6 +11746,18 @@
             : 1;
           this.runStartLevel = normalizedStartLevel;
           this.level = normalizedStartLevel;
+          if (Number.isFinite(Number(ro.resumeScore))) {
+            this.score = Math.max(0, Math.round(Number(ro.resumeScore)));
+          }
+          if (Number.isFinite(Number(ro.resumeLives)) && Number(ro.resumeLives) > 0) {
+            this.lives = Math.max(1, Math.floor(Number(ro.resumeLives)));
+          }
+          if (Number.isFinite(Number(ro.resumeWords))) {
+            this.wordsCompleted = Math.max(0, Math.floor(Number(ro.resumeWords)));
+          }
+          if (this.challengeMeta) {
+            persistChallengeResume(this);
+          }
           this.startLevelTransition();
         }
 
@@ -15170,6 +15407,9 @@
         completeLevelTransition(isRestart, container) {
           this.phase = 'running';
           this.prepareLevel();
+          if (this.challengeMeta) {
+            persistChallengeResume(this);
+          }
           this.startLoop();
 
           if (!container) return;
@@ -15444,38 +15684,26 @@
         if (!meta || !SquirrelApi.isConfigured() || meta.code === 'offline') return null;
         const pid = getOrCreatePlayerId();
         showChallengeBetweenLevelsOverlay();
-        const refreshPaint = async () => {
-          const st = await SquirrelApi.getChallenge(meta.code);
-          if (st) paintChallengeWaitPanel(st, round.level, pid);
-        };
-        await refreshPaint();
         try {
+          persistChallengeResume(this);
+          let before = await SquirrelApi.getChallenge(meta.code);
+          if (before) paintChallengeWaitPanel(before, round.level, pid);
           let state = await SquirrelApi.postChallengeRound(meta.code, pid, round.level, round.points);
           if (state) paintChallengeWaitPanel(state, round.level, pid);
           if (!state) {
-            hideChallengeBetweenLevelsOverlay();
+            await new Promise((r) => setTimeout(r, 900));
             return null;
           }
+          await new Promise((r) => setTimeout(r, state.last_resolved_level >= round.level ? 1600 : 1200));
+          if (state.status === 'completed' && state.match_summary) {
+            return state.match_summary;
+          }
           if (state.last_resolved_level >= round.level && state.last_round_summary) {
-            hideChallengeBetweenLevelsOverlay();
             return `${state.last_round_summary} (${state.host_wins ?? 0}–${state.guest_wins ?? 0})`;
           }
-          const deadline = Date.now() + 180000;
-          while (Date.now() < deadline) {
-            await new Promise((r) => setTimeout(r, 1400));
-            await refreshPaint();
-            state = await SquirrelApi.getChallenge(meta.code);
-            if (!state) break;
-            if (state.last_resolved_level >= round.level && state.last_round_summary) {
-              hideChallengeBetweenLevelsOverlay();
-              return `${state.last_round_summary} (${state.host_wins ?? 0}–${state.guest_wins ?? 0})`;
-            }
-          }
-          hideChallengeBetweenLevelsOverlay();
-          return 'Rival still on this level — you can keep playing. Results sync when both finish.';
+          return 'Score saved - keep playing while your rival catches up.';
         } catch (e) {
           console.warn(e);
-          hideChallengeBetweenLevelsOverlay();
           return null;
         }
       };
@@ -15497,11 +15725,12 @@
           dom.gameOverMatchSummary.classList.add('hidden');
         }
         originalTriggerGameOver.call(this, message, fromDeath);
+        if (dom.gameOverRestart) {
+          dom.gameOverRestart.classList.add('hidden');
+          dom.gameOverRestart.style.display = 'none';
+        }
         if (onlineCh) {
-          if (dom.gameOverRestart) dom.gameOverRestart.classList.add('hidden');
           if (dom.buyLifeButton) dom.buyLifeButton.style.display = 'none';
-        } else {
-          if (dom.gameOverRestart) dom.gameOverRestart.classList.remove('hidden');
         }
         if (eligibleForReward && reward > 0) {
           this.addCurrency(reward, 'Run complete');
@@ -15518,6 +15747,12 @@
       let currentSelectedLevel = 1;
       const biomeDifficultySelections = {};
       let settingsOpenedFrom = 'menu'; // Track where settings was opened from: 'menu' or 'game'
+
+      window.addEventListener('beforeunload', () => {
+        if (game && game.challengeMeta && game.phase !== 'gameover') {
+          persistChallengeResume(game);
+        }
+      });
 
       async function createHostedChallengeRoom(forceNew) {
         updateLevelDisplay();
@@ -15609,6 +15844,7 @@
             toggle(dom.challengeOverlay, true);
             if (dom.challengeHostStatus) dom.challengeHostStatus.textContent = '';
             if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = '';
+            if (dom.challengeDisplayNameInput) dom.challengeDisplayNameInput.value = loadDisplayName();
             updateChallengeVersusHint();
             refreshChallengeResumeUi();
             if (window.FB && loadFacebookId()) renderFbFriendsList();
@@ -15653,6 +15889,18 @@
             toggle(dom.achievementsOverlay, true);
           });
         }
+        if (dom.challengeDisplayNameInput) {
+          dom.challengeDisplayNameInput.value = loadDisplayName();
+        }
+        if (dom.challengeSaveDisplayName) {
+          dom.challengeSaveDisplayName.addEventListener('click', () => {
+            const v = dom.challengeDisplayNameInput ? dom.challengeDisplayNameInput.value : '';
+            saveDisplayName(v);
+            if (dom.statsDisplayNameInput) dom.statsDisplayNameInput.value = loadDisplayName();
+            showToast('Challenge name saved');
+            if (hostChallengePayload) void createHostedChallengeRoom(true);
+          });
+        }
         if (dom.challengeContinueButton) {
           dom.challengeContinueButton.addEventListener('click', async () => {
             const payload = readChallengeResumePayload();
@@ -15678,10 +15926,15 @@
               showToast('You are not part of that match anymore.');
               return;
             }
+            if ((isHost && row.host_eliminated) || (isGuest && row.guest_eliminated)) {
+              clearChallengeResume();
+              showToast('You were already out of that match.');
+              return;
+            }
             const seedNum = Number(row.seed);
             const sl = Math.max(
               1,
-              Math.floor(Number(row.current_level != null ? row.current_level : row.start_level) || 1)
+              Math.floor(Number(payload.level || row.start_level || row.current_level) || 1)
             );
             if (!Number.isFinite(seedNum)) {
               showToast('Invalid challenge data.');
@@ -15690,6 +15943,9 @@
             toggle(dom.challengeOverlay, false);
             beginGameFromMenu(sl, {
               runSeed: seedNum,
+              resumeScore: payload.score || 0,
+              resumeLives: payload.lives || undefined,
+              resumeWords: payload.wordsCompleted || 0,
               challenge: { code: payload.code, role: isHost ? 'host' : 'guest' }
             });
           });
@@ -15728,7 +15984,12 @@
                 'No friends on this app yet. Invite friends so they appear here after connecting.';
               return;
             }
-            dom.fbFriendsList.innerHTML = res.data.map((f) => `<div>${f.name}</div>`).join('');
+            dom.fbFriendsList.textContent = '';
+            res.data.forEach((f) => {
+              const row = document.createElement('div');
+              row.textContent = f.name || 'Facebook friend';
+              dom.fbFriendsList.appendChild(row);
+            });
           });
         }
 
@@ -15762,7 +16023,7 @@
                     renderFbFriendsList();
                   });
                 },
-                { scope: 'public_profile' }
+                { scope: 'public_profile,user_friends' }
               );
             });
           });
@@ -15799,7 +16060,7 @@
             const seedNum = Number(row.seed);
             const sl = Math.max(
               1,
-              Math.floor(Number(row.current_level != null ? row.current_level : row.start_level) || 1)
+              Math.floor(Number(row.start_level != null ? row.start_level : row.current_level) || 1)
             );
             if (!Number.isFinite(seedNum)) {
               if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = 'Invalid challenge data.';
@@ -15959,6 +16220,7 @@
           dom.statsSaveDisplayName.addEventListener('click', () => {
             const v = dom.statsDisplayNameInput ? dom.statsDisplayNameInput.value : '';
             saveDisplayName(v);
+            if (dom.challengeDisplayNameInput) dom.challengeDisplayNameInput.value = loadDisplayName();
             showToast('Display name saved');
             let wc = 0;
             try {

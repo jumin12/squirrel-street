@@ -59,6 +59,21 @@ CREATE TABLE IF NOT EXISTS challenges (
 );
 
 CREATE INDEX IF NOT EXISTS idx_challenges_code ON challenges(code);
+
+CREATE TABLE IF NOT EXISTS challenge_rounds (
+  challenge_id TEXT NOT NULL REFERENCES challenges(id) ON DELETE CASCADE,
+  level INT NOT NULL,
+  host_score INT,
+  guest_score INT,
+  host_submitted BOOLEAN NOT NULL DEFAULT FALSE,
+  guest_submitted BOOLEAN NOT NULL DEFAULT FALSE,
+  resolved BOOLEAN NOT NULL DEFAULT FALSE,
+  summary TEXT,
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (challenge_id, level)
+);
+
+CREATE INDEX IF NOT EXISTS idx_challenge_rounds_challenge ON challenge_rounds(challenge_id, level);
 `;
 
 const migrateLeaderboardCols = [
@@ -66,6 +81,7 @@ const migrateLeaderboardCols = [
   'ALTER TABLE leaderboard ADD COLUMN IF NOT EXISTS mp_wins INT NOT NULL DEFAULT 0',
   'ALTER TABLE leaderboard ADD COLUMN IF NOT EXISTS mp_losses INT NOT NULL DEFAULT 0',
   'ALTER TABLE leaderboard ADD COLUMN IF NOT EXISTS mp_total_score BIGINT NOT NULL DEFAULT 0',
+  'ALTER TABLE leaderboard ADD COLUMN IF NOT EXISTS mp_words_spelled BIGINT NOT NULL DEFAULT 0',
   'ALTER TABLE leaderboard ADD COLUMN IF NOT EXISTS facebook_id TEXT'
 ];
 
@@ -91,7 +107,33 @@ async function migrate() {
   }
 }
 
-function rowToChallenge(r) {
+function roundRowsToPayload(rounds = []) {
+  return rounds.map((round) => ({
+    level: round.level,
+    host_score: round.host_score,
+    guest_score: round.guest_score,
+    host_submitted: Boolean(round.host_submitted),
+    guest_submitted: Boolean(round.guest_submitted),
+    resolved: Boolean(round.resolved),
+    summary: round.summary || null
+  }));
+}
+
+async function getRecentRounds(client, challengeId, limit = 12) {
+  const { rows } = await client.query(
+    `SELECT level, host_score, guest_score, host_submitted, guest_submitted, resolved, summary
+     FROM challenge_rounds
+     WHERE challenge_id = $1
+     ORDER BY level DESC
+     LIMIT $2`,
+    [challengeId, limit]
+  );
+  return rows.reverse();
+}
+
+function rowToChallenge(r, rounds = []) {
+  const payloadRounds = roundRowsToPayload(rounds);
+  const latestRound = payloadRounds[payloadRounds.length - 1] || null;
   return {
     code: r.code,
     seed: Number(r.seed),
@@ -104,8 +146,8 @@ function rowToChallenge(r) {
     reserved_guest_id: r.reserved_guest_id,
     host_wins: r.host_wins,
     guest_wins: r.guest_wins,
-    round_host_score: r.round_host_score,
-    round_guest_score: r.round_guest_score,
+    round_host_score: latestRound ? latestRound.host_score : r.round_host_score,
+    round_guest_score: latestRound ? latestRound.guest_score : r.round_guest_score,
     host_submitted_round: r.host_submitted_round,
     guest_submitted_round: r.guest_submitted_round,
     last_resolved_level: r.last_resolved_level,
@@ -119,53 +161,142 @@ function rowToChallenge(r) {
     guest_words_accum: r.guest_words_accum != null ? Number(r.guest_words_accum) : 0,
     winner_id: r.winner_id || null,
     match_summary: r.match_summary || null,
-    created_at: r.created_at || null
+    created_at: r.created_at || null,
+    rounds: payloadRounds
   };
 }
 
-async function tryResolveRound(client, row) {
-  let hostScore = row.round_host_score != null ? Number(row.round_host_score) : null;
-  let guestScore = row.round_guest_score != null ? Number(row.round_guest_score) : null;
-  if (hostScore === null && row.host_eliminated) hostScore = 0;
-  if (guestScore === null && row.guest_eliminated) guestScore = 0;
-  if (hostScore === null || guestScore === null) return false;
+async function resolveStoredRounds(client, challengeId) {
+  const { rows } = await client.query(
+    `SELECT level, host_score, guest_score
+     FROM challenge_rounds
+     WHERE challenge_id = $1
+       AND resolved = FALSE
+       AND host_submitted = TRUE
+       AND guest_submitted = TRUE
+     ORDER BY level ASC`,
+    [challengeId]
+  );
 
-  let summary = '';
-  let hostWins = Number(row.host_wins) || 0;
-  let guestWins = Number(row.guest_wins) || 0;
-  const lvl = row.current_level;
+  for (const round of rows) {
+    const hostScore = Number(round.host_score) || 0;
+    const guestScore = Number(round.guest_score) || 0;
+    let hostInc = 0;
+    let guestInc = 0;
+    let summary = '';
 
-  if (hostScore > guestScore) {
-    hostWins += 1;
-    summary = `Level ${lvl}: Host wins (${hostScore} vs ${guestScore}).`;
-  } else if (guestScore > hostScore) {
-    guestWins += 1;
-    summary = `Level ${lvl}: Guest wins (${guestScore} vs ${hostScore}).`;
-  } else {
-    summary = `Level ${lvl}: Tie at ${hostScore} pts.`;
+    if (hostScore > guestScore) {
+      hostInc = 1;
+      summary = `Host wins level ${round.level} (${hostScore} vs ${guestScore}).`;
+    } else if (guestScore > hostScore) {
+      guestInc = 1;
+      summary = `Guest wins level ${round.level} (${guestScore} vs ${hostScore}).`;
+    } else {
+      summary = `Level ${round.level} ties at ${hostScore} pts.`;
+    }
+
+    await client.query(
+      `UPDATE challenge_rounds
+       SET resolved = TRUE, summary = $3, updated_at = NOW()
+       WHERE challenge_id = $1 AND level = $2`,
+      [challengeId, round.level, summary]
+    );
+    await client.query(
+      `UPDATE challenges
+       SET host_wins = host_wins + $2,
+           guest_wins = guest_wins + $3,
+           last_resolved_level = GREATEST(last_resolved_level, $4),
+           last_round_summary = $5,
+           updated_at = NOW()
+       WHERE id = $1`,
+      [challengeId, hostInc, guestInc, round.level, summary]
+    );
+  }
+}
+
+async function submitChallengeScore(client, row, playerId, level, points, wordsSpelled = 0, eliminated = false) {
+  const isHost = row.host_id === playerId;
+  const isGuest = row.guest_id === playerId;
+  if (!isHost && !isGuest) {
+    const err = new Error('not_in_challenge');
+    err.status = 403;
+    throw err;
+  }
+  if ((isHost && row.host_eliminated) || (isGuest && row.guest_eliminated)) {
+    return false;
   }
 
-  const prevHt = Number(row.host_total_points) || 0;
-  const prevGt = Number(row.guest_total_points) || 0;
+  const lvl = Math.max(Number(row.start_level) || 1, Math.floor(Number(level) || row.start_level || 1));
+  const pts = Math.max(0, Math.round(Number(points) || 0));
+  const words = Math.max(0, Math.floor(Number(wordsSpelled) || 0));
 
   await client.query(
-    `UPDATE challenges SET
-      host_wins = $1,
-      guest_wins = $2,
-      last_resolved_level = $3,
-      last_round_summary = $4,
-      current_level = current_level + 1,
-      round_host_score = NULL,
-      round_guest_score = NULL,
-      host_submitted_round = FALSE,
-      guest_submitted_round = FALSE,
-      host_total_points = $6,
-      guest_total_points = $7,
-      updated_at = NOW()
-     WHERE id = $5`,
-    [hostWins, guestWins, lvl, summary, row.id, prevHt + hostScore, prevGt + guestScore]
+    `INSERT INTO challenge_rounds (challenge_id, level, updated_at)
+     VALUES ($1, $2, NOW())
+     ON CONFLICT (challenge_id, level) DO NOTHING`,
+    [row.id, lvl]
   );
-  return true;
+
+  const { rows } = await client.query(
+    'SELECT * FROM challenge_rounds WHERE challenge_id = $1 AND level = $2 FOR UPDATE',
+    [row.id, lvl]
+  );
+  const round = rows[0];
+  const alreadySubmitted = isHost ? round.host_submitted : round.guest_submitted;
+
+  if (!alreadySubmitted) {
+    if (isHost) {
+      await client.query(
+        `UPDATE challenge_rounds
+         SET host_score = $3, host_submitted = TRUE, updated_at = NOW()
+         WHERE challenge_id = $1 AND level = $2`,
+        [row.id, lvl, pts]
+      );
+      await client.query(
+        `UPDATE challenges SET
+           host_total_points = host_total_points + $2,
+           host_words_accum = GREATEST(host_words_accum, $3),
+           current_level = GREATEST(current_level, $4),
+           round_host_score = $2,
+           host_submitted_round = TRUE,
+           host_eliminated = CASE WHEN $5 THEN TRUE ELSE host_eliminated END,
+           updated_at = NOW()
+         WHERE id = $1`,
+        [row.id, pts, words, lvl + 1, eliminated]
+      );
+    } else {
+      await client.query(
+        `UPDATE challenge_rounds
+         SET guest_score = $3, guest_submitted = TRUE, updated_at = NOW()
+         WHERE challenge_id = $1 AND level = $2`,
+        [row.id, lvl, pts]
+      );
+      await client.query(
+        `UPDATE challenges SET
+           guest_total_points = guest_total_points + $2,
+           guest_words_accum = GREATEST(guest_words_accum, $3),
+           current_level = GREATEST(current_level, $4),
+           round_guest_score = $2,
+           guest_submitted_round = TRUE,
+           guest_eliminated = CASE WHEN $5 THEN TRUE ELSE guest_eliminated END,
+           updated_at = NOW()
+         WHERE id = $1`,
+        [row.id, pts, words, lvl + 1, eliminated]
+      );
+    }
+  } else if (eliminated) {
+    await client.query(
+      `UPDATE challenges SET
+         host_eliminated = CASE WHEN $2 THEN TRUE ELSE host_eliminated END,
+         guest_eliminated = CASE WHEN $3 THEN TRUE ELSE guest_eliminated END,
+         updated_at = NOW()
+       WHERE id = $1`,
+      [row.id, isHost, isGuest]
+    );
+  }
+
+  await resolveStoredRounds(client, row.id);
+  return !alreadySubmitted;
 }
 
 async function finalizeMatchIfNeeded(client, row) {
@@ -198,12 +329,13 @@ async function finalizeMatchIfNeeded(client, row) {
 
   async function touchPlayer(pid, wonInc, lostInc, pts, words) {
     await client.query(
-      `INSERT INTO leaderboard (player_id, display_name, words_spelled, mp_wins, mp_losses, mp_total_score, updated_at)
-       VALUES ($1, 'Player', $2, $3, $4, $5, NOW())
+      `INSERT INTO leaderboard (player_id, display_name, words_spelled, mp_wins, mp_losses, mp_total_score, mp_words_spelled, updated_at)
+       VALUES ($1, 'Player', $2, $3, $4, $5, $2, NOW())
        ON CONFLICT (player_id) DO UPDATE SET
          mp_wins = leaderboard.mp_wins + $3,
          mp_losses = leaderboard.mp_losses + $4,
          mp_total_score = leaderboard.mp_total_score + $5,
+         mp_words_spelled = leaderboard.mp_words_spelled + $2,
          words_spelled = GREATEST(COALESCE(leaderboard.words_spelled, 0), $2),
          updated_at = NOW()`,
       [pid, Math.max(0, Math.floor(words || 0)), wonInc, lostInc, Math.max(0, Math.floor(pts || 0))]
@@ -240,7 +372,7 @@ app.get('/api/leaderboard', async (req, res) => {
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 40));
     const { rows } = await pool.query(
       `SELECT player_id, display_name, high_score, highest_level,
-              words_spelled, mp_wins, mp_losses, mp_total_score, updated_at
+              words_spelled, mp_wins, mp_losses, mp_total_score, mp_words_spelled, updated_at
        FROM leaderboard
        ORDER BY high_score DESC, highest_level DESC
        LIMIT $1`,
@@ -377,10 +509,35 @@ app.post('/api/challenges/join', async (req, res) => {
     }
 
     const r2 = await pool.query('SELECT * FROM challenges WHERE code = $1', [c]);
-    res.json(rowToChallenge(r2.rows[0]));
+    const rounds = await getRecentRounds(pool, r2.rows[0].id);
+    res.json(rowToChallenge(r2.rows[0], rounds));
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'join_failed' });
+  }
+});
+
+app.get('/api/challenges/history/:playerId', async (req, res) => {
+  if (!pool) return res.status(503).json({ error: 'Database not configured' });
+  try {
+    const playerId = req.params.playerId;
+    const limit = Math.min(30, Math.max(1, parseInt(req.query.limit, 10) || 12));
+    const { rows } = await pool.query(
+      `SELECT code, start_level, current_level, host_id, host_name, guest_id, guest_name,
+              host_wins, guest_wins, host_total_points, guest_total_points,
+              host_words_accum, guest_words_accum, winner_id, match_summary,
+              status, updated_at
+       FROM challenges
+       WHERE status = 'completed'
+         AND (host_id = $1 OR guest_id = $1)
+       ORDER BY updated_at DESC
+       LIMIT $2`,
+      [playerId, limit]
+    );
+    res.json(rows);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'history_failed' });
   }
 });
 
@@ -391,7 +548,8 @@ app.get('/api/challenges/:code', async (req, res) => {
     const { rows } = await pool.query('SELECT * FROM challenges WHERE code = $1', [c]);
     const row = rows[0];
     if (!row) return res.status(404).json({ error: 'not_found' });
-    res.json(rowToChallenge(row));
+    const rounds = await getRecentRounds(pool, row.id);
+    res.json(rowToChallenge(row, rounds));
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'fetch_failed' });
@@ -421,65 +579,22 @@ app.post('/api/challenges/:code/round', async (req, res) => {
       await client.query('ROLLBACK');
       return res.status(410).json({ error: 'inactive' });
     }
-    if (lvl !== row.current_level) {
-      await client.query('ROLLBACK');
-      return res.status(409).json({
-        error: 'level_mismatch',
-        expected: row.current_level,
-        got: lvl
-      });
-    }
-
-    const isHost = row.host_id === player_id;
-    const isGuest = row.guest_id === player_id;
-    if (!isHost && !isGuest) {
-      await client.query('ROLLBACK');
-      return res.status(403).json({ error: 'not_in_challenge' });
-    }
-    if (isHost && row.host_eliminated) {
-      await client.query('ROLLBACK');
-      return res.status(403).json({ error: 'eliminated' });
-    }
-    if (isGuest && row.guest_eliminated) {
-      await client.query('ROLLBACK');
-      return res.status(403).json({ error: 'eliminated' });
-    }
-    if (isHost && row.host_submitted_round) {
-      await client.query('ROLLBACK');
-      return res.status(409).json({ error: 'already_submitted' });
-    }
-    if (isGuest && row.guest_submitted_round) {
-      await client.query('ROLLBACK');
-      return res.status(409).json({ error: 'already_submitted' });
-    }
-
-    if (isHost) {
-      await client.query(
-        `UPDATE challenges SET round_host_score = $1, host_submitted_round = TRUE, updated_at = NOW() WHERE id = $2`,
-        [pts, row.id]
-      );
-    } else {
-      await client.query(
-        `UPDATE challenges SET round_guest_score = $1, guest_submitted_round = TRUE, updated_at = NOW() WHERE id = $2`,
-        [pts, row.id]
-      );
-    }
-
-    const { rows: rows2 } = await client.query('SELECT * FROM challenges WHERE id = $1', [row.id]);
-    let cur = rows2[0];
-
-    await tryResolveRound(client, cur);
+    await submitChallengeScore(client, row, player_id, lvl, pts, 0, false);
     const { rows: rows3 } = await client.query('SELECT * FROM challenges WHERE id = $1 FOR UPDATE', [row.id]);
-    cur = rows3[0];
+    const cur = rows3[0];
     await finalizeMatchIfNeeded(client, cur);
 
     await client.query('COMMIT');
     const { rows: finalRows } = await pool.query('SELECT * FROM challenges WHERE code = $1', [c]);
-    res.json(rowToChallenge(finalRows[0]));
+    const rounds = await getRecentRounds(pool, finalRows[0].id);
+    res.json(rowToChallenge(finalRows[0], rounds));
   } catch (e) {
     try {
       await client.query('ROLLBACK');
     } catch (_) {}
+    if (e && e.status) {
+      return res.status(e.status).json({ error: e.message || 'challenge_error' });
+    }
     console.error(e);
     res.status(500).json({ error: 'round_failed' });
   } finally {
@@ -522,62 +637,32 @@ app.post('/api/challenges/:code/eliminate', async (req, res) => {
     if (isHost && row.host_eliminated) {
       await client.query('COMMIT');
       const { rows: fr } = await pool.query('SELECT * FROM challenges WHERE code = $1', [c]);
-      return res.json(rowToChallenge(fr[0]));
+      const rounds = await getRecentRounds(pool, fr[0].id);
+      return res.json(rowToChallenge(fr[0], rounds));
     }
     if (isGuest && row.guest_eliminated) {
       await client.query('COMMIT');
       const { rows: fr } = await pool.query('SELECT * FROM challenges WHERE code = $1', [c]);
-      return res.json(rowToChallenge(fr[0]));
+      const rounds = await getRecentRounds(pool, fr[0].id);
+      return res.json(rowToChallenge(fr[0], rounds));
     }
 
-    if (lvl !== row.current_level) {
-      await client.query('ROLLBACK');
-      return res.status(409).json({
-        error: 'level_mismatch',
-        expected: row.current_level,
-        got: lvl
-      });
-    }
-
-    if (isHost) {
-      await client.query(
-        `UPDATE challenges SET
-           host_eliminated = TRUE,
-           host_words_accum = GREATEST(host_words_accum, $1),
-           round_host_score = CASE WHEN host_submitted_round THEN round_host_score ELSE $2 END,
-           host_submitted_round = TRUE,
-           updated_at = NOW()
-         WHERE id = $3`,
-        [words, pts, row.id]
-      );
-    } else {
-      await client.query(
-        `UPDATE challenges SET
-           guest_eliminated = TRUE,
-           guest_words_accum = GREATEST(guest_words_accum, $1),
-           round_guest_score = CASE WHEN guest_submitted_round THEN round_guest_score ELSE $2 END,
-           guest_submitted_round = TRUE,
-           updated_at = NOW()
-         WHERE id = $3`,
-        [words, pts, row.id]
-      );
-    }
-
-    const { rows: rows2 } = await client.query('SELECT * FROM challenges WHERE id = $1', [row.id]);
-    let cur = rows2[0];
-
-    await tryResolveRound(client, cur);
+    await submitChallengeScore(client, row, player_id, lvl, pts, words, true);
     const { rows: rows3 } = await client.query('SELECT * FROM challenges WHERE id = $1 FOR UPDATE', [row.id]);
-    cur = rows3[0];
+    const cur = rows3[0];
     await finalizeMatchIfNeeded(client, cur);
 
     await client.query('COMMIT');
     const { rows: finalRows } = await pool.query('SELECT * FROM challenges WHERE code = $1', [c]);
-    res.json(rowToChallenge(finalRows[0]));
+    const rounds = await getRecentRounds(pool, finalRows[0].id);
+    res.json(rowToChallenge(finalRows[0], rounds));
   } catch (e) {
     try {
       await client.query('ROLLBACK');
     } catch (_) {}
+    if (e && e.status) {
+      return res.status(e.status).json({ error: e.message || 'challenge_error' });
+    }
     console.error(e);
     res.status(500).json({ error: 'eliminate_failed' });
   } finally {
