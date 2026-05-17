@@ -541,6 +541,40 @@ app.get('/api/challenges/history/:playerId', async (req, res) => {
   }
 });
 
+/** Active matches you can resume (not eliminated). Must register before /api/challenges/:code */
+app.get('/api/challenges/active/:playerId', async (req, res) => {
+  if (!pool) return res.status(503).json({ error: 'Database not configured' });
+  try {
+    const playerId = req.params.playerId;
+    if (!playerId || typeof playerId !== 'string') {
+      return res.status(400).json({ error: 'player_id required' });
+    }
+    const limit = Math.min(20, Math.max(1, parseInt(req.query.limit, 10) || 10));
+    const { rows } = await pool.query(
+      `SELECT code, seed, start_level, current_level,
+              host_id, host_name, guest_id, guest_name,
+              host_wins, guest_wins,
+              host_total_points, guest_total_points,
+              host_words_accum, guest_words_accum,
+              host_eliminated, guest_eliminated,
+              status, updated_at
+       FROM challenges
+       WHERE status = 'active'
+         AND (
+           (host_id = $1 AND host_eliminated = FALSE)
+           OR (guest_id = $1 AND guest_eliminated = FALSE)
+         )
+       ORDER BY updated_at DESC
+       LIMIT $2`,
+      [playerId, limit]
+    );
+    res.json(rows);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'active_list_failed' });
+  }
+});
+
 app.get('/api/challenges/:code', async (req, res) => {
   if (!pool) return res.status(503).json({ error: 'Database not configured' });
   try {
@@ -561,12 +595,13 @@ app.post('/api/challenges/:code/round', async (req, res) => {
   const client = await pool.connect();
   try {
     const c = req.params.code.trim().toUpperCase();
-    const { player_id, level, level_score } = req.body || {};
+    const { player_id, level, level_score, words_spelled } = req.body || {};
     if (!player_id || level == null || level_score == null) {
       return res.status(400).json({ error: 'player_id, level, level_score required' });
     }
     const lvl = Math.floor(Number(level));
     const pts = Math.round(Number(level_score));
+    const words = Math.max(0, Math.floor(Number(words_spelled) || 0));
 
     await client.query('BEGIN');
     const { rows } = await client.query('SELECT * FROM challenges WHERE code = $1 FOR UPDATE', [c]);
@@ -579,7 +614,7 @@ app.post('/api/challenges/:code/round', async (req, res) => {
       await client.query('ROLLBACK');
       return res.status(410).json({ error: 'inactive' });
     }
-    await submitChallengeScore(client, row, player_id, lvl, pts, 0, false);
+    await submitChallengeScore(client, row, player_id, lvl, pts, words, false);
     const { rows: rows3 } = await client.query('SELECT * FROM challenges WHERE id = $1 FOR UPDATE', [row.id]);
     const cur = rows3[0];
     await finalizeMatchIfNeeded(client, cur);
