@@ -4698,7 +4698,7 @@
             </span>
         </div>
       </div>
-      <div id="menuVersion" style="text-align: right; margin-top: 8px; font-size: 0.6rem; color: rgba(255,255,255,0.3);">v2.2</div>
+      <div id="menuVersion" style="text-align: right; margin-top: 8px; font-size: 0.6rem; color: rgba(255,255,255,0.3);">v2.5</div>
     </div>
   </div>
 
@@ -9461,6 +9461,18 @@
       // Changelog Data
       const CHANGELOG = [
         {
+          version: '2.5',
+          date: '2026-05-17',
+          changes: [
+            'Achievements → Stats tab lays out correctly — inactive tab no longer steals space',
+            'Challenge Host auto-creates an online room code or offline seed; clearer scoring names on Host & Join',
+            'Challenge mode lists your active online matches at the bottom — Rejoin keeps progress when you exited without losing',
+            'Leaving a challenge via pause/back saves your spot instead of eliminating you from the match',
+            'Between levels: full-screen matchup breakdown (scores, words, submissions) with live polling instead of a frozen wait',
+            'Server API: list active challenges per player and sync cumulative words with each level score'
+          ]
+        },
+        {
           version: '2.4',
           date: '2026-05-14',
           changes: [
@@ -9586,7 +9598,7 @@
         }
       ];
       
-      const CURRENT_VERSION = '2.4';
+      const CURRENT_VERSION = '2.5';
       const LAST_SEEN_VERSION_KEY = 'squirrelStreet.lastSeenVersion';
 
       function checkChangelogBadge() {
