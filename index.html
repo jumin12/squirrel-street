@@ -1129,12 +1129,115 @@
       background-size: cover, cover;
       background-position: center, center;
       background-repeat: no-repeat, no-repeat;
+      display: flex;
+      flex-direction: column;
+      max-height: min(88vh, calc(var(--app-height, 100vh) - 24px));
+      overflow: hidden;
+    }
+
+    #achievementsOverlay .ach-tab-body {
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #achievementsOverlay .achievements-container {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #achievementsOverlay .achievements-container .achievements-scroll {
+      flex: 1;
+      min-height: 0;
+      max-height: none;
     }
 
     /* Tab panels use .hidden (opacity/visibility only); remove from layout so the inactive tab does not reserve ~60vh and push Stats to the bottom. */
     #achievementsOverlay #achievementsTabPanel.hidden,
     #achievementsOverlay #statsTabPanel.hidden {
-      display: none;
+      display: none !important;
+    }
+
+    #challengeOverlay .modal.challenge-modal {
+      position: relative;
+      max-height: min(90vh, calc(var(--app-height, 100vh) - 20px));
+      overflow-y: auto;
+    }
+
+    .challenge-modal-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+      text-align: left;
+    }
+
+    .challenge-modal-header h2 {
+      margin: 0;
+      flex: 1;
+      text-align: left;
+    }
+
+    .challenge-profile-corner {
+      position: relative;
+      flex-shrink: 0;
+      z-index: 2;
+    }
+
+    .challenge-profile-chip {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+      max-width: 140px;
+      padding: 6px 10px;
+      border-radius: 10px;
+      border: 2px solid rgba(125, 211, 252, 0.45);
+      background: linear-gradient(135deg, rgba(30, 64, 175, 0.55), rgba(15, 23, 42, 0.85));
+      color: #f8fafc;
+      font-size: 0.38rem;
+      line-height: 1.35;
+      cursor: pointer;
+      text-align: right;
+    }
+
+    .challenge-profile-chip strong {
+      font-size: 0.42rem;
+      color: #fcd34d;
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .challenge-profile-panel {
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      width: min(260px, 78vw);
+      padding: 12px;
+      border-radius: 12px;
+      border: 2px solid rgba(125, 211, 252, 0.35);
+      background: linear-gradient(165deg, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.99));
+      box-shadow: 4px 6px 16px rgba(0, 0, 0, 0.45);
+      text-align: left;
+    }
+
+    .challenge-profile-panel.hidden {
+      display: none !important;
+    }
+
+    .challenge-host-code-block {
+      margin: 10px 0 14px;
+      padding: 12px;
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(250, 204, 21, 0.35);
     }
 
     #challengeOverlay #challengeHostPanel.hidden,
@@ -4408,6 +4511,17 @@
         }
     }
 
+    .screen-version-label {
+      position: fixed;
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 6px);
+      right: calc(env(safe-area-inset-right, 0px) + 8px);
+      font-size: clamp(0.38rem, 2.8vw, 0.48rem);
+      color: rgba(255, 255, 255, 0.28);
+      z-index: 60;
+      pointer-events: none;
+      text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+    }
+
     .leaderboard-chart-wrap {
       border-radius: 12px;
       background: rgba(15, 23, 42, 0.55);
@@ -4629,6 +4743,7 @@
   </script>
 </head>
 <body>
+  <div id="screenVersion" class="screen-version-label" aria-hidden="true">v2.6</div>
   <div id="preloadScreen" class="screen">
     <div class="logo">Squirrel Street</div>
     <div class="menu-card">
@@ -4698,7 +4813,7 @@
             </span>
         </div>
       </div>
-      <div id="menuVersion" style="text-align: right; margin-top: 8px; font-size: 0.6rem; color: rgba(255,255,255,0.3);">v2.5</div>
+      <div id="menuVersion" style="text-align: right; margin-top: 8px; font-size: 0.6rem; color: rgba(255,255,255,0.3);">v2.6</div>
     </div>
   </div>
 
@@ -4715,25 +4830,40 @@
   </div>
 
   <div id="challengeOverlay" class="overlay hidden">
-    <div class="modal" style="max-width: 520px; width: 94vw;">
-      <h2>Challenge mode</h2>
-      <p style="font-size: 0.5rem; margin-bottom: 12px; line-height: 1.5;">Same seed per run. After <strong>each level</strong>, your score saves to the server and you can keep going while your rival catches up.</p>
+    <div class="modal challenge-modal" style="max-width: 520px; width: 94vw;">
+      <div class="challenge-modal-header">
+        <h2>Challenge mode</h2>
+        <div class="challenge-profile-corner" id="challengeProfileCorner">
+          <button type="button" id="challengeProfileToggle" class="challenge-profile-chip" aria-expanded="false" aria-controls="challengeProfilePanel">
+            <strong id="challengeProfileChipName">Player</strong>
+            <span id="challengeProfileChipMp">0W · 0L</span>
+          </button>
+          <div id="challengeProfilePanel" class="challenge-profile-panel hidden">
+            <label style="font-size: 0.42rem; display: block; margin-bottom: 4px;">Your name</label>
+            <div style="display: flex; gap: 6px; margin-bottom: 10px;">
+              <input id="challengeDisplayNameInput" maxlength="24" style="flex: 1; min-width: 0; font-size: 0.48rem; padding: 6px;">
+              <button type="button" id="challengeSaveDisplayName" class="pill-button" style="font-size: 0.36rem;">Save</button>
+            </div>
+            <p id="challengeProfileMpLocal" style="font-size: 0.4rem; color: #cbd5e1; margin: 0 0 6px; line-height: 1.45;"></p>
+            <p id="challengeProfileMpOnline" style="font-size: 0.38rem; color: #7dd3fc; margin: 0 0 10px; line-height: 1.45;"></p>
+            <button type="button" id="openChallengeProfileButton" class="pill-button ghost" style="width: 100%; font-size: 0.38rem;">Full stats &amp; leaderboard</button>
+          </div>
+        </div>
+      </div>
+      <p style="font-size: 0.5rem; margin-bottom: 12px; line-height: 1.5; text-align: left;">Same seed per run. After <strong>each level</strong>, your score saves to the server and you can keep going while your rival catches up.</p>
       <div class="pill-buttons" style="margin-bottom: 12px;">
         <button type="button" id="challengeTabHost" class="pill-button selected">Host</button>
         <button type="button" id="challengeTabJoin" class="pill-button">Join</button>
       </div>
       <div id="challengeHostPanel">
         <p id="challengeVersusHint" style="font-size: 0.48rem; color: #7dd3fc; min-height: 1.2em;"></p>
+        <div class="challenge-host-code-block">
+          <p id="challengeHostCodeDisplay" style="font-size: 0.75rem; color: #fcd34d; margin: 0; text-align: center; min-height: 1.5em;"></p>
+          <p id="challengeHostStatus" style="font-size: 0.45rem; color: #94a3b8; text-align: center; margin: 8px 0 0;"></p>
+        </div>
         <div id="challengeResumePanel" class="hidden" style="margin-bottom: 12px; padding: 10px; background: rgba(0,0,0,0.35); border-radius: 10px; border: 1px solid rgba(250, 204, 21, 0.35);">
           <p id="challengeResumeHint" style="font-size: 0.45rem; color: #fcd34d; margin: 0 0 8px 0; line-height: 1.45;"></p>
           <button type="button" id="challengeContinueButton" class="button" style="width: 100%;">Continue last match</button>
-        </div>
-        <button type="button" id="openChallengeProfileButton" class="pill-button ghost" style="width: 100%; margin-bottom: 10px; font-size: 0.42rem;">Multiplayer profile &amp; stats</button>
-        <label style="font-size: 0.45rem; display: block; margin-bottom: 4px;">Your name for scoring</label>
-        <p style="font-size: 0.38rem; color: #94a3b8; margin: 0 0 6px 0; line-height: 1.45;">Saved on this device. Use a unique nickname so you are not confused with your rival.</p>
-        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-          <input id="challengeDisplayNameInput" maxlength="24" style="flex: 1; min-width: 0; font-size: 0.52rem; padding: 8px;">
-          <button type="button" id="challengeSaveDisplayName" class="pill-button" style="font-size: 0.4rem;">Save</button>
         </div>
         <div id="challengeFacebookSection" style="margin-bottom: 12px; padding: 10px; background: rgba(30,58,138,0.25); border-radius: 10px; border: 1px solid rgba(125,211,252,0.25);">
           <p style="font-size: 0.42rem; color: #94a3b8; margin: 0 0 8px 0; line-height: 1.45;">Facebook links your name for challenges. Friends who also play appear below (Facebook only returns friends on this app).</p>
@@ -4743,8 +4873,6 @@
         <p style="font-size: 0.5rem;">Uses the starting level from your Biomes selector (open Biomes first if you want a specific level).</p>
         <button type="button" id="regenerateChallengeCodeButton" class="pill-button ghost" style="width: 100%; margin-top: 8px; font-size: 0.42rem;">New room code</button>
         <button id="startHostedRunButton" class="button hidden" style="width: 100%; margin-top: 10px;">Start challenge run</button>
-        <p id="challengeHostCodeDisplay" style="font-size: 0.75rem; color: #fcd34d; margin-top: 12px; text-align: center; min-height: 1.5em;"></p>
-        <p id="challengeHostStatus" style="font-size: 0.45rem; color: #94a3b8; text-align: center;"></p>
       </div>
       <div id="challengeJoinPanel" class="hidden">
         <label style="font-size: 0.45rem; display: block; margin-bottom: 4px;">Your name for scoring</label>
@@ -5278,43 +5406,46 @@
   <div id="achievementsOverlay" class="overlay hidden">
     <div class="modal" style="max-width: 720px; width: 94vw;">
       <h2>Achievements &amp; stats</h2>
-      <div class="pill-buttons" style="margin: 12px 0;">
+      <div class="pill-buttons" style="margin: 12px 0; flex-shrink: 0;">
         <button type="button" id="achTabAchievements" class="pill-button selected">Achievements</button>
         <button type="button" id="achTabStats" class="pill-button">Stats</button>
       </div>
-      <p class="achievement-progress" id="achievementProgress">Achievements: 0 / 22</p>
-      
-      <div class="achievements-container" id="achievementsTabPanel">
-        <div class="achievements-scroll">
-          <div class="achievements-grid" id="achievementsGrid">
-            <!-- Achievement cards will be generated here -->
+      <div class="ach-tab-body">
+        <p class="achievement-progress" id="achievementProgress">Achievements: 0 / 22</p>
+        
+        <div class="achievements-container" id="achievementsTabPanel">
+          <div class="achievements-scroll">
+            <div class="achievements-grid" id="achievementsGrid">
+              <!-- Achievement cards will be generated here -->
+            </div>
           </div>
         </div>
-      </div>
 
-      <div id="statsTabPanel" class="hidden">
-        <div class="achievements-scroll" style="max-height: 68vh; padding-top: 2px;">
-          <div class="stats-hero-card">
-            <strong>Your profile</strong><br>
-            High score: <span id="statsLocalHighScore">0</span> · Highest level: <span id="statsLocalHighestLevel">1</span> · Words spelled: <span id="statsLocalWordCount">0</span><br>
-            <span id="statsLocalMpRow">Challenge wins 0 · losses 0 · score 0</span>
-          </div>
-          <label style="font-size: 0.5rem; display: block; margin-bottom: 4px;">Name on leaderboard (optional)</label>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
-            <input id="statsDisplayNameInput" maxlength="24" style="flex: 1; min-width: 160px; font-size: 0.55rem; padding: 8px;">
-            <button type="button" id="statsSaveDisplayName" class="pill-button">Save</button>
-          </div>
-          <p id="statsOnlineMessage" style="font-size: 0.45rem; color: #94a3b8; margin-bottom: 8px;"></p>
-          <p id="statsMpOnlineRow" style="font-size: 0.46rem; color: #fcd34d; margin-bottom: 10px; line-height: 1.5;"></p>
+        <div id="statsTabPanel" class="achievements-container hidden">
+          <div class="achievements-scroll">
+            <div class="stats-hero-card">
+              <strong>Your profile</strong><br>
+              High score: <span id="statsLocalHighScore">0</span> · Highest level: <span id="statsLocalHighestLevel">1</span> · Words spelled: <span id="statsLocalWordCount">0</span>
+            </div>
+            <h3 style="font-size: 0.6rem; color: #fcd34d; margin: 12px 0 6px;">Multiplayer</h3>
+            <p id="statsLocalMpRow" style="font-size: 0.46rem; color: #cbd5e1; margin-bottom: 8px; line-height: 1.5;">Challenge wins 0 · losses 0 · score 0</p>
+            <p id="statsMpOnlineRow" style="font-size: 0.46rem; color: #fcd34d; margin-bottom: 12px; line-height: 1.5;"></p>
+            <label style="font-size: 0.5rem; display: block; margin-bottom: 4px;">Name on leaderboard (optional)</label>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
+              <input id="statsDisplayNameInput" maxlength="24" style="flex: 1; min-width: 160px; font-size: 0.55rem; padding: 8px;">
+              <button type="button" id="statsSaveDisplayName" class="pill-button">Save</button>
+            </div>
+            <p id="statsOnlineMessage" style="font-size: 0.45rem; color: #94a3b8; margin-bottom: 8px;"></p>
           <h3 style="font-size: 0.6rem; color: #fcd34d; margin-bottom: 6px;">Global score chart</h3>
           <div id="statsLeaderboardList" style="font-size: 0.48rem; line-height: 1.5;"></div>
           <button type="button" id="statsRefreshLeaderboard" class="pill-button" style="margin-top: 12px;">Refresh list</button>
           <h3 style="font-size: 0.6rem; color: #fcd34d; margin: 14px 0 6px;">Challenge history</h3>
           <div id="statsMatchHistoryList" class="match-history-list"></div>
+          </div>
         </div>
       </div>
       
-      <div class="pill-buttons" style="margin-top: 16px;">
+      <div class="pill-buttons" style="margin-top: 16px; flex-shrink: 0;">
         <button id="closeAchievementsButton" class="pill-button ghost">Back</button>
       </div>
     </div>
@@ -5986,6 +6117,13 @@
         challengeResumeHint: document.getElementById('challengeResumeHint'),
         challengeContinueButton: document.getElementById('challengeContinueButton'),
         openChallengeProfileButton: document.getElementById('openChallengeProfileButton'),
+        challengeProfileCorner: document.getElementById('challengeProfileCorner'),
+        challengeProfileToggle: document.getElementById('challengeProfileToggle'),
+        challengeProfilePanel: document.getElementById('challengeProfilePanel'),
+        challengeProfileChipName: document.getElementById('challengeProfileChipName'),
+        challengeProfileChipMp: document.getElementById('challengeProfileChipMp'),
+        challengeProfileMpLocal: document.getElementById('challengeProfileMpLocal'),
+        challengeProfileMpOnline: document.getElementById('challengeProfileMpOnline'),
         challengeDisplayNameInput: document.getElementById('challengeDisplayNameInput'),
         challengeSaveDisplayName: document.getElementById('challengeSaveDisplayName'),
         challengeJoinDisplayNameInput: document.getElementById('challengeJoinDisplayNameInput'),
@@ -6257,6 +6395,61 @@
         const n = loadDisplayName();
         if (dom.challengeDisplayNameInput) dom.challengeDisplayNameInput.value = n;
         if (dom.challengeJoinDisplayNameInput) dom.challengeJoinDisplayNameInput.value = n;
+        refreshChallengeProfileCorner();
+      }
+
+      function setChallengeProfilePanelOpen(open) {
+        if (dom.challengeProfilePanel) dom.challengeProfilePanel.classList.toggle('hidden', !open);
+        if (dom.challengeProfileToggle) {
+          dom.challengeProfileToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+      }
+
+      function refreshChallengeProfileCorner() {
+        const name = loadDisplayName() || 'Player';
+        const mp = loadLocalMpStats();
+        if (dom.challengeProfileChipName) dom.challengeProfileChipName.textContent = name;
+        if (dom.challengeProfileChipMp) {
+          dom.challengeProfileChipMp.textContent = `${mp.wins}W · ${mp.losses}L`;
+        }
+        if (dom.challengeProfileMpLocal) {
+          dom.challengeProfileMpLocal.textContent =
+            `Local: ${mp.wins} wins · ${mp.losses} losses · ${mp.score} pts · ${mp.words} words`;
+        }
+        if (dom.challengeProfileMpOnline) {
+          dom.challengeProfileMpOnline.textContent = SquirrelApi.isConfigured()
+            ? 'Loading online stats…'
+            : 'Connect the API to sync online multiplayer stats.';
+        }
+        if (!SquirrelApi.isConfigured() || !dom.challengeProfileMpOnline) return;
+        void (async () => {
+          try {
+            const list = await SquirrelApi.fetchLeaderboard(30);
+            const myId = getOrCreatePlayerId();
+            const row = Array.isArray(list) ? list.find((r) => r.player_id === myId) : null;
+            if (!dom.challengeProfileMpOnline) return;
+            if (row) {
+              dom.challengeProfileMpOnline.textContent =
+                `Online: ${row.mp_wins ?? 0}W · ${row.mp_losses ?? 0}L · ${row.mp_total_score ?? 0} challenge pts`;
+            } else {
+              dom.challengeProfileMpOnline.textContent =
+                'No online record yet — finish a challenge match to sync.';
+            }
+          } catch (e) {
+            if (dom.challengeProfileMpOnline) {
+              dom.challengeProfileMpOnline.textContent = 'Could not load online stats.';
+            }
+          }
+        })();
+      }
+
+      function showChallengeHostTab(autoCreateCode) {
+        if (dom.challengeTabHost) dom.challengeTabHost.classList.add('selected');
+        if (dom.challengeTabJoin) dom.challengeTabJoin.classList.remove('selected');
+        if (dom.challengeHostPanel) dom.challengeHostPanel.classList.remove('hidden');
+        if (dom.challengeJoinPanel) dom.challengeJoinPanel.classList.add('hidden');
+        updateChallengeVersusHint();
+        void createHostedChallengeRoom(Boolean(autoCreateCode));
       }
 
       function hostChallengeDisplayNameForApi() {
@@ -9461,6 +9654,16 @@
       // Changelog Data
       const CHANGELOG = [
         {
+          version: '2.6',
+          date: '2026-05-19',
+          changes: [
+            'Stats tab fills the screen like Achievements — multiplayer stats sit at the top instead of the bottom',
+            'Challenge mode: profile chip top-right to change your name and view local/online MP stats',
+            'Host tab auto-generates a room code when you open Challenge mode or tap Host',
+            'Room code and status moved to the top of the host panel for quicker sharing'
+          ]
+        },
+        {
           version: '2.5',
           date: '2026-05-17',
           changes: [
@@ -9598,7 +9801,7 @@
         }
       ];
       
-      const CURRENT_VERSION = '2.5';
+      const CURRENT_VERSION = '2.6';
       const LAST_SEEN_VERSION_KEY = 'squirrelStreet.lastSeenVersion';
 
       function checkChangelogBadge() {
@@ -9618,6 +9821,10 @@
         const menuVersion = document.getElementById('menuVersion');
         if (menuVersion) {
           menuVersion.textContent = 'v' + CURRENT_VERSION;
+        }
+        const screenVersion = document.getElementById('screenVersion');
+        if (screenVersion) {
+          screenVersion.textContent = 'v' + CURRENT_VERSION;
         }
       }
 
@@ -16205,6 +16412,7 @@
         if (hostChallengeCreating) return;
         hostChallengeCreating = true;
         try {
+          if (dom.challengeHostCodeDisplay) dom.challengeHostCodeDisplay.textContent = 'Generating code…';
           if (dom.challengeHostStatus) dom.challengeHostStatus.textContent = 'Creating room…';
           const reserved =
             leaderboardChallengeTarget && leaderboardChallengeTarget.id
@@ -16276,11 +16484,25 @@
             refreshChallengeResumeUi();
             void refreshActiveChallengesPanel();
             if (window.FB && loadFacebookId()) renderFbFriendsList();
-            if (dom.challengeTabHost && dom.challengeTabHost.classList.contains('selected')) {
-              void createHostedChallengeRoom(false);
-            }
+            setChallengeProfilePanelOpen(false);
+            showChallengeHostTab(true);
           });
         }
+        if (dom.challengeProfileToggle) {
+          dom.challengeProfileToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const willOpen =
+              dom.challengeProfilePanel && dom.challengeProfilePanel.classList.contains('hidden');
+            setChallengeProfilePanelOpen(willOpen);
+            if (willOpen) refreshChallengeProfileCorner();
+          });
+        }
+        document.addEventListener('click', (e) => {
+          if (!dom.challengeOverlay || dom.challengeOverlay.classList.contains('hidden')) return;
+          if (dom.challengeProfileCorner && !dom.challengeProfileCorner.contains(e.target)) {
+            setChallengeProfilePanelOpen(false);
+          }
+        });
         if (dom.closeChallengeOverlayButton) {
           dom.closeChallengeOverlayButton.addEventListener('click', () => {
             hostChallengePayload = null;
@@ -16290,18 +16512,14 @@
         }
         if (dom.challengeTabHost && dom.challengeTabJoin && dom.challengeHostPanel && dom.challengeJoinPanel) {
           dom.challengeTabHost.addEventListener('click', () => {
-            dom.challengeTabHost.classList.add('selected');
-            dom.challengeTabJoin.classList.remove('selected');
-            dom.challengeHostPanel.classList.remove('hidden');
-            dom.challengeJoinPanel.classList.add('hidden');
-            updateChallengeVersusHint();
-            void createHostedChallengeRoom(false);
+            showChallengeHostTab(true);
           });
           dom.challengeTabJoin.addEventListener('click', () => {
             dom.challengeTabJoin.classList.add('selected');
             dom.challengeTabHost.classList.remove('selected');
             dom.challengeJoinPanel.classList.remove('hidden');
             dom.challengeHostPanel.classList.add('hidden');
+            setChallengeProfilePanelOpen(false);
             if (dom.challengeJoinDisplayNameInput) dom.challengeJoinDisplayNameInput.value = loadDisplayName();
           });
         }
@@ -16312,6 +16530,7 @@
         }
         if (dom.openChallengeProfileButton) {
           dom.openChallengeProfileButton.addEventListener('click', () => {
+            setChallengeProfilePanelOpen(false);
             toggle(dom.challengeOverlay, false);
             showAchievementsTab('stats');
             refreshStatsPanel();
@@ -16326,7 +16545,9 @@
             syncChallengeNameInputsFromStorage();
             if (dom.statsDisplayNameInput) dom.statsDisplayNameInput.value = loadDisplayName();
             showToast('Display name saved');
-            if (hostChallengePayload) void createHostedChallengeRoom(true);
+            if (dom.challengeTabHost && dom.challengeTabHost.classList.contains('selected')) {
+              void createHostedChallengeRoom(true);
+            }
           });
         }
         if (dom.challengeJoinSaveDisplayName) {
