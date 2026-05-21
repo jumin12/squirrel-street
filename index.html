@@ -4787,7 +4787,7 @@
   </script>
 </head>
 <body>
-  <div id="screenVersion" class="screen-version-label" aria-hidden="true">v2.6</div>
+  <div id="screenVersion" class="screen-version-label" aria-hidden="true">v2.7</div>
   <div id="preloadScreen" class="screen">
     <div class="logo">Squirrel Street</div>
     <div class="menu-card">
@@ -4857,7 +4857,7 @@
             </span>
         </div>
       </div>
-      <div id="menuVersion" style="text-align: right; margin-top: 8px; font-size: 0.6rem; color: rgba(255,255,255,0.3);">v2.6</div>
+      <div id="menuVersion" style="text-align: right; margin-top: 8px; font-size: 0.6rem; color: rgba(255,255,255,0.3);">v2.7</div>
     </div>
   </div>
 
@@ -9697,8 +9697,17 @@
       // Changelog Data
       const CHANGELOG = [
         {
-          version: '2.6',
+          version: '2.7',
           date: '2026-05-19',
+          changes: [
+            'Stats tab uses stacked panels so multiplayer stats stay pinned at the top of the screen',
+            'Challenge mode shows an always-visible profile card top-right — edit name and view MP stats without extra taps',
+            'Host tab always generates a fresh room code (same as New room code) when opened or selected',
+            'Stats tab scroll resets to the top when you switch from Achievements'
+          ]
+        },
+        {
+          version: '2.6',
           changes: [
             'Stats tab fills the screen like Achievements — multiplayer stats sit at the top instead of the bottom',
             'Challenge mode: profile chip top-right to change your name and view local/online MP stats',
@@ -9844,7 +9853,7 @@
         }
       ];
       
-      const CURRENT_VERSION = '2.6';
+      const CURRENT_VERSION = '2.7';
       const LAST_SEEN_VERSION_KEY = 'squirrelStreet.lastSeenVersion';
 
       function checkChangelogBadge() {
