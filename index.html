@@ -1136,30 +1136,74 @@
     }
 
     #achievementsOverlay .ach-tab-body {
+      position: relative;
       flex: 1;
-      min-height: 0;
+      min-height: min(62vh, calc(var(--app-height, 100vh) - 220px));
       width: 100%;
+    }
+
+    #achievementsOverlay .ach-tab-panel {
+      position: absolute;
+      inset: 0;
       display: flex;
       flex-direction: column;
-    }
-
-    #achievementsOverlay .achievements-container {
-      flex: 1;
       min-height: 0;
-      display: flex;
-      flex-direction: column;
+      overflow: hidden;
     }
 
-    #achievementsOverlay .achievements-container .achievements-scroll {
-      flex: 1;
-      min-height: 0;
-      max-height: none;
-    }
-
-    /* Tab panels use .hidden (opacity/visibility only); remove from layout so the inactive tab does not reserve ~60vh and push Stats to the bottom. */
-    #achievementsOverlay #achievementsTabPanel.hidden,
-    #achievementsOverlay #statsTabPanel.hidden {
+    #achievementsOverlay .ach-tab-panel.hidden {
       display: none !important;
+    }
+
+    #achievementsOverlay .ach-tab-panel .achievements-scroll {
+      flex: 1;
+      min-height: 0;
+      max-height: none !important;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    #achievementsOverlay #statsTabPanel .stats-mp-hero {
+      flex-shrink: 0;
+      margin-bottom: 12px;
+      padding: 12px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(30, 64, 175, 0.5), rgba(15, 23, 42, 0.78));
+      border: 1px solid rgba(250, 204, 21, 0.35);
+      text-align: left;
+    }
+
+    #achievementsOverlay #statsTabPanel .stats-mp-hero h3 {
+      margin: 0 0 8px;
+      font-size: 0.62rem;
+      color: #fcd34d;
+    }
+
+    .challenge-profile-card {
+      width: min(200px, 42vw);
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 2px solid rgba(125, 211, 252, 0.45);
+      background: linear-gradient(135deg, rgba(30, 64, 175, 0.55), rgba(15, 23, 42, 0.88));
+      text-align: left;
+    }
+
+    .challenge-profile-card label {
+      font-size: 0.36rem;
+      color: #94a3b8;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .challenge-profile-card .challenge-profile-mp {
+      font-size: 0.36rem;
+      color: #cbd5e1;
+      margin: 6px 0 0;
+      line-height: 1.45;
+    }
+
+    .challenge-profile-card .challenge-profile-mp.online {
+      color: #7dd3fc;
     }
 
     #challengeOverlay .modal.challenge-modal {
@@ -4834,19 +4878,17 @@
       <div class="challenge-modal-header">
         <h2>Challenge mode</h2>
         <div class="challenge-profile-corner" id="challengeProfileCorner">
-          <button type="button" id="challengeProfileToggle" class="challenge-profile-chip" aria-expanded="false" aria-controls="challengeProfilePanel">
-            <strong id="challengeProfileChipName">Player</strong>
-            <span id="challengeProfileChipMp">0W · 0L</span>
-          </button>
-          <div id="challengeProfilePanel" class="challenge-profile-panel hidden">
-            <label style="font-size: 0.42rem; display: block; margin-bottom: 4px;">Your name</label>
-            <div style="display: flex; gap: 6px; margin-bottom: 10px;">
-              <input id="challengeDisplayNameInput" maxlength="24" style="flex: 1; min-width: 0; font-size: 0.48rem; padding: 6px;">
-              <button type="button" id="challengeSaveDisplayName" class="pill-button" style="font-size: 0.36rem;">Save</button>
+          <div class="challenge-profile-card" id="challengeProfilePanel">
+            <label>Your name</label>
+            <div style="display: flex; gap: 6px; margin-bottom: 4px;">
+              <input id="challengeDisplayNameInput" maxlength="24" style="flex: 1; min-width: 0; font-size: 0.44rem; padding: 5px;">
+              <button type="button" id="challengeSaveDisplayName" class="pill-button" style="font-size: 0.34rem;">Save</button>
             </div>
-            <p id="challengeProfileMpLocal" style="font-size: 0.4rem; color: #cbd5e1; margin: 0 0 6px; line-height: 1.45;"></p>
-            <p id="challengeProfileMpOnline" style="font-size: 0.38rem; color: #7dd3fc; margin: 0 0 10px; line-height: 1.45;"></p>
-            <button type="button" id="openChallengeProfileButton" class="pill-button ghost" style="width: 100%; font-size: 0.38rem;">Full stats &amp; leaderboard</button>
+            <strong id="challengeProfileChipName" style="display:none;">Player</strong>
+            <span id="challengeProfileChipMp" style="display:none;">0W · 0L</span>
+            <p id="challengeProfileMpLocal" class="challenge-profile-mp"></p>
+            <p id="challengeProfileMpOnline" class="challenge-profile-mp online"></p>
+            <button type="button" id="openChallengeProfileButton" class="pill-button ghost" style="width: 100%; margin-top: 8px; font-size: 0.34rem;">Full stats</button>
           </div>
         </div>
       </div>
@@ -5411,9 +5453,8 @@
         <button type="button" id="achTabStats" class="pill-button">Stats</button>
       </div>
       <div class="ach-tab-body">
-        <p class="achievement-progress" id="achievementProgress">Achievements: 0 / 22</p>
-        
-        <div class="achievements-container" id="achievementsTabPanel">
+        <div class="achievements-container ach-tab-panel" id="achievementsTabPanel">
+          <p class="achievement-progress" id="achievementProgress">Achievements: 0 / 22</p>
           <div class="achievements-scroll">
             <div class="achievements-grid" id="achievementsGrid">
               <!-- Achievement cards will be generated here -->
@@ -5421,15 +5462,17 @@
           </div>
         </div>
 
-        <div id="statsTabPanel" class="achievements-container hidden">
+        <div id="statsTabPanel" class="achievements-container ach-tab-panel hidden">
           <div class="achievements-scroll">
+            <div class="stats-mp-hero">
+              <h3>Multiplayer stats</h3>
+              <p id="statsLocalMpRow" style="font-size: 0.46rem; color: #e2e8f0; margin: 0 0 6px; line-height: 1.5;">Challenge wins 0 · losses 0 · score 0</p>
+              <p id="statsMpOnlineRow" style="font-size: 0.44rem; color: #fcd34d; margin: 0; line-height: 1.5;"></p>
+            </div>
             <div class="stats-hero-card">
-              <strong>Your profile</strong><br>
+              <strong>Solo profile</strong><br>
               High score: <span id="statsLocalHighScore">0</span> · Highest level: <span id="statsLocalHighestLevel">1</span> · Words spelled: <span id="statsLocalWordCount">0</span>
             </div>
-            <h3 style="font-size: 0.6rem; color: #fcd34d; margin: 12px 0 6px;">Multiplayer</h3>
-            <p id="statsLocalMpRow" style="font-size: 0.46rem; color: #cbd5e1; margin-bottom: 8px; line-height: 1.5;">Challenge wins 0 · losses 0 · score 0</p>
-            <p id="statsMpOnlineRow" style="font-size: 0.46rem; color: #fcd34d; margin-bottom: 12px; line-height: 1.5;"></p>
             <label style="font-size: 0.5rem; display: block; margin-bottom: 4px;">Name on leaderboard (optional)</label>
             <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
               <input id="statsDisplayNameInput" maxlength="24" style="flex: 1; min-width: 160px; font-size: 0.55rem; padding: 8px;">
@@ -6443,13 +6486,13 @@
         })();
       }
 
-      function showChallengeHostTab(autoCreateCode) {
+      function showChallengeHostTab() {
         if (dom.challengeTabHost) dom.challengeTabHost.classList.add('selected');
         if (dom.challengeTabJoin) dom.challengeTabJoin.classList.remove('selected');
         if (dom.challengeHostPanel) dom.challengeHostPanel.classList.remove('hidden');
         if (dom.challengeJoinPanel) dom.challengeJoinPanel.classList.add('hidden');
         updateChallengeVersusHint();
-        void createHostedChallengeRoom(Boolean(autoCreateCode));
+        void createHostedChallengeRoom(true);
       }
 
       function hostChallengeDisplayNameForApi() {
@@ -10575,9 +10618,9 @@
         if (dom.achTabStats) dom.achTabStats.classList.toggle('selected', !achievements);
         if (dom.achievementsTabPanel) dom.achievementsTabPanel.classList.toggle('hidden', !achievements);
         if (dom.statsTabPanel) dom.statsTabPanel.classList.toggle('hidden', achievements);
-        const progressEl = document.getElementById('achievementProgress');
-        if (progressEl) progressEl.style.display = achievements ? '' : 'none';
-        if (!achievements) {
+        if (!achievements && dom.statsTabPanel) {
+          const statsScroll = dom.statsTabPanel.querySelector('.achievements-scroll');
+          if (statsScroll) statsScroll.scrollTop = 0;
           refreshStatsPanel();
         }
       }
@@ -16484,25 +16527,9 @@
             refreshChallengeResumeUi();
             void refreshActiveChallengesPanel();
             if (window.FB && loadFacebookId()) renderFbFriendsList();
-            setChallengeProfilePanelOpen(false);
-            showChallengeHostTab(true);
+            showChallengeHostTab();
           });
         }
-        if (dom.challengeProfileToggle) {
-          dom.challengeProfileToggle.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const willOpen =
-              dom.challengeProfilePanel && dom.challengeProfilePanel.classList.contains('hidden');
-            setChallengeProfilePanelOpen(willOpen);
-            if (willOpen) refreshChallengeProfileCorner();
-          });
-        }
-        document.addEventListener('click', (e) => {
-          if (!dom.challengeOverlay || dom.challengeOverlay.classList.contains('hidden')) return;
-          if (dom.challengeProfileCorner && !dom.challengeProfileCorner.contains(e.target)) {
-            setChallengeProfilePanelOpen(false);
-          }
-        });
         if (dom.closeChallengeOverlayButton) {
           dom.closeChallengeOverlayButton.addEventListener('click', () => {
             hostChallengePayload = null;
@@ -16512,14 +16539,13 @@
         }
         if (dom.challengeTabHost && dom.challengeTabJoin && dom.challengeHostPanel && dom.challengeJoinPanel) {
           dom.challengeTabHost.addEventListener('click', () => {
-            showChallengeHostTab(true);
+            showChallengeHostTab();
           });
           dom.challengeTabJoin.addEventListener('click', () => {
             dom.challengeTabJoin.classList.add('selected');
             dom.challengeTabHost.classList.remove('selected');
             dom.challengeJoinPanel.classList.remove('hidden');
             dom.challengeHostPanel.classList.add('hidden');
-            setChallengeProfilePanelOpen(false);
             if (dom.challengeJoinDisplayNameInput) dom.challengeJoinDisplayNameInput.value = loadDisplayName();
           });
         }
@@ -16530,7 +16556,6 @@
         }
         if (dom.openChallengeProfileButton) {
           dom.openChallengeProfileButton.addEventListener('click', () => {
-            setChallengeProfilePanelOpen(false);
             toggle(dom.challengeOverlay, false);
             showAchievementsTab('stats');
             refreshStatsPanel();
