@@ -4857,7 +4857,6 @@
             </span>
         </div>
       </div>
-      <div id="menuVersion" style="text-align: right; margin-top: 8px; font-size: 0.6rem; color: rgba(255,255,255,0.3);">v2.7</div>
     </div>
   </div>
 
@@ -9870,11 +9869,7 @@
             if (optionsBadge) optionsBadge.classList.add('hidden');
         }
         
-        // Update main menu version display if element exists
-        const menuVersion = document.getElementById('menuVersion');
-        if (menuVersion) {
-          menuVersion.textContent = 'v' + CURRENT_VERSION;
-        }
+        // Single version label (bottom-right); driven by CURRENT_VERSION only
         const screenVersion = document.getElementById('screenVersion');
         if (screenVersion) {
           screenVersion.textContent = 'v' + CURRENT_VERSION;
