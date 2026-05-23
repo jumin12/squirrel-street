@@ -1125,7 +1125,7 @@
     }
 
     #achievementsOverlay .modal {
-      background: linear-gradient(rgba(28, 32, 48, 0.9), rgba(18, 21, 32, 0.95)), url('art/images/background2.png');
+      background: linear-gradient(rgba(46, 29, 16, 0.9), rgba(28, 18, 10, 0.94)), url('art/images/background1.png');
       background-size: cover, cover;
       background-position: center, center;
       background-repeat: no-repeat, no-repeat;
@@ -1163,53 +1163,83 @@
       -webkit-overflow-scrolling: touch;
     }
 
-    #achievementsOverlay #statsTabPanel .stats-mp-hero {
-      flex-shrink: 0;
+    .stats-wood-panel {
       margin-bottom: 12px;
-      padding: 12px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, rgba(30, 64, 175, 0.5), rgba(15, 23, 42, 0.78));
-      border: 1px solid rgba(250, 204, 21, 0.35);
+      padding: 14px 16px;
+      background: rgba(74, 44, 26, 0.72);
+      border: 3px solid #5D4037;
+      box-shadow:
+        inset 2px 2px 0 rgba(205, 133, 63, 0.35),
+        inset -2px -2px 0 rgba(0, 0, 0, 0.45),
+        3px 3px 0 rgba(0, 0, 0, 0.55);
       text-align: left;
     }
 
-    #achievementsOverlay #statsTabPanel .stats-mp-hero h3 {
-      margin: 0 0 8px;
+    .stats-panel-title {
+      margin: 0 0 10px;
       font-size: 0.62rem;
-      color: #fcd34d;
+      color: #FFD700;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.55);
     }
 
-    .challenge-profile-card {
-      width: min(200px, 42vw);
-      padding: 8px 10px;
-      border-radius: 10px;
-      border: 2px solid rgba(125, 211, 252, 0.45);
-      background: linear-gradient(135deg, rgba(30, 64, 175, 0.55), rgba(15, 23, 42, 0.88));
-      text-align: left;
+    .stats-panel-row {
+      margin: 0 0 6px;
+      font-size: 0.46rem;
+      color: #FFF;
+      line-height: 1.55;
+      text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.45);
     }
 
-    .challenge-profile-card label {
-      font-size: 0.36rem;
-      color: #94a3b8;
-      display: block;
-      margin-bottom: 4px;
+    .stats-panel-row:last-child {
+      margin-bottom: 0;
     }
 
-    .challenge-profile-card .challenge-profile-mp {
-      font-size: 0.36rem;
-      color: #cbd5e1;
-      margin: 6px 0 0;
+    .stats-panel-highlight {
+      color: #FFD700;
+    }
+
+    .stats-panel-hint {
+      font-size: 0.4rem;
+      color: rgba(255, 255, 255, 0.78);
+      margin: 0 0 8px;
       line-height: 1.45;
     }
 
-    .challenge-profile-card .challenge-profile-mp.online {
-      color: #7dd3fc;
+    .stats-name-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+
+    .stats-name-row input {
+      flex: 1;
+      min-width: 140px;
+      font-size: 0.52rem;
+      padding: 8px 10px;
+      border: 2px solid #5D4037;
+      background: rgba(0, 0, 0, 0.35);
+      color: #FFF;
+    }
+
+    .stats-refresh-btn {
+      margin-top: 10px;
+    }
+
+    #achievementsOverlay #statsTabPanel .stats-scroll {
+      padding-right: 4px;
     }
 
     #challengeOverlay .modal.challenge-modal {
       position: relative;
       max-height: min(90vh, calc(var(--app-height, 100vh) - 20px));
       overflow-y: auto;
+      background: linear-gradient(rgba(46, 29, 16, 0.92), rgba(28, 18, 10, 0.96)), url('art/images/background1.png');
+      background-size: cover, cover;
+      background-position: center, center;
+      background-repeat: no-repeat, no-repeat;
     }
 
     .challenge-modal-header {
@@ -1231,10 +1261,118 @@
       position: relative;
       flex-shrink: 0;
       z-index: 2;
+      max-width: min(220px, 46vw);
+    }
+
+    .challenge-profile-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 8px 10px;
+      border: 3px solid #5D4037;
+      background: rgba(74, 44, 26, 0.88);
+      color: #FFF;
+      cursor: pointer;
+      text-align: left;
+      box-shadow:
+        inset 2px 2px 0 rgba(205, 133, 63, 0.35),
+        inset -2px -2px 0 rgba(0, 0, 0, 0.45),
+        2px 2px 0 rgba(0, 0, 0, 0.55);
+    }
+
+    .challenge-profile-toggle:hover {
+      background: rgba(93, 64, 55, 0.92);
+    }
+
+    .challenge-profile-acorn {
+      width: 22px;
+      height: 22px;
+      flex-shrink: 0;
+      image-rendering: pixelated;
+    }
+
+    .challenge-profile-toggle-text {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .challenge-profile-toggle-label {
+      font-size: 0.32rem;
+      color: rgba(255, 215, 0, 0.85);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .challenge-profile-toggle strong {
+      font-size: 0.44rem;
+      color: #FFD700;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .challenge-profile-toggle span#challengeProfileChipMp {
+      font-size: 0.34rem;
+      color: rgba(255, 255, 255, 0.82);
+    }
+
+    .challenge-profile-chevron {
+      font-size: 0.34rem;
+      color: #FFD700;
+      transition: transform 0.2s ease;
+    }
+
+    .challenge-profile-toggle[aria-expanded="true"] .challenge-profile-chevron {
+      transform: rotate(180deg);
+    }
+
+    .challenge-profile-panel label {
+      font-size: 0.38rem;
+      color: rgba(255, 215, 0, 0.9);
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .challenge-profile-name-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .challenge-profile-name-row input {
+      flex: 1;
+      min-width: 0;
+      font-size: 0.44rem;
+      padding: 6px 8px;
+      border: 2px solid #5D4037;
+      background: rgba(0, 0, 0, 0.35);
+      color: #FFF;
+    }
+
+    .challenge-profile-panel .challenge-profile-mp {
+      font-size: 0.38rem;
+      color: #FFF;
+      margin: 4px 0 0;
+      line-height: 1.45;
+      text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.4);
+    }
+
+    .challenge-profile-panel .challenge-profile-mp.online {
+      color: #FFD700;
+    }
+
+    .challenge-profile-stats-btn {
+      width: 100%;
+      margin-top: 10px;
+      font-size: 0.36rem !important;
     }
 
     .challenge-profile-chip {
-      display: flex;
+      display: none;
       flex-direction: column;
       align-items: flex-end;
       gap: 2px;
@@ -1260,15 +1398,14 @@
     }
 
     .challenge-profile-panel {
-      position: absolute;
-      top: calc(100% + 6px);
-      right: 0;
-      width: min(260px, 78vw);
-      padding: 12px;
-      border-radius: 12px;
-      border: 2px solid rgba(125, 211, 252, 0.35);
-      background: linear-gradient(165deg, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.99));
-      box-shadow: 4px 6px 16px rgba(0, 0, 0, 0.45);
+      margin-top: 8px;
+      padding: 10px 12px;
+      border: 3px solid #5D4037;
+      background: rgba(74, 44, 26, 0.95);
+      box-shadow:
+        inset 2px 2px 0 rgba(205, 133, 63, 0.3),
+        inset -2px -2px 0 rgba(0, 0, 0, 0.45),
+        3px 3px 0 rgba(0, 0, 0, 0.55);
       text-align: left;
     }
 
@@ -1276,12 +1413,44 @@
       display: none !important;
     }
 
+    .challenge-active-card {
+      padding: 10px 12px;
+      background: rgba(74, 44, 26, 0.65);
+      border: 3px solid #5D4037;
+      box-shadow:
+        inset 2px 2px 0 rgba(205, 133, 63, 0.25),
+        inset -2px -2px 0 rgba(0, 0, 0, 0.4),
+        2px 2px 0 rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .challenge-active-card-info {
+      font-size: 0.42rem;
+      line-height: 1.45;
+      color: #FFF;
+      text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.4);
+    }
+
+    .challenge-active-card-info strong {
+      color: #FFD700;
+    }
+
+    .challenge-active-card-info .muted {
+      color: rgba(255, 255, 255, 0.72);
+    }
+
     .challenge-host-code-block {
       margin: 10px 0 14px;
       padding: 12px;
-      border-radius: 12px;
-      background: rgba(0, 0, 0, 0.35);
-      border: 1px solid rgba(250, 204, 21, 0.35);
+      background: rgba(74, 44, 26, 0.55);
+      border: 3px solid #5D4037;
+      box-shadow:
+        inset 2px 2px 0 rgba(205, 133, 63, 0.25),
+        inset -2px -2px 0 rgba(0, 0, 0, 0.4);
     }
 
     #challengeOverlay #challengeHostPanel.hidden,
@@ -4567,11 +4736,11 @@
     }
 
     .leaderboard-chart-wrap {
-      border-radius: 12px;
-      background: rgba(15, 23, 42, 0.55);
-      border: 1px solid rgba(148, 163, 184, 0.35);
+      border: 3px solid #5D4037;
+      background: rgba(0, 0, 0, 0.28);
       overflow: hidden;
       margin-top: 8px;
+      box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.35);
     }
     .leaderboard-row {
       display: grid;
@@ -4579,56 +4748,53 @@
       gap: 8px;
       align-items: center;
       padding: 10px 12px;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
+      border-bottom: 1px solid rgba(93, 64, 55, 0.65);
       font-size: 0.42rem;
       line-height: 1.45;
     }
     .leaderboard-row:last-child { border-bottom: none; }
     .leaderboard-row.you {
-      background: linear-gradient(90deg, rgba(250, 204, 21, 0.22), rgba(15,23,42,0));
-      box-shadow: inset 3px 0 0 0 #facc15;
+      background: linear-gradient(90deg, rgba(255, 215, 0, 0.18), rgba(74, 44, 26, 0));
+      box-shadow: inset 3px 0 0 0 #FFD700;
     }
-    .leaderboard-rank { color: #94a3b8; font-variant-numeric: tabular-nums; text-align: right; }
-    .leaderboard-name { color: #e2e8f0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .leaderboard-meta { color: #7dd3fc; font-size: 0.38rem; text-align: right; white-space: nowrap; }
+    .leaderboard-rank { color: rgba(255, 255, 255, 0.65); font-variant-numeric: tabular-nums; text-align: right; }
+    .leaderboard-name { color: #FFF; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .leaderboard-meta { color: #FFD700; font-size: 0.38rem; text-align: right; white-space: nowrap; }
     .leaderboard-bar-track {
       position: relative;
       min-height: 28px;
       border-radius: 999px;
-      background: rgba(15, 23, 42, 0.85);
+      background: rgba(0, 0, 0, 0.45);
       overflow: hidden;
-      border: 1px solid rgba(125, 211, 252, 0.18);
+      border: 2px solid #5D4037;
     }
     .leaderboard-bar-fill {
       position: absolute;
       inset: 0 auto 0 0;
       width: var(--bar-width, 0%);
-      background: linear-gradient(90deg, rgba(56, 189, 248, 0.85), rgba(34, 197, 94, 0.72));
+      background: linear-gradient(90deg, rgba(205, 133, 63, 0.9), rgba(139, 69, 19, 0.85));
     }
     .leaderboard-row.you .leaderboard-bar-fill {
-      background: linear-gradient(90deg, rgba(250, 204, 21, 0.95), rgba(251, 146, 60, 0.8));
+      background: linear-gradient(90deg, rgba(255, 215, 0, 0.95), rgba(255, 140, 0, 0.85));
     }
     .leaderboard-bar-label {
       position: relative;
       z-index: 1;
       display: block;
       padding: 7px 8px;
-      color: #f8fafc;
+      color: #FFF;
       text-align: right;
       text-shadow: 1px 1px 0 rgba(0,0,0,0.65);
       font-variant-numeric: tabular-nums;
     }
-    .stats-hero-card {
-      margin-bottom: 10px;
-      padding: 12px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, rgba(30, 64, 175, 0.42), rgba(15, 23, 42, 0.72));
-      border: 1px solid rgba(125, 211, 252, 0.26);
-      font-size: 0.45rem;
-      line-height: 1.55;
+    .stats-empty-note {
+      font-size: 0.42rem;
+      color: rgba(255, 255, 255, 0.75);
+      line-height: 1.45;
+      margin: 0;
     }
     .match-history-list {
-      margin-top: 10px;
+      margin-top: 6px;
       display: grid;
       gap: 8px;
       font-size: 0.4rem;
@@ -4636,10 +4802,10 @@
     }
     .match-history-item {
       padding: 9px 10px;
-      border-radius: 10px;
-      background: rgba(15, 23, 42, 0.6);
-      border: 1px solid rgba(148, 163, 184, 0.18);
-      color: #cbd5e1;
+      background: rgba(74, 44, 26, 0.55);
+      border: 2px solid #5D4037;
+      color: #FFF;
+      text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.35);
     }
     #challengeBetweenLevelsOverlay.challenge-between-overlay {
       justify-content: flex-start;
@@ -4787,7 +4953,7 @@
   </script>
 </head>
 <body>
-  <div id="screenVersion" class="screen-version-label" aria-hidden="true">v2.7</div>
+  <div id="screenVersion" class="screen-version-label" aria-hidden="true">v2.8</div>
   <div id="preloadScreen" class="screen">
     <div class="logo">Squirrel Street</div>
     <div class="menu-card">
@@ -4877,17 +5043,24 @@
       <div class="challenge-modal-header">
         <h2>Challenge mode</h2>
         <div class="challenge-profile-corner" id="challengeProfileCorner">
-          <div class="challenge-profile-card" id="challengeProfilePanel">
-            <label>Your name</label>
-            <div style="display: flex; gap: 6px; margin-bottom: 4px;">
-              <input id="challengeDisplayNameInput" maxlength="24" style="flex: 1; min-width: 0; font-size: 0.44rem; padding: 5px;">
-              <button type="button" id="challengeSaveDisplayName" class="pill-button" style="font-size: 0.34rem;">Save</button>
+          <button type="button" id="challengeProfileToggle" class="challenge-profile-toggle" aria-expanded="false" aria-controls="challengeProfilePanel">
+            <img src="art/acorn.png" alt="" class="challenge-profile-acorn" aria-hidden="true">
+            <span class="challenge-profile-toggle-text">
+              <span class="challenge-profile-toggle-label">Your profile</span>
+              <strong id="challengeProfileChipName">Player</strong>
+              <span id="challengeProfileChipMp">0W · 0L</span>
+            </span>
+            <span class="challenge-profile-chevron" aria-hidden="true">▼</span>
+          </button>
+          <div class="challenge-profile-panel hidden" id="challengeProfilePanel">
+            <label for="challengeDisplayNameInput">Display name</label>
+            <div class="challenge-profile-name-row">
+              <input id="challengeDisplayNameInput" maxlength="24" placeholder="Your name">
+              <button type="button" id="challengeSaveDisplayName" class="pill-button">Save</button>
             </div>
-            <strong id="challengeProfileChipName" style="display:none;">Player</strong>
-            <span id="challengeProfileChipMp" style="display:none;">0W · 0L</span>
             <p id="challengeProfileMpLocal" class="challenge-profile-mp"></p>
             <p id="challengeProfileMpOnline" class="challenge-profile-mp online"></p>
-            <button type="button" id="openChallengeProfileButton" class="pill-button ghost" style="width: 100%; margin-top: 8px; font-size: 0.34rem;">Full stats</button>
+            <button type="button" id="openChallengeProfileButton" class="pill-button ghost challenge-profile-stats-btn">View full stats</button>
           </div>
         </div>
       </div>
@@ -5462,27 +5635,34 @@
         </div>
 
         <div id="statsTabPanel" class="achievements-container ach-tab-panel hidden">
-          <div class="achievements-scroll">
-            <div class="stats-mp-hero">
-              <h3>Multiplayer stats</h3>
-              <p id="statsLocalMpRow" style="font-size: 0.46rem; color: #e2e8f0; margin: 0 0 6px; line-height: 1.5;">Challenge wins 0 · losses 0 · score 0</p>
-              <p id="statsMpOnlineRow" style="font-size: 0.44rem; color: #fcd34d; margin: 0; line-height: 1.5;"></p>
-            </div>
-            <div class="stats-hero-card">
-              <strong>Solo profile</strong><br>
-              High score: <span id="statsLocalHighScore">0</span> · Highest level: <span id="statsLocalHighestLevel">1</span> · Words spelled: <span id="statsLocalWordCount">0</span>
-            </div>
-            <label style="font-size: 0.5rem; display: block; margin-bottom: 4px;">Name on leaderboard (optional)</label>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
-              <input id="statsDisplayNameInput" maxlength="24" style="flex: 1; min-width: 160px; font-size: 0.55rem; padding: 8px;">
-              <button type="button" id="statsSaveDisplayName" class="pill-button">Save</button>
-            </div>
-            <p id="statsOnlineMessage" style="font-size: 0.45rem; color: #94a3b8; margin-bottom: 8px;"></p>
-          <h3 style="font-size: 0.6rem; color: #fcd34d; margin-bottom: 6px;">Global score chart</h3>
-          <div id="statsLeaderboardList" style="font-size: 0.48rem; line-height: 1.5;"></div>
-          <button type="button" id="statsRefreshLeaderboard" class="pill-button" style="margin-top: 12px;">Refresh list</button>
-          <h3 style="font-size: 0.6rem; color: #fcd34d; margin: 14px 0 6px;">Challenge history</h3>
-          <div id="statsMatchHistoryList" class="match-history-list"></div>
+          <div class="achievements-scroll stats-scroll">
+            <section class="stats-wood-panel">
+              <h3 class="stats-panel-title">Multiplayer</h3>
+              <p id="statsLocalMpRow" class="stats-panel-row">Challenge wins 0 · losses 0 · score 0</p>
+              <p id="statsMpOnlineRow" class="stats-panel-row stats-panel-highlight"></p>
+            </section>
+            <section class="stats-wood-panel">
+              <h3 class="stats-panel-title">Solo profile</h3>
+              <p class="stats-panel-row">High score: <span id="statsLocalHighScore">0</span> · Highest level: <span id="statsLocalHighestLevel">1</span> · Words spelled: <span id="statsLocalWordCount">0</span></p>
+            </section>
+            <section class="stats-wood-panel">
+              <h3 class="stats-panel-title">Leaderboard name</h3>
+              <p class="stats-panel-hint">Shown on the global score chart (optional)</p>
+              <div class="stats-name-row">
+                <input id="statsDisplayNameInput" maxlength="24" placeholder="Your name">
+                <button type="button" id="statsSaveDisplayName" class="pill-button">Save</button>
+              </div>
+              <p id="statsOnlineMessage" class="stats-panel-hint"></p>
+            </section>
+            <section class="stats-wood-panel">
+              <h3 class="stats-panel-title">Global score chart</h3>
+              <div id="statsLeaderboardList"></div>
+              <button type="button" id="statsRefreshLeaderboard" class="pill-button stats-refresh-btn">Refresh list</button>
+            </section>
+            <section class="stats-wood-panel">
+              <h3 class="stats-panel-title">Challenge history</h3>
+              <div id="statsMatchHistoryList" class="match-history-list"></div>
+            </section>
           </div>
         </div>
       </div>
@@ -6626,6 +6806,30 @@
         toggle(dom.challengeBetweenLevelsOverlay, false);
       }
 
+      let gameRunGeneration = 0;
+      let rejoinChallengeInProgress = false;
+
+      function prepareForNewGameRun() {
+        gameRunGeneration += 1;
+        if (!game) return;
+        game.stopLoop();
+        game._pendingChallengeRound = null;
+        game._runGeneration = gameRunGeneration;
+        game.phase = 'ready';
+        game.lastTimestamp = null;
+        hideChallengeBetweenLevelsOverlay();
+        toggle(dom.pauseOverlay, false);
+        toggle(dom.wordOverlay, false);
+        toggle(dom.stashLetterOverlay, false);
+        toggle(dom.gameOverOverlay, false);
+        toggle(dom.exitConfirmOverlay, false);
+        const container = dom.gameScreen && dom.gameScreen.querySelector('.canvas-container');
+        if (container) {
+          container.classList.remove('transitioning', 'fade-out', 'fade-in');
+          container.classList.add('active');
+        }
+      }
+
       function escapeHtml(value) {
         return String(value == null ? '' : value).replace(/[&<>"']/g, (ch) => ({
           '&': '&amp;',
@@ -6753,19 +6957,16 @@
         }
         rows.forEach((row) => {
           const card = document.createElement('div');
-          card.style.cssText =
-            'padding:10px;border-radius:10px;background:rgba(15,23,42,0.55);border:1px solid rgba(125,211,252,0.2);display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;';
+          card.className = 'challenge-active-card';
           const left = document.createElement('div');
-          left.style.fontSize = '0.42rem';
-          left.style.lineHeight = '1.45';
-          left.style.color = '#e2e8f0';
+          left.className = 'challenge-active-card-info';
           const opp =
             row.host_id === pid
               ? row.guest_id
                 ? `vs ${escapeHtml(row.guest_name || 'Guest')}`
                 : 'Waiting for guest to join'
               : `vs ${escapeHtml(row.host_name || 'Host')}`;
-          left.innerHTML = `<strong style="color:#fcd34d;">${escapeHtml(row.code)}</strong><br>${opp}<br><span style="color:#94a3b8;">World level ~${escapeHtml(String(row.current_level ?? '?'))} · set ${escapeHtml(String(row.host_wins ?? 0))}–${escapeHtml(String(row.guest_wins ?? 0))}</span>`;
+          left.innerHTML = `<strong>${escapeHtml(row.code)}</strong><br>${opp}<br><span class="muted">World level ~${escapeHtml(String(row.current_level ?? '?'))} · set ${escapeHtml(String(row.host_wins ?? 0))}–${escapeHtml(String(row.guest_wins ?? 0))}</span>`;
           const btn = document.createElement('button');
           btn.type = 'button';
           btn.className = 'pill-button';
@@ -6779,6 +6980,7 @@
       }
 
       async function resumeOnlineChallenge(options) {
+        if (rejoinChallengeInProgress) return;
         const rawCode = options && options.code;
         const savedPayload = options && options.savedPayload;
         const norm = String(rawCode || '')
@@ -6788,56 +6990,69 @@
           showToast('Invalid challenge.');
           return;
         }
-        const row = await SquirrelApi.getChallenge(norm);
-        if (!row || row.status !== 'active') {
-          clearChallengeResume();
-          showToast('That match has ended.');
-          void refreshActiveChallengesPanel();
+        if (!game) {
+          showToast('Game still loading — try again in a moment.');
           return;
         }
-        const pid = getOrCreatePlayerId();
-        const isHost = row.host_id === pid;
-        const isGuest = row.guest_id === pid;
-        if (!isHost && !isGuest) {
-          clearChallengeResume();
-          showToast('You are not part of that match.');
-          return;
+        rejoinChallengeInProgress = true;
+        try {
+          const row = await SquirrelApi.getChallenge(norm);
+          if (!row || row.status !== 'active') {
+            clearChallengeResume();
+            showToast('That match has ended.');
+            void refreshActiveChallengesPanel();
+            return;
+          }
+          const pid = getOrCreatePlayerId();
+          const isHost = row.host_id === pid;
+          const isGuest = row.guest_id === pid;
+          if (!isHost && !isGuest) {
+            clearChallengeResume();
+            showToast('You are not part of that match.');
+            return;
+          }
+          if ((isHost && row.host_eliminated) || (isGuest && row.guest_eliminated)) {
+            clearChallengeResume();
+            showToast('You were eliminated from that match.');
+            void refreshActiveChallengesPanel();
+            return;
+          }
+          const seedNum = Number(row.seed);
+          if (!Number.isFinite(seedNum)) {
+            showToast('Invalid challenge data.');
+            return;
+          }
+          let sl = Math.max(1, Math.floor(Number(row.current_level || row.start_level) || 1));
+          let resumeScore = 0;
+          let resumeLives = undefined;
+          let resumeWords = 0;
+          const disk = savedPayload || readChallengeResumePayload();
+          if (
+            disk &&
+            disk.code === norm &&
+            disk.playerId === pid &&
+            Date.now() - disk.savedAt <= CHALLENGE_RESUME_MAX_MS
+          ) {
+            sl = Math.max(1, Math.floor(Number(disk.level) || sl));
+            resumeScore = Math.max(0, Math.round(Number(disk.score) || 0));
+            if (Number.isFinite(Number(disk.lives))) resumeLives = Math.max(1, Math.floor(Number(disk.lives)));
+            resumeWords = Math.max(0, Math.floor(Number(disk.wordsCompleted) || 0));
+          }
+          toggle(dom.challengeOverlay, false);
+          setChallengeProfilePanelOpen(false);
+          beginGameFromMenu(sl, {
+            runSeed: seedNum,
+            resumeScore,
+            resumeLives,
+            resumeWords,
+            challenge: { code: norm, role: isHost ? 'host' : 'guest' }
+          });
+        } catch (e) {
+          console.warn(e);
+          showToast('Could not rejoin — check your connection and try again.');
+        } finally {
+          rejoinChallengeInProgress = false;
         }
-        if ((isHost && row.host_eliminated) || (isGuest && row.guest_eliminated)) {
-          clearChallengeResume();
-          showToast('You were eliminated from that match.');
-          void refreshActiveChallengesPanel();
-          return;
-        }
-        const seedNum = Number(row.seed);
-        if (!Number.isFinite(seedNum)) {
-          showToast('Invalid challenge data.');
-          return;
-        }
-        let sl = Math.max(1, Math.floor(Number(row.current_level || row.start_level) || 1));
-        let resumeScore = 0;
-        let resumeLives = undefined;
-        let resumeWords = 0;
-        const disk = savedPayload || readChallengeResumePayload();
-        if (
-          disk &&
-          disk.code === norm &&
-          disk.playerId === pid &&
-          Date.now() - disk.savedAt <= CHALLENGE_RESUME_MAX_MS
-        ) {
-          sl = Math.max(1, Math.floor(Number(disk.level) || sl));
-          resumeScore = Math.max(0, Math.round(Number(disk.score) || 0));
-          if (Number.isFinite(Number(disk.lives))) resumeLives = Math.max(1, Math.floor(Number(disk.lives)));
-          resumeWords = Math.max(0, Math.floor(Number(disk.wordsCompleted) || 0));
-        }
-        toggle(dom.challengeOverlay, false);
-        beginGameFromMenu(sl, {
-          runSeed: seedNum,
-          resumeScore,
-          resumeLives,
-          resumeWords,
-          challenge: { code: norm, role: isHost ? 'host' : 'guest' }
-        });
       }
 
       function generateChallengeCode() {
@@ -9696,6 +9911,16 @@
       // Changelog Data
       const CHANGELOG = [
         {
+          version: '2.8',
+          date: '2026-05-19',
+          changes: [
+            'Rejoining an online challenge no longer crashes — stale game loops and sync tasks are cleaned up first',
+            'Stats screen restyled with wood panels and gold headings to match the main menu',
+            'Challenge mode profile is a compact top-right toggle — tap to edit name and view MP stats',
+            'Active challenge cards and leaderboard chart use the same forest UI theme'
+          ]
+        },
+        {
           version: '2.7',
           date: '2026-05-19',
           changes: [
@@ -9853,7 +10078,7 @@
         }
       ];
       
-      const CURRENT_VERSION = '2.7';
+      const CURRENT_VERSION = '2.8';
       const LAST_SEEN_VERSION_KEY = 'squirrelStreet.lastSeenVersion';
 
       function checkChangelogBadge() {
@@ -10656,14 +10881,14 @@
         if (!SquirrelApi.isConfigured()) {
           dom.statsLeaderboardList.textContent = '';
           const p = document.createElement('p');
-          p.style.color = '#94a3b8';
+          p.className = 'stats-empty-note';
           p.textContent = 'Local stats are above. Add apiBaseUrl to load other players scores.';
           dom.statsLeaderboardList.appendChild(p);
           return;
         }
         dom.statsLeaderboardList.textContent = '';
         const loading = document.createElement('p');
-        loading.style.color = '#94a3b8';
+        loading.className = 'stats-empty-note';
         loading.textContent = 'Loading…';
         dom.statsLeaderboardList.appendChild(loading);
         const list = await SquirrelApi.fetchLeaderboard(30);
@@ -10700,7 +10925,7 @@
         });
         if (!list.length) {
           const empty = document.createElement('p');
-          empty.style.color = '#94a3b8';
+          empty.className = 'stats-empty-note';
           empty.textContent = 'No cloud rows yet. Your profile is shown below until the first online score syncs.';
           dom.statsLeaderboardList.appendChild(empty);
         }
@@ -10734,7 +10959,7 @@
           nameBtn.type = 'button';
           nameBtn.textContent = row.display_name || 'Player';
           nameBtn.style.cssText =
-            'background:none;border:none;color:#7dd3fc;font:inherit;cursor:pointer;text-align:left;padding:0;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:underline;text-underline-offset:3px;';
+            'background:none;border:none;color:#FFD700;font:inherit;cursor:pointer;text-align:left;padding:0;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:underline;text-underline-offset:3px;';
           nameBtn.title =
             row.player_id === myId ? 'This is you' : 'Challenge this player (they must join with your code)';
           nameBtn.disabled = row.player_id === myId;
@@ -10812,7 +11037,12 @@
       }
 
       function beginGameFromMenu(startLevel, runOptions) {
+        if (!game) {
+          showToast('Game still loading — try again in a moment.');
+          return;
+        }
         checkFirstTimeControls(() => {
+          prepareForNewGameRun();
           toggle(dom.menuScreen, false);
           toggle(dom.playModeOverlay, false);
           toggle(dom.challengeOverlay, false);
@@ -12349,6 +12579,8 @@
         }
 
         startNewRun(words, startLevel = 1, runOptions = null) {
+          this.stopLoop();
+          this._runGeneration = gameRunGeneration;
           this.dictionaryWords = words;
           if (!Array.isArray(this.dictionaryWords) || this.dictionaryWords.length === 0) {
             showToast('Dictionary empty. Add words first!');
@@ -15980,12 +16212,18 @@
             this._pendingChallengeRound = null;
             this.phase = 'paused';
             this.stopLoop();
+            const syncGen = this._runGeneration;
             this.syncChallengeRoundOnServer(pending)
               .then((msg) => {
+                if (syncGen !== gameRunGeneration || this._runGeneration !== syncGen) return;
                 if (msg) showToast(msg);
               })
               .catch(() => {})
               .finally(() => {
+                if (syncGen !== gameRunGeneration || this._runGeneration !== syncGen) {
+                  hideChallengeBetweenLevelsOverlay();
+                  return;
+                }
                 persistChallengeResume(this);
                 hideChallengeBetweenLevelsOverlay();
                 proceed();
@@ -16312,6 +16550,8 @@
       Game.prototype.syncChallengeRoundOnServer = async function (round) {
         const meta = this.challengeMeta;
         if (!meta || !SquirrelApi.isConfigured() || meta.code === 'offline') return null;
+        const syncGen = this._runGeneration;
+        const isStale = () => syncGen !== gameRunGeneration || this._runGeneration !== syncGen;
         const pid = getOrCreatePlayerId();
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const wcRun = Math.max(0, Math.round(Number(this.wordsCompleted) || 0));
@@ -16335,6 +16575,10 @@
         try {
           persistChallengeResume(this);
           let state = await SquirrelApi.getChallenge(meta.code);
+          if (isStale()) {
+            hideChallengeBetweenLevelsOverlay();
+            return null;
+          }
           if (state) paintChallengeWaitPanel(state, round.level, pid, localSnap);
 
           state = await SquirrelApi.postChallengeRound(
@@ -16344,6 +16588,10 @@
             round.points,
             wordsForServer
           );
+          if (isStale()) {
+            hideChallengeBetweenLevelsOverlay();
+            return null;
+          }
           if (state) paintChallengeWaitPanel(state, round.level, pid, localSnap);
 
           if (!state) {
@@ -16353,6 +16601,10 @@
 
           const deadline = Date.now() + 120000;
           while (Date.now() < deadline && state && state.status === 'active') {
+            if (isStale()) {
+              hideChallengeBetweenLevelsOverlay();
+              return null;
+            }
             const rr = Array.isArray(state.rounds)
               ? state.rounds.find((x) => Number(x.level) === Number(round.level))
               : null;
@@ -16360,14 +16612,24 @@
             if (!waitingGuest && rr && rr.host_submitted && rr.guest_submitted && rr.resolved) break;
             if (Number(state.last_resolved_level) >= Number(round.level) && rr && rr.resolved) break;
             await sleep(1300);
+            if (isStale()) {
+              hideChallengeBetweenLevelsOverlay();
+              return null;
+            }
             const next = await SquirrelApi.getChallenge(meta.code);
             if (!next) break;
             state = next;
             paintChallengeWaitPanel(state, round.level, pid, localSnap);
           }
 
+          if (isStale()) {
+            hideChallengeBetweenLevelsOverlay();
+            return null;
+          }
+
           await sleep(400);
 
+          if (!state) return null;
           if (state.status === 'completed' && state.match_summary) {
             return state.match_summary;
           }
@@ -16377,6 +16639,7 @@
           return 'Score saved — keep playing while your rival catches up.';
         } catch (e) {
           console.warn(e);
+          hideChallengeBetweenLevelsOverlay();
           return null;
         }
       };
@@ -16530,6 +16793,8 @@
             syncChallengeNameInputsFromStorage();
             updateChallengeVersusHint();
             refreshChallengeResumeUi();
+            setChallengeProfilePanelOpen(false);
+            refreshChallengeProfileCorner();
             void refreshActiveChallengesPanel();
             if (window.FB && loadFacebookId()) renderFbFriendsList();
             showChallengeHostTab();
@@ -16557,6 +16822,13 @@
         if (dom.regenerateChallengeCodeButton) {
           dom.regenerateChallengeCodeButton.addEventListener('click', () => {
             void createHostedChallengeRoom(true);
+          });
+        }
+        if (dom.challengeProfileToggle) {
+          dom.challengeProfileToggle.addEventListener('click', () => {
+            const willOpen = dom.challengeProfilePanel && dom.challengeProfilePanel.classList.contains('hidden');
+            setChallengeProfilePanelOpen(willOpen);
+            if (willOpen) refreshChallengeProfileCorner();
           });
         }
         if (dom.openChallengeProfileButton) {
