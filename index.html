@@ -1292,6 +1292,26 @@
       image-rendering: pixelated;
     }
 
+    .challenge-profile-skin-preview {
+      width: 42px;
+      height: 42px;
+      flex-shrink: 0;
+      background: #4E3625;
+      border: 2px solid #5D4037;
+      box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3px;
+    }
+
+    .challenge-profile-skin-preview img {
+      max-width: 100%;
+      max-height: 100%;
+      image-rendering: pixelated;
+      object-fit: contain;
+    }
+
     .challenge-profile-toggle-text {
       display: flex;
       flex-direction: column;
@@ -4587,9 +4607,9 @@
       border: none !important;
       justify-content: space-evenly !important; /* Distribute numbers across the bar */
       width: 90%; /* Restrict width to keep numbers centered in art */
-      margin-top: -12px !important;
-      padding-top: clamp(0px, 2.6vw, 16px) !important;
-      align-items: flex-start;
+      margin-top: 4px !important;
+      padding-top: clamp(16px, 4.8vw, 28px) !important;
+      align-items: center !important;
     }
 
     .hud-card {
@@ -4615,7 +4635,7 @@
     }
     .hud-card:nth-child(4) { /* Lives */
         transform: translateX(-40%);
-        margin-top: -2px !important; /* Shift lives up slightly (pixel-based for stability across PC/Mobile) */
+        margin-top: 0 !important;
     }
 
     /* Small Adjustments for very wide screens (tablets landscape / desktop) */
@@ -4629,12 +4649,12 @@
             background-position: center top !important;
         }
         .hud-stats {
-            margin-top: -10px !important;
-            padding-top: 15px !important;
+            margin-top: 6px !important;
+            padding-top: 22px !important;
             width: 90% !important; /* 90% of the constrained 520px width */
         }
         .hud-card:nth-child(4) {
-             margin-top: -2px !important; /* Matches global shift - previously -8px was too high on PC */
+             margin-top: 0 !important;
         }
     }
     
@@ -4744,10 +4764,10 @@
     }
     .leaderboard-row {
       display: grid;
-      grid-template-columns: 34px minmax(0, 1fr) minmax(92px, 34%);
-      gap: 8px;
-      align-items: center;
-      padding: 10px 12px;
+      grid-template-columns: 36px minmax(0, 1fr);
+      gap: 6px 10px;
+      align-items: start;
+      padding: 12px;
       border-bottom: 1px solid rgba(93, 64, 55, 0.65);
       font-size: 0.42rem;
       line-height: 1.45;
@@ -4757,12 +4777,63 @@
       background: linear-gradient(90deg, rgba(255, 215, 0, 0.18), rgba(74, 44, 26, 0));
       box-shadow: inset 3px 0 0 0 #FFD700;
     }
-    .leaderboard-rank { color: rgba(255, 255, 255, 0.65); font-variant-numeric: tabular-nums; text-align: right; }
-    .leaderboard-name { color: #FFF; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .leaderboard-meta { color: #FFD700; font-size: 0.38rem; text-align: right; white-space: nowrap; }
+    .leaderboard-rank {
+      color: rgba(255, 255, 255, 0.65);
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+      padding-top: 2px;
+    }
+    .leaderboard-name-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+    .leaderboard-name-btn {
+      background: none;
+      border: none;
+      color: #FFD700;
+      font: inherit;
+      cursor: pointer;
+      text-align: left;
+      padding: 0;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .leaderboard-name-btn:disabled {
+      cursor: default;
+      text-decoration: none;
+      color: #FFF;
+    }
+    .leaderboard-you-badge {
+      font-size: 0.34rem;
+      color: #FFD700;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 215, 0, 0.45);
+      padding: 2px 6px;
+      white-space: nowrap;
+    }
+    .leaderboard-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 4px;
+    }
+    .leaderboard-friend-btn {
+      font-size: 0.32rem !important;
+      padding: 4px 8px !important;
+    }
+    .leaderboard-score-block {
+      grid-column: 1 / -1;
+    }
     .leaderboard-bar-track {
       position: relative;
-      min-height: 28px;
+      min-height: 32px;
       border-radius: 999px;
       background: rgba(0, 0, 0, 0.45);
       overflow: hidden;
@@ -4780,12 +4851,72 @@
     .leaderboard-bar-label {
       position: relative;
       z-index: 1;
-      display: block;
-      padding: 7px 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 32px;
+      padding: 6px 10px;
       color: #FFF;
-      text-align: right;
       text-shadow: 1px 1px 0 rgba(0,0,0,0.65);
       font-variant-numeric: tabular-nums;
+    }
+    .leaderboard-score-main {
+      font-size: 0.44rem;
+      color: #FFD700;
+      line-height: 1.35;
+    }
+    .leaderboard-score-sub {
+      font-size: 0.36rem;
+      color: rgba(255, 255, 255, 0.85);
+      line-height: 1.35;
+      margin-top: 2px;
+    }
+    .friends-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .friend-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 10px;
+      background: rgba(0, 0, 0, 0.25);
+      border: 2px solid #5D4037;
+    }
+    .friend-row-name {
+      font-size: 0.42rem;
+      color: #FFF;
+      text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.35);
+    }
+    .friend-row-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .invite-link-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .invite-link-row .pill-button {
+      flex: 1;
+      min-width: 120px;
+    }
+
+    .invite-section {
+      margin-bottom: 12px;
+    }
+
+    .invite-room-btn {
+      width: 100%;
+      margin-top: 8px;
+      font-size: 0.38rem !important;
     }
     .stats-empty-note {
       font-size: 0.42rem;
@@ -4944,16 +5075,18 @@
   <script>
     /* API for leaderboard + challenges (same host as this file on Render is fine). */
     window.SQUIRREL_ONLINE = Object.assign(
-      { apiBaseUrl: 'https://squirrel-street.onrender.com' },
+      {
+        apiBaseUrl: 'https://squirrel-street.onrender.com',
+        /* Public URL for invite links (defaults to apiBaseUrl). Set for Capacitor/Android if needed. */
+        inviteBaseUrl: 'https://squirrel-street.onrender.com'
+      },
       window.SQUIRREL_ONLINE || {}
     );
-    /* Optional: Facebook Login app id for friends list + identity (create app at developers.facebook.com). */
-    window.SQUIRREL_FACEBOOK_APP_ID = window.SQUIRREL_FACEBOOK_APP_ID || '';
     /* Override: set window.SQUIRREL_ONLINE before this script (e.g. WebView) or edit apiBaseUrl above. */
   </script>
 </head>
 <body>
-  <div id="screenVersion" class="screen-version-label" aria-hidden="true">v2.8</div>
+  <div id="screenVersion" class="screen-version-label" aria-hidden="true">v2.9</div>
   <div id="preloadScreen" class="screen">
     <div class="logo">Squirrel Street</div>
     <div class="menu-card">
@@ -5044,7 +5177,9 @@
         <h2>Challenge mode</h2>
         <div class="challenge-profile-corner" id="challengeProfileCorner">
           <button type="button" id="challengeProfileToggle" class="challenge-profile-toggle" aria-expanded="false" aria-controls="challengeProfilePanel">
-            <img src="art/acorn.png" alt="" class="challenge-profile-acorn" aria-hidden="true">
+            <div class="challenge-profile-skin-preview" aria-hidden="true">
+              <img id="challengeProfileSkinImg" src="art/animations/squirrel/standing/default/squirrelright.png" alt="">
+            </div>
             <span class="challenge-profile-toggle-text">
               <span class="challenge-profile-toggle-label">Your profile</span>
               <strong id="challengeProfileChipName">Player</strong>
@@ -5061,6 +5196,7 @@
             <p id="challengeProfileMpLocal" class="challenge-profile-mp"></p>
             <p id="challengeProfileMpOnline" class="challenge-profile-mp online"></p>
             <button type="button" id="openChallengeProfileButton" class="pill-button ghost challenge-profile-stats-btn">View full stats</button>
+            <button type="button" id="challengeProfileShareInviteButton" class="pill-button challenge-profile-stats-btn">Share invite link</button>
           </div>
         </div>
       </div>
@@ -5079,10 +5215,14 @@
           <p id="challengeResumeHint" style="font-size: 0.45rem; color: #fcd34d; margin: 0 0 8px 0; line-height: 1.45;"></p>
           <button type="button" id="challengeContinueButton" class="button" style="width: 100%;">Continue last match</button>
         </div>
-        <div id="challengeFacebookSection" style="margin-bottom: 12px; padding: 10px; background: rgba(30,58,138,0.25); border-radius: 10px; border: 1px solid rgba(125,211,252,0.25);">
-          <p style="font-size: 0.42rem; color: #94a3b8; margin: 0 0 8px 0; line-height: 1.45;">Facebook links your name for challenges. Friends who also play appear below (Facebook only returns friends on this app).</p>
-          <button type="button" id="fbConnectButton" class="pill-button" style="width: 100%; font-size: 0.42rem;">Connect Facebook</button>
-          <div id="fbFriendsList" style="font-size: 0.4rem; margin-top: 10px; max-height: 120px; overflow-y: auto; color: #cbd5e1; line-height: 1.45;"></div>
+        <div class="stats-wood-panel invite-section">
+          <h3 class="stats-panel-title">Invite friends</h3>
+          <p class="stats-panel-hint">Share your link anywhere — friends keep their own in-game profile when they open it.</p>
+          <div class="invite-link-row">
+            <button type="button" id="challengeCopyInviteButton" class="pill-button">Copy invite link</button>
+            <button type="button" id="challengeShareInviteButton" class="pill-button ghost">Share link</button>
+          </div>
+          <button type="button" id="challengeShareRoomButton" class="pill-button ghost hidden invite-room-btn">Share room link</button>
         </div>
         <p style="font-size: 0.5rem;">Uses the starting level from your Biomes selector (open Biomes first if you want a specific level).</p>
         <button type="button" id="regenerateChallengeCodeButton" class="pill-button ghost" style="width: 100%; margin-top: 8px; font-size: 0.42rem;">New room code</button>
@@ -5653,6 +5793,16 @@
                 <button type="button" id="statsSaveDisplayName" class="pill-button">Save</button>
               </div>
               <p id="statsOnlineMessage" class="stats-panel-hint"></p>
+            </section>
+            <section class="stats-wood-panel">
+              <h3 class="stats-panel-title">Friends</h3>
+              <p class="stats-panel-hint">Share your invite link or send requests from the score chart below.</p>
+              <div class="invite-link-row">
+                <button type="button" id="statsCopyInviteButton" class="pill-button">Copy invite link</button>
+                <button type="button" id="statsShareInviteButton" class="pill-button ghost">Share link</button>
+              </div>
+              <div id="statsFriendsIncoming" class="friends-list"></div>
+              <div id="statsFriendsList" class="friends-list"></div>
             </section>
             <section class="stats-wood-panel">
               <h3 class="stats-panel-title">Global score chart</h3>
@@ -6346,12 +6496,15 @@
         challengeProfileChipMp: document.getElementById('challengeProfileChipMp'),
         challengeProfileMpLocal: document.getElementById('challengeProfileMpLocal'),
         challengeProfileMpOnline: document.getElementById('challengeProfileMpOnline'),
+        challengeProfileSkinImg: document.getElementById('challengeProfileSkinImg'),
         challengeDisplayNameInput: document.getElementById('challengeDisplayNameInput'),
         challengeSaveDisplayName: document.getElementById('challengeSaveDisplayName'),
         challengeJoinDisplayNameInput: document.getElementById('challengeJoinDisplayNameInput'),
         challengeJoinSaveDisplayName: document.getElementById('challengeJoinSaveDisplayName'),
-        fbConnectButton: document.getElementById('fbConnectButton'),
-        fbFriendsList: document.getElementById('fbFriendsList'),
+        challengeCopyInviteButton: document.getElementById('challengeCopyInviteButton'),
+        challengeShareInviteButton: document.getElementById('challengeShareInviteButton'),
+        challengeShareRoomButton: document.getElementById('challengeShareRoomButton'),
+        challengeProfileShareInviteButton: document.getElementById('challengeProfileShareInviteButton'),
         regenerateChallengeCodeButton: document.getElementById('regenerateChallengeCodeButton'),
         startHostedRunButton: document.getElementById('startHostedRunButton'),
         challengeHostCodeDisplay: document.getElementById('challengeHostCodeDisplay'),
@@ -6490,6 +6643,10 @@
         statsSaveDisplayName: document.getElementById('statsSaveDisplayName'),
         statsOnlineMessage: document.getElementById('statsOnlineMessage'),
         statsMpOnlineRow: document.getElementById('statsMpOnlineRow'),
+        statsFriendsIncoming: document.getElementById('statsFriendsIncoming'),
+        statsFriendsList: document.getElementById('statsFriendsList'),
+        statsCopyInviteButton: document.getElementById('statsCopyInviteButton'),
+        statsShareInviteButton: document.getElementById('statsShareInviteButton'),
         statsLeaderboardList: document.getElementById('statsLeaderboardList'),
         statsMatchHistoryList: document.getElementById('statsMatchHistoryList'),
         statsRefreshLeaderboard: document.getElementById('statsRefreshLeaderboard'),
@@ -6585,8 +6742,8 @@
         displayName: 'squirrelStreet.displayName',
         localMpStats: 'squirrelStreet.localMpStats',
         challengeResume: 'squirrelStreet.challengeResume',
-        facebookId: 'squirrelStreet.facebookId',
-        facebookName: 'squirrelStreet.facebookName'
+        pendingInviteFrom: 'squirrelStreet.pendingInviteFrom',
+        pendingChallengeCode: 'squirrelStreet.pendingChallengeCode'
       };
 
       function getOrCreatePlayerId() {
@@ -6620,6 +6777,216 @@
         refreshChallengeProfileCorner();
       }
 
+      function getInviteBaseUrl() {
+        const cfg = window.SQUIRREL_ONLINE || {};
+        if (cfg.inviteBaseUrl) return String(cfg.inviteBaseUrl).replace(/\/$/, '');
+        const api = (cfg.apiBaseUrl || '').replace(/\/$/, '');
+        if (api) return api;
+        if (typeof window !== 'undefined' && window.location?.origin && !window.location.origin.startsWith('file')) {
+          const path = window.location.pathname || '/';
+          const base = path.endsWith('/') ? path : path.replace(/\/[^/]*$/, '/');
+          return window.location.origin + base;
+        }
+        return 'https://squirrel-street.onrender.com';
+      }
+
+      function buildPlayerInviteUrl(playerId) {
+        const base = getInviteBaseUrl();
+        const sep = base.includes('?') ? '&' : '?';
+        return `${base}${sep}invite=${encodeURIComponent(playerId || getOrCreatePlayerId())}`;
+      }
+
+      function buildChallengeInviteUrl(code, hostPlayerId) {
+        const base = getInviteBaseUrl();
+        const sep = base.includes('?') ? '&' : '?';
+        const params = new URLSearchParams();
+        params.set('challenge', String(code || '').trim().toUpperCase());
+        params.set('from', hostPlayerId || getOrCreatePlayerId());
+        return `${base}${sep}${params.toString()}`;
+      }
+
+      async function copyTextToClipboard(text) {
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(text);
+            showToast('Link copied!');
+            return true;
+          }
+        } catch (e) {
+          console.warn(e);
+        }
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.setAttribute('readonly', '');
+          ta.style.position = 'fixed';
+          ta.style.left = '-9999px';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          showToast('Link copied!');
+          return true;
+        } catch (e2) {
+          showToast('Could not copy link.');
+          return false;
+        }
+      }
+
+      async function shareGameLink(url, title, text) {
+        if (navigator.share) {
+          try {
+            await navigator.share({ title: title || 'Squirrel Street', text: text || 'Join me in Squirrel Street!', url });
+            return true;
+          } catch (e) {
+            if (e && e.name === 'AbortError') return false;
+          }
+        }
+        return copyTextToClipboard(url);
+      }
+
+      function parseInviteParamsFromUrl() {
+        try {
+          if (!window.location || !window.location.search) return;
+          const params = new URLSearchParams(window.location.search);
+          const challenge = params.get('challenge');
+          const invite = params.get('invite');
+          const from = params.get('from');
+          if (challenge) {
+            localStorage.setItem(STORAGE_KEYS.pendingChallengeCode, String(challenge).trim().toUpperCase());
+            if (from) localStorage.setItem(STORAGE_KEYS.pendingInviteFrom, String(from).trim());
+          } else if (invite) {
+            localStorage.setItem(STORAGE_KEYS.pendingInviteFrom, String(invite).trim());
+          }
+          if (params.has('invite') || params.has('challenge') || params.has('from')) {
+            const cleanUrl = (window.location.pathname || '/') + (window.location.hash || '');
+            window.history.replaceState({}, document.title, cleanUrl);
+          }
+        } catch (e) {
+          console.warn(e);
+        }
+      }
+
+      async function processPendingInviteOnReady() {
+        const fromId = localStorage.getItem(STORAGE_KEYS.pendingInviteFrom);
+        const challengeCode = localStorage.getItem(STORAGE_KEYS.pendingChallengeCode);
+        if (!fromId && !challengeCode) return;
+
+        const myId = getOrCreatePlayerId();
+        let effectiveFrom = fromId && fromId !== myId ? fromId : null;
+        if (fromId && fromId === myId) {
+          localStorage.removeItem(STORAGE_KEYS.pendingInviteFrom);
+          effectiveFrom = null;
+        }
+
+        if (challengeCode && dom.challengeCodeInput) {
+          dom.challengeCodeInput.value = challengeCode;
+          localStorage.removeItem(STORAGE_KEYS.pendingChallengeCode);
+        }
+
+        if (effectiveFrom) {
+          localStorage.removeItem(STORAGE_KEYS.pendingInviteFrom);
+          let inviterName = 'A player';
+          if (SquirrelApi.isConfigured()) {
+            inviterName = await SquirrelApi.fetchPlayerDisplayName(effectiveFrom);
+            const res = await SquirrelApi.sendFriendRequest(myId, effectiveFrom);
+            if (res.auto_accepted) {
+              showToast(`${inviterName} invited you — you're now friends!`);
+            } else if (res.ok || res.already_pending) {
+              showToast(`${inviterName} invited you — friend request sent!`);
+            } else if (res.error === 'already_friends') {
+              showToast(`${inviterName} invited you — already friends!`);
+            } else {
+              showToast(`${inviterName} invited you to Squirrel Street!`);
+            }
+            await refreshFriendsPanel();
+          } else {
+            showToast(`${inviterName} invited you! Play online to connect as friends.`);
+          }
+        }
+
+        if (challengeCode) {
+          setTimeout(() => {
+            toggle(dom.playModeOverlay, false);
+            toggle(dom.challengeOverlay, true);
+            syncChallengeNameInputsFromStorage();
+            refreshChallengeProfileCorner();
+            if (dom.challengeTabJoin) dom.challengeTabJoin.click();
+            if (dom.challengeJoinStatus) {
+              dom.challengeJoinStatus.textContent = effectiveFrom
+                ? 'Room code loaded from invite — tap Load & start when ready.'
+                : 'Room code loaded from link — tap Load & start when ready.';
+            }
+          }, 600);
+        }
+      }
+
+      function bindInviteLinkButtons() {
+        if (dom.statsCopyInviteButton) {
+          dom.statsCopyInviteButton.addEventListener('click', () => {
+            void copyTextToClipboard(buildPlayerInviteUrl(getOrCreatePlayerId()));
+          });
+        }
+        if (dom.statsShareInviteButton) {
+          dom.statsShareInviteButton.addEventListener('click', () => {
+            void shareGameLink(
+              buildPlayerInviteUrl(getOrCreatePlayerId()),
+              'Squirrel Street',
+              'Join me in Squirrel Street!'
+            );
+          });
+        }
+        if (dom.challengeCopyInviteButton) {
+          dom.challengeCopyInviteButton.addEventListener('click', () => {
+            void copyTextToClipboard(buildPlayerInviteUrl(getOrCreatePlayerId()));
+          });
+        }
+        if (dom.challengeShareInviteButton) {
+          dom.challengeShareInviteButton.addEventListener('click', () => {
+            void shareGameLink(
+              buildPlayerInviteUrl(getOrCreatePlayerId()),
+              'Squirrel Street',
+              'Join me in Squirrel Street!'
+            );
+          });
+        }
+        if (dom.challengeProfileShareInviteButton) {
+          dom.challengeProfileShareInviteButton.addEventListener('click', () => {
+            void shareGameLink(
+              buildPlayerInviteUrl(getOrCreatePlayerId()),
+              'Squirrel Street',
+              'Join me in Squirrel Street!'
+            );
+          });
+        }
+        if (dom.challengeShareRoomButton) {
+          dom.challengeShareRoomButton.addEventListener('click', () => {
+            const code =
+              hostChallengePayload && hostChallengePayload.code && hostChallengePayload.code !== 'offline'
+                ? hostChallengePayload.code
+                : '';
+            if (!code || code.length < 4) {
+              showToast('Create a room code first.');
+              return;
+            }
+            void shareGameLink(
+              buildChallengeInviteUrl(code, getOrCreatePlayerId()),
+              'Squirrel Street Challenge',
+              `Join my Squirrel Street challenge! Code: ${code}`
+            );
+          });
+        }
+      }
+
+      function updateChallengeRoomShareButton() {
+        if (!dom.challengeShareRoomButton) return;
+        const code =
+          hostChallengePayload && hostChallengePayload.code && hostChallengePayload.code !== 'offline'
+            ? hostChallengePayload.code
+            : null;
+        dom.challengeShareRoomButton.classList.toggle('hidden', !code);
+      }
+
       function setChallengeProfilePanelOpen(open) {
         if (dom.challengeProfilePanel) dom.challengeProfilePanel.classList.toggle('hidden', !open);
         if (dom.challengeProfileToggle) {
@@ -6630,6 +6997,9 @@
       function refreshChallengeProfileCorner() {
         const name = loadDisplayName() || 'Player';
         const mp = loadLocalMpStats();
+        if (dom.challengeProfileSkinImg) {
+          dom.challengeProfileSkinImg.src = getEquippedSquirrelSkinPreviewSrc();
+        }
         if (dom.challengeProfileChipName) dom.challengeProfileChipName.textContent = name;
         if (dom.challengeProfileChipMp) {
           dom.challengeProfileChipMp.textContent = `${mp.wins}W · ${mp.losses}L`;
@@ -6729,21 +7099,6 @@
       }
 
       const CHALLENGE_RESUME_MAX_MS = 24 * 60 * 60 * 1000;
-
-      function loadFacebookId() {
-        return localStorage.getItem(STORAGE_KEYS.facebookId) || '';
-      }
-
-      function loadFacebookName() {
-        return localStorage.getItem(STORAGE_KEYS.facebookName) || '';
-      }
-
-      function saveFacebookMeta(id, name) {
-        if (id) localStorage.setItem(STORAGE_KEYS.facebookId, id);
-        else localStorage.removeItem(STORAGE_KEYS.facebookId);
-        if (name) localStorage.setItem(STORAGE_KEYS.facebookName, name);
-        else localStorage.removeItem(STORAGE_KEYS.facebookName);
-      }
 
       function persistChallengeResume(gameRef) {
         try {
@@ -7072,6 +7427,7 @@
           dom.challengeHostCodeDisplay.textContent = `Code: ${payload.code}`;
         }
         if (dom.startHostedRunButton) dom.startHostedRunButton.classList.remove('hidden');
+        updateChallengeRoomShareButton();
       }
 
       const SquirrelApi = (function createSquirrelApi() {
@@ -7093,7 +7449,7 @@
             if (!r.ok) return [];
             return r.json();
           },
-          async submitLeaderboardIfBetter(playerId, displayName, score, highestLevel, wordsSpelled, facebookId) {
+          async submitLeaderboardIfBetter(playerId, displayName, score, highestLevel, wordsSpelled) {
             const root = apiRoot();
             if (!root || !playerId) return;
             const body = {
@@ -7103,13 +7459,20 @@
               highest_level: Math.max(1, Math.floor(highestLevel) || 1),
               words_spelled: Math.max(0, Math.floor(Number(wordsSpelled) || 0))
             };
-            if (facebookId) body.facebook_id = String(facebookId).slice(0, 64);
             const r = await fetch(`${root}/leaderboard`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(body)
             });
             if (!r.ok) console.warn('leaderboard submit failed', r.status);
+          },
+          async fetchPlayerDisplayName(playerId) {
+            const root = apiRoot();
+            if (!root || !playerId) return 'Player';
+            const r = await fetch(`${root}/players/${encodeURIComponent(playerId)}`);
+            if (!r.ok) return 'Player';
+            const data = await r.json().catch(() => ({}));
+            return (data && data.display_name) || 'Player';
           },
           async createChallenge(hostId, hostName, startLevel, reservedGuestId) {
             const root = apiRoot();
@@ -7196,9 +7559,208 @@
             });
             if (!r.ok) return null;
             return r.json();
+          },
+          async fetchFriends(playerId) {
+            const root = apiRoot();
+            if (!root || !playerId) return { friends: [], incoming: [], outgoing: [] };
+            const r = await fetch(`${root}/friends/${encodeURIComponent(playerId)}`);
+            if (!r.ok) return { friends: [], incoming: [], outgoing: [] };
+            return r.json();
+          },
+          async sendFriendRequest(fromPlayerId, toPlayerId) {
+            const root = apiRoot();
+            if (!root || !fromPlayerId || !toPlayerId) return { ok: false };
+            const r = await fetch(`${root}/friends/request`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ from_player_id: fromPlayerId, to_player_id: toPlayerId })
+            });
+            const data = await r.json().catch(() => ({}));
+            return { ok: r.ok, status: r.status, ...data };
+          },
+          async respondFriendRequest(playerId, fromPlayerId, accept) {
+            const root = apiRoot();
+            if (!root || !playerId || !fromPlayerId) return { ok: false };
+            const r = await fetch(`${root}/friends/respond`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ player_id: playerId, from_player_id: fromPlayerId, accept: Boolean(accept) })
+            });
+            const data = await r.json().catch(() => ({}));
+            return { ok: r.ok, ...data };
           }
         };
       })();
+
+      let cachedFriendState = { friends: [], incoming: [], outgoing: [] };
+
+      function getFriendRelation(targetId) {
+        const myId = getOrCreatePlayerId();
+        if (!targetId || targetId === myId) return 'self';
+        if (cachedFriendState.friends.some((f) => f.player_id === targetId)) return 'friends';
+        if (cachedFriendState.outgoing.some((f) => f.player_id === targetId)) return 'pending_out';
+        if (cachedFriendState.incoming.some((f) => f.player_id === targetId)) return 'pending_in';
+        return 'none';
+      }
+
+      async function sendFriendRequestTo(targetId, targetName) {
+        if (!SquirrelApi.isConfigured()) {
+          showToast('Connect the online API to send friend requests.');
+          return;
+        }
+        const myId = getOrCreatePlayerId();
+        if (targetId === myId) return;
+        const res = await SquirrelApi.sendFriendRequest(myId, targetId);
+        if (res.auto_accepted) {
+          showToast(`${targetName || 'Player'} accepted your request!`);
+        } else if (res.ok) {
+          showToast(`Friend request sent to ${targetName || 'player'}.`);
+        } else if (res.error === 'already_friends') {
+          showToast('Already friends.');
+        } else {
+          showToast('Could not send friend request.');
+        }
+        await refreshFriendsPanel();
+        void refreshStatsPanel();
+      }
+
+      function renderFriendsPanel() {
+        if (!dom.statsFriendsIncoming || !dom.statsFriendsList) return;
+        dom.statsFriendsIncoming.textContent = '';
+        dom.statsFriendsList.textContent = '';
+
+        if (!SquirrelApi.isConfigured()) {
+          const note = document.createElement('p');
+          note.className = 'stats-empty-note';
+          note.textContent = 'Online API required for in-game friends.';
+          dom.statsFriendsList.appendChild(note);
+          return;
+        }
+
+        if (cachedFriendState.incoming.length) {
+          const heading = document.createElement('p');
+          heading.className = 'stats-panel-hint';
+          heading.textContent = 'Incoming requests';
+          dom.statsFriendsIncoming.appendChild(heading);
+          cachedFriendState.incoming.forEach((req) => {
+            const row = document.createElement('div');
+            row.className = 'friend-row';
+            const name = document.createElement('div');
+            name.className = 'friend-row-name';
+            name.textContent = req.display_name || 'Player';
+            const actions = document.createElement('div');
+            actions.className = 'friend-row-actions';
+            const acceptBtn = document.createElement('button');
+            acceptBtn.type = 'button';
+            acceptBtn.className = 'pill-button leaderboard-friend-btn';
+            acceptBtn.textContent = 'Accept';
+            acceptBtn.addEventListener('click', () => {
+              void (async () => {
+                const res = await SquirrelApi.respondFriendRequest(getOrCreatePlayerId(), req.player_id, true);
+                if (res.ok) {
+                  showToast(`You are now friends with ${req.display_name || 'Player'}.`);
+                  await refreshFriendsPanel();
+                  void refreshStatsPanel();
+                } else {
+                  showToast('Could not accept request.');
+                }
+              })();
+            });
+            const declineBtn = document.createElement('button');
+            declineBtn.type = 'button';
+            declineBtn.className = 'pill-button ghost leaderboard-friend-btn';
+            declineBtn.textContent = 'Decline';
+            declineBtn.addEventListener('click', () => {
+              void (async () => {
+                const res = await SquirrelApi.respondFriendRequest(getOrCreatePlayerId(), req.player_id, false);
+                if (res.ok) {
+                  showToast('Request declined.');
+                  await refreshFriendsPanel();
+                  void refreshStatsPanel();
+                }
+              })();
+            });
+            actions.appendChild(acceptBtn);
+            actions.appendChild(declineBtn);
+            row.appendChild(name);
+            row.appendChild(actions);
+            dom.statsFriendsIncoming.appendChild(row);
+          });
+        }
+
+        if (cachedFriendState.friends.length) {
+          const heading = document.createElement('p');
+          heading.className = 'stats-panel-hint';
+          heading.textContent = 'Your friends';
+          dom.statsFriendsList.appendChild(heading);
+          cachedFriendState.friends.forEach((friend) => {
+            const row = document.createElement('div');
+            row.className = 'friend-row';
+            const name = document.createElement('div');
+            name.className = 'friend-row-name';
+            name.textContent = friend.display_name || 'Player';
+            const actions = document.createElement('div');
+            actions.className = 'friend-row-actions';
+            const challengeBtn = document.createElement('button');
+            challengeBtn.type = 'button';
+            challengeBtn.className = 'pill-button ghost leaderboard-friend-btn';
+            challengeBtn.textContent = 'Challenge';
+            challengeBtn.addEventListener('click', () => {
+              leaderboardChallengeTarget = {
+                id: friend.player_id,
+                name: friend.display_name || 'Player'
+              };
+              toggle(dom.achievementsOverlay, false);
+              toggle(dom.challengeOverlay, true);
+              syncChallengeNameInputsFromStorage();
+              refreshChallengeProfileCorner();
+              void refreshActiveChallengesPanel();
+              if (dom.challengeTabHost) dom.challengeTabHost.click();
+              updateChallengeVersusHint();
+              showToast(`Challenge setup: ${friend.display_name || 'Player'}.`);
+            });
+            actions.appendChild(challengeBtn);
+            row.appendChild(name);
+            row.appendChild(actions);
+            dom.statsFriendsList.appendChild(row);
+          });
+        } else if (!cachedFriendState.incoming.length) {
+          const empty = document.createElement('p');
+          empty.className = 'stats-empty-note';
+          empty.textContent = 'No friends yet — tap Add friend on a player in the score chart.';
+          dom.statsFriendsList.appendChild(empty);
+        }
+
+        if (cachedFriendState.outgoing.length) {
+          const heading = document.createElement('p');
+          heading.className = 'stats-panel-hint';
+          heading.style.marginTop = '10px';
+          heading.textContent = 'Pending sent';
+          dom.statsFriendsList.appendChild(heading);
+          cachedFriendState.outgoing.forEach((req) => {
+            const row = document.createElement('div');
+            row.className = 'friend-row';
+            const name = document.createElement('div');
+            name.className = 'friend-row-name';
+            name.textContent = `${req.display_name || 'Player'} — waiting`;
+            row.appendChild(name);
+            dom.statsFriendsList.appendChild(row);
+          });
+        }
+      }
+
+      async function refreshFriendsPanel() {
+        if (!SquirrelApi.isConfigured()) {
+          cachedFriendState = { friends: [], incoming: [], outgoing: [] };
+          renderFriendsPanel();
+          return;
+        }
+        cachedFriendState = await SquirrelApi.fetchFriends(getOrCreatePlayerId());
+        if (!cachedFriendState || typeof cachedFriendState !== 'object') {
+          cachedFriendState = { friends: [], incoming: [], outgoing: [] };
+        }
+        renderFriendsPanel();
+      }
 
       function addCurrency(amount) {
         const current = Number(localStorage.getItem(STORAGE_KEYS.currency) || '0');
@@ -7598,6 +8160,17 @@
         const catalog = carSkinCatalog[category];
         if (!catalog) return -1;
         return catalog.skins.findIndex((skin) => skin.id === skinId);
+      }
+
+      function getEquippedSquirrelSkinPreviewSrc() {
+        ensureCarSkinStateLoaded();
+        const config = carSkinCatalog.squirrel;
+        if (!config || !config.skins.length) {
+          return 'art/animations/squirrel/standing/default/squirrelright.png';
+        }
+        const selectedId = carSkinSelections && carSkinSelections.squirrel;
+        const skin = getCarSkinById('squirrel', selectedId) || config.skins[0];
+        return skin.src;
       }
 
       function applyCarSkinSelectionsToManifest() {
@@ -9050,6 +9623,7 @@
           applyCarSkinSelectionsToManifest();
           await refreshCarAsset(category);
           renderCarProfiles();
+          if (category === 'squirrel') refreshChallengeProfileCorner();
           showToast(`${config.displayName} equipped!`);
         }
 
@@ -9911,6 +10485,16 @@
       // Changelog Data
       const CHANGELOG = [
         {
+          version: '2.9',
+          date: '2026-05-19',
+          changes: [
+            'Invite links replace Facebook — share on any platform and keep separate in-game profiles',
+            'Friend invite URLs auto-connect when opened; challenge room links preload the join code',
+            'Copy or share invite links from Stats, Challenge mode, and your profile panel',
+            'Share room link button appears when hosting an online challenge'
+          ]
+        },
+        {
           version: '2.8',
           date: '2026-05-19',
           changes: [
@@ -10078,7 +10662,7 @@
         }
       ];
       
-      const CURRENT_VERSION = '2.8';
+      const CURRENT_VERSION = '2.9';
       const LAST_SEEN_VERSION_KEY = 'squirrelStreet.lastSeenVersion';
 
       function checkChangelogBadge() {
@@ -10878,6 +11462,7 @@
         if (!dom.statsLeaderboardList) return;
         if (dom.statsMpOnlineRow) dom.statsMpOnlineRow.textContent = '';
         if (dom.statsMatchHistoryList) dom.statsMatchHistoryList.textContent = '';
+        await refreshFriendsPanel();
         if (!SquirrelApi.isConfigured()) {
           dom.statsLeaderboardList.textContent = '';
           const p = document.createElement('p');
@@ -10947,23 +11532,25 @@
         const maxScore = Math.max(1, ...rows.map((row) => Number(row.high_score) || 0));
         rows.slice(0, 30).forEach((row) => {
           const absoluteRank = rows.findIndex((r) => r.player_id === row.player_id) + 1;
+          const isYou = row.player_id === myId;
           const line = document.createElement('div');
-          line.className = 'leaderboard-row' + (row.player_id === myId ? ' you' : '');
+          line.className = 'leaderboard-row' + (isYou ? ' you' : '');
 
           const rank = document.createElement('div');
           rank.className = 'leaderboard-rank';
           rank.textContent = `${absoluteRank || ''}`;
 
           const nameCell = document.createElement('div');
+          const nameRow = document.createElement('div');
+          nameRow.className = 'leaderboard-name-row';
           const nameBtn = document.createElement('button');
           nameBtn.type = 'button';
+          nameBtn.className = 'leaderboard-name-btn';
           nameBtn.textContent = row.display_name || 'Player';
-          nameBtn.style.cssText =
-            'background:none;border:none;color:#FFD700;font:inherit;cursor:pointer;text-align:left;padding:0;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:underline;text-underline-offset:3px;';
           nameBtn.title =
-            row.player_id === myId ? 'This is you' : 'Challenge this player (they must join with your code)';
-          nameBtn.disabled = row.player_id === myId;
-          if (row.player_id !== myId) {
+            isYou ? 'This is you' : 'Challenge this player (they must join with your code)';
+          nameBtn.disabled = isYou;
+          if (!isYou) {
             nameBtn.addEventListener('click', () => {
               leaderboardChallengeTarget = {
                 id: row.player_id,
@@ -10972,34 +11559,90 @@
               toggle(dom.achievementsOverlay, false);
               toggle(dom.challengeOverlay, true);
               syncChallengeNameInputsFromStorage();
+              refreshChallengeProfileCorner();
               void refreshActiveChallengesPanel();
               if (dom.challengeTabHost) dom.challengeTabHost.click();
               updateChallengeVersusHint();
               showToast(`Challenge setup: ${row.display_name}. A room code is created on the Host tab.`);
             });
           }
-          nameCell.appendChild(nameBtn);
-          if (row.player_id === myId) {
-            const youLbl = document.createElement('div');
-            youLbl.style.cssText = 'font-size:0.36rem;color:#facc15;margin-top:2px;';
-            youLbl.textContent = row.local_only ? 'You - syncing after next online run' : 'You';
-            nameCell.appendChild(youLbl);
+          nameRow.appendChild(nameBtn);
+          if (isYou) {
+            const youLbl = document.createElement('span');
+            youLbl.className = 'leaderboard-you-badge';
+            youLbl.textContent = row.local_only ? 'You · sync pending' : 'You';
+            nameRow.appendChild(youLbl);
+          }
+          nameCell.appendChild(nameRow);
+
+          if (!isYou) {
+            const actions = document.createElement('div');
+            actions.className = 'leaderboard-actions';
+            const relation = getFriendRelation(row.player_id);
+            if (relation === 'friends') {
+              const friendLbl = document.createElement('span');
+              friendLbl.className = 'leaderboard-you-badge';
+              friendLbl.textContent = 'Friend';
+              actions.appendChild(friendLbl);
+            } else if (relation === 'pending_out') {
+              const pendingLbl = document.createElement('span');
+              pendingLbl.className = 'stats-panel-hint';
+              pendingLbl.style.margin = '0';
+              pendingLbl.textContent = 'Request sent';
+              actions.appendChild(pendingLbl);
+            } else if (relation === 'pending_in') {
+              const acceptBtn = document.createElement('button');
+              acceptBtn.type = 'button';
+              acceptBtn.className = 'pill-button leaderboard-friend-btn';
+              acceptBtn.textContent = 'Accept friend';
+              acceptBtn.addEventListener('click', () => {
+                void (async () => {
+                  const res = await SquirrelApi.respondFriendRequest(myId, row.player_id, true);
+                  if (res.ok) {
+                    showToast(`You are now friends with ${row.display_name || 'Player'}.`);
+                    await refreshFriendsPanel();
+                    void refreshStatsPanel();
+                  }
+                })();
+              });
+              actions.appendChild(acceptBtn);
+            } else {
+              const friendBtn = document.createElement('button');
+              friendBtn.type = 'button';
+              friendBtn.className = 'pill-button ghost leaderboard-friend-btn';
+              friendBtn.textContent = 'Add friend';
+              friendBtn.addEventListener('click', () => {
+                void sendFriendRequestTo(row.player_id, row.display_name || 'Player');
+              });
+              actions.appendChild(friendBtn);
+            }
+            nameCell.appendChild(actions);
           }
 
+          const scoreBlock = document.createElement('div');
+          scoreBlock.className = 'leaderboard-score-block';
           const bar = document.createElement('div');
           bar.className = 'leaderboard-bar-track';
           const fill = document.createElement('div');
           fill.className = 'leaderboard-bar-fill';
-          fill.style.setProperty('--bar-width', `${Math.max(4, Math.round(((Number(row.high_score) || 0) / maxScore) * 100))}%`);
-          const label = document.createElement('span');
+          fill.style.setProperty('--bar-width', `${Math.max(6, Math.round(((Number(row.high_score) || 0) / maxScore) * 100))}%`);
+          const label = document.createElement('div');
           label.className = 'leaderboard-bar-label';
-          label.innerHTML = `${Number(row.high_score) || 0} pts · L${Number(row.highest_level) || 1}<br><span style="font-size:0.34rem;color:#bfdbfe;">${row.words_spelled ?? 0} words · ${row.mp_wins ?? 0}W/${row.mp_losses ?? 0}L</span>`;
+          const main = document.createElement('div');
+          main.className = 'leaderboard-score-main';
+          main.textContent = `${Number(row.high_score) || 0} pts · Level ${Number(row.highest_level) || 1}`;
+          const sub = document.createElement('div');
+          sub.className = 'leaderboard-score-sub';
+          sub.textContent = `${row.words_spelled ?? 0} words · ${row.mp_wins ?? 0}W / ${row.mp_losses ?? 0}L MP`;
+          label.appendChild(main);
+          label.appendChild(sub);
           bar.appendChild(fill);
           bar.appendChild(label);
+          scoreBlock.appendChild(bar);
 
           line.appendChild(rank);
           line.appendChild(nameCell);
-          line.appendChild(bar);
+          line.appendChild(scoreBlock);
           wrap.appendChild(line);
         });
         if (dom.statsMatchHistoryList) {
@@ -11079,8 +11722,7 @@
               loadDisplayName(),
               finalScore,
               finalLevel,
-              wordsCount,
-              loadFacebookId() || undefined
+              wordsCount
             );
           }
           if (challenge && SquirrelApi.isConfigured() && challenge.code && challenge.code !== 'offline') {
@@ -16796,7 +17438,6 @@
             setChallengeProfilePanelOpen(false);
             refreshChallengeProfileCorner();
             void refreshActiveChallengesPanel();
-            if (window.FB && loadFacebookId()) renderFbFriendsList();
             showChallengeHostTab();
           });
         }
@@ -16879,84 +17520,6 @@
           dom.challengeRefreshActiveButton.addEventListener('click', () => void refreshActiveChallengesPanel());
         }
 
-        function ensureFbSdk(cb) {
-          const appId = window.SQUIRREL_FACEBOOK_APP_ID || '';
-          if (!appId) {
-            showToast('Add window.SQUIRREL_FACEBOOK_APP_ID with your Facebook app id.');
-            return;
-          }
-          if (window.FB) {
-            cb();
-            return;
-          }
-          window.fbAsyncInit = function () {
-            FB.init({ appId, cookie: true, xfbml: false, version: 'v19.0' });
-            cb();
-          };
-          const s = document.createElement('script');
-          s.async = true;
-          s.src = 'https://connect.facebook.net/en_US/sdk.js';
-          document.head.appendChild(s);
-        }
-
-        function renderFbFriendsList() {
-          if (!dom.fbFriendsList || !window.FB) return;
-          FB.api('/me/friends', { fields: 'name,id' }, (res) => {
-            if (!res || !res.data) {
-              dom.fbFriendsList.textContent =
-                'Friends list unavailable — Facebook only shows friends who also use this app.';
-              return;
-            }
-            if (!res.data.length) {
-              dom.fbFriendsList.textContent =
-                'No friends on this app yet. Invite friends so they appear here after connecting.';
-              return;
-            }
-            dom.fbFriendsList.textContent = '';
-            res.data.forEach((f) => {
-              const row = document.createElement('div');
-              row.textContent = f.name || 'Facebook friend';
-              dom.fbFriendsList.appendChild(row);
-            });
-          });
-        }
-
-        if (dom.fbConnectButton) {
-          dom.fbConnectButton.addEventListener('click', () => {
-            ensureFbSdk(() => {
-              FB.login(
-                (response) => {
-                  if (!response.authResponse) return;
-                  FB.api('/me', { fields: 'id,name' }, (me) => {
-                    if (!me || !me.id) return;
-                    saveFacebookMeta(me.id, me.name || '');
-                    if (me.name) saveDisplayName(me.name.slice(0, 24));
-                    if (dom.statsDisplayNameInput) dom.statsDisplayNameInput.value = loadDisplayName();
-                    syncChallengeNameInputsFromStorage();
-                    showToast('Facebook connected');
-                    let wc = 0;
-                    try {
-                      const arr = loadSpelledWords();
-                      wc = Array.isArray(arr) ? arr.length : 0;
-                    } catch (e) {
-                      wc = 0;
-                    }
-                    void SquirrelApi.submitLeaderboardIfBetter(
-                      getOrCreatePlayerId(),
-                      loadDisplayName(),
-                      loadHighScore(),
-                      loadHighestLevel(),
-                      wc,
-                      loadFacebookId() || undefined
-                    );
-                    renderFbFriendsList();
-                  });
-                },
-                { scope: 'public_profile,user_friends' }
-              );
-            });
-          });
-        }
         if (dom.startHostedRunButton) {
           dom.startHostedRunButton.addEventListener('click', () => {
             if (!hostChallengePayload) {
@@ -17180,8 +17743,7 @@
               loadDisplayName(),
               loadHighScore(),
               loadHighestLevel(),
-              wc,
-              loadFacebookId() || undefined
+              wc
             );
           });
         }
@@ -17490,9 +18052,11 @@
           button.addEventListener('mouseup', handleEnd);
           button.addEventListener('mouseleave', handleEnd);
         });
+        bindInviteLinkButtons();
       }
 
       (async function init() {
+        parseInviteParamsFromUrl();
         resizeCanvas();
         
         // Dynamically load dictionary to prevent blocking initial render
@@ -17572,6 +18136,7 @@
           levelPreviewRenderer.setDictionary(dictionaryWords);
         }
         bindUI();
+        void processPendingInviteOnReady();
         refreshChallengeResumeUi();
         initCarSkinShop(true);
         renderCarProfiles();

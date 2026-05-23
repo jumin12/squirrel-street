@@ -85,6 +85,19 @@ const migrateLeaderboardCols = [
   'ALTER TABLE leaderboard ADD COLUMN IF NOT EXISTS facebook_id TEXT'
 ];
 
+const migrateFriendCols = [
+  `CREATE TABLE IF NOT EXISTS friend_requests (
+    id SERIAL PRIMARY KEY,
+    from_player_id TEXT NOT NULL,
+    to_player_id TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+  )`,
+  'CREATE INDEX IF NOT EXISTS idx_friend_requests_to ON friend_requests(to_player_id, status)',
+  'CREATE INDEX IF NOT EXISTS idx_friend_requests_from ON friend_requests(from_player_id, status)'
+];
+
 const migrateChallengeCols = [
   'ALTER TABLE challenges ADD COLUMN IF NOT EXISTS host_eliminated BOOLEAN NOT NULL DEFAULT FALSE',
   'ALTER TABLE challenges ADD COLUMN IF NOT EXISTS guest_eliminated BOOLEAN NOT NULL DEFAULT FALSE',
@@ -105,6 +118,23 @@ async function migrate() {
   for (const sql of migrateChallengeCols) {
     await pool.query(sql);
   }
+  for (const sql of migrateFriendCols) {
+    await pool.query(sql);
+  }
+}
+
+async function areFriends(client, a, b) {
+  const { rows } = await client.query(
+    `SELECT 1 FROM friend_requests
+     WHERE status = 'accepted'
+       AND (
+         (from_player_id = $1 AND to_player_id = $2)
+         OR (from_player_id = $2 AND to_player_id = $1)
+       )
+     LIMIT 1`,
+    [a, b]
+  );
+  return rows.length > 0;
 }
 
 function roundRowsToPayload(rounds = []) {
@@ -702,6 +732,188 @@ app.post('/api/challenges/:code/eliminate', async (req, res) => {
     res.status(500).json({ error: 'eliminate_failed' });
   } finally {
     client.release();
+  }
+});
+
+app.get('/api/players/:playerId', async (req, res) => {
+  if (!pool) return res.status(503).json({ error: 'Database not configured' });
+  try {
+    const playerId = req.params.playerId;
+    if (!playerId || typeof playerId !== 'string') {
+      return res.status(400).json({ error: 'player_id required' });
+    }
+    const { rows } = await pool.query(
+      'SELECT player_id, display_name FROM leaderboard WHERE player_id = $1',
+      [playerId]
+    );
+    if (!rows[0]) {
+      return res.json({ player_id: playerId, display_name: 'Player' });
+    }
+    res.json({ player_id: rows[0].player_id, display_name: rows[0].display_name || 'Player' });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'player_lookup_failed' });
+  }
+});
+
+app.get('/api/friends/:playerId', async (req, res) => {
+  if (!pool) return res.status(503).json({ error: 'Database not configured' });
+  try {
+    const playerId = req.params.playerId;
+    if (!playerId || typeof playerId !== 'string') {
+      return res.status(400).json({ error: 'player_id required' });
+    }
+
+    const { rows: incomingRows } = await pool.query(
+      `SELECT fr.id, fr.from_player_id, fr.created_at,
+              COALESCE(lb.display_name, 'Player') AS display_name
+       FROM friend_requests fr
+       LEFT JOIN leaderboard lb ON lb.player_id = fr.from_player_id
+       WHERE fr.to_player_id = $1 AND fr.status = 'pending'
+       ORDER BY fr.created_at DESC`,
+      [playerId]
+    );
+
+    const { rows: outgoingRows } = await pool.query(
+      `SELECT fr.id, fr.to_player_id, fr.created_at,
+              COALESCE(lb.display_name, 'Player') AS display_name
+       FROM friend_requests fr
+       LEFT JOIN leaderboard lb ON lb.player_id = fr.to_player_id
+       WHERE fr.from_player_id = $1 AND fr.status = 'pending'
+       ORDER BY fr.created_at DESC`,
+      [playerId]
+    );
+
+    const { rows: friendRows } = await pool.query(
+      `SELECT
+         CASE WHEN fr.from_player_id = $1 THEN fr.to_player_id ELSE fr.from_player_id END AS player_id,
+         COALESCE(lb.display_name, 'Player') AS display_name,
+         fr.updated_at
+       FROM friend_requests fr
+       LEFT JOIN leaderboard lb ON lb.player_id = CASE
+         WHEN fr.from_player_id = $1 THEN fr.to_player_id
+         ELSE fr.from_player_id
+       END
+       WHERE fr.status = 'accepted'
+         AND (fr.from_player_id = $1 OR fr.to_player_id = $1)
+       ORDER BY fr.updated_at DESC`,
+      [playerId]
+    );
+
+    res.json({
+      friends: friendRows.map((r) => ({
+        player_id: r.player_id,
+        display_name: r.display_name,
+        updated_at: r.updated_at
+      })),
+      incoming: incomingRows.map((r) => ({
+        id: r.id,
+        player_id: r.from_player_id,
+        display_name: r.display_name,
+        created_at: r.created_at
+      })),
+      outgoing: outgoingRows.map((r) => ({
+        id: r.id,
+        player_id: r.to_player_id,
+        display_name: r.display_name,
+        created_at: r.created_at
+      }))
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'friends_list_failed' });
+  }
+});
+
+app.post('/api/friends/request', async (req, res) => {
+  if (!pool) return res.status(503).json({ error: 'Database not configured' });
+  const client = await pool.connect();
+  try {
+    const { from_player_id, to_player_id } = req.body || {};
+    if (!from_player_id || !to_player_id || typeof from_player_id !== 'string' || typeof to_player_id !== 'string') {
+      return res.status(400).json({ error: 'from_player_id and to_player_id required' });
+    }
+    if (from_player_id === to_player_id) {
+      return res.status(400).json({ error: 'cannot_friend_self' });
+    }
+
+    await client.query('BEGIN');
+
+    if (await areFriends(client, from_player_id, to_player_id)) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'already_friends' });
+    }
+
+    const reverse = await client.query(
+      `SELECT id FROM friend_requests
+       WHERE from_player_id = $1 AND to_player_id = $2 AND status = 'pending'
+       LIMIT 1`,
+      [to_player_id, from_player_id]
+    );
+    if (reverse.rows[0]) {
+      await client.query(
+        `UPDATE friend_requests SET status = 'accepted', updated_at = NOW() WHERE id = $1`,
+        [reverse.rows[0].id]
+      );
+      await client.query('COMMIT');
+      return res.json({ ok: true, auto_accepted: true });
+    }
+
+    const existing = await client.query(
+      `SELECT id, status FROM friend_requests
+       WHERE from_player_id = $1 AND to_player_id = $2
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [from_player_id, to_player_id]
+    );
+    if (existing.rows[0]) {
+      if (existing.rows[0].status === 'pending') {
+        await client.query('ROLLBACK');
+        return res.json({ ok: true, already_pending: true });
+      }
+      if (existing.rows[0].status === 'accepted') {
+        await client.query('ROLLBACK');
+        return res.status(409).json({ error: 'already_friends' });
+      }
+    }
+
+    await client.query(
+      `INSERT INTO friend_requests (from_player_id, to_player_id, status, created_at, updated_at)
+       VALUES ($1, $2, 'pending', NOW(), NOW())`,
+      [from_player_id, to_player_id]
+    );
+    await client.query('COMMIT');
+    res.json({ ok: true });
+  } catch (e) {
+    try {
+      await client.query('ROLLBACK');
+    } catch (_) {}
+    console.error(e);
+    res.status(500).json({ error: 'friend_request_failed' });
+  } finally {
+    client.release();
+  }
+});
+
+app.post('/api/friends/respond', async (req, res) => {
+  if (!pool) return res.status(503).json({ error: 'Database not configured' });
+  try {
+    const { player_id, from_player_id, accept } = req.body || {};
+    if (!player_id || !from_player_id) {
+      return res.status(400).json({ error: 'player_id and from_player_id required' });
+    }
+    const status = accept ? 'accepted' : 'declined';
+    const { rowCount } = await pool.query(
+      `UPDATE friend_requests
+       SET status = $3, updated_at = NOW()
+       WHERE from_player_id = $1 AND to_player_id = $2 AND status = 'pending'`,
+      [from_player_id, player_id, status]
+    );
+    if (!rowCount) return res.status(404).json({ error: 'request_not_found' });
+    res.json({ ok: true, status });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'friend_respond_failed' });
   }
 });
 
