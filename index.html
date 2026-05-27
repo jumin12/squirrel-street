@@ -5006,6 +5006,50 @@
         grid-template-columns: 1fr;
       }
     }
+    .challenge-between-footer {
+      flex-shrink: 0;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 2px solid rgba(93, 64, 55, 0.65);
+    }
+    .challenge-between-continue-btn {
+      width: 100%;
+      max-width: 320px;
+      font-size: 0.48rem !important;
+      padding: 12px 18px !important;
+    }
+    .challenge-level-winner {
+      margin: 14px auto;
+      max-width: 520px;
+      padding: 12px 14px;
+      background: linear-gradient(135deg, rgba(255, 215, 0, 0.22), rgba(74, 44, 26, 0.85));
+      border: 2px solid #FFD700;
+      color: #FFD700;
+      font-size: clamp(0.44rem, 2.6vw, 0.56rem);
+      line-height: 1.5;
+      text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+    }
+    .challenge-match-winner {
+      margin: 12px auto 8px;
+      max-width: 520px;
+      padding: 14px;
+      background: linear-gradient(135deg, rgba(255, 215, 0, 0.35), rgba(139, 69, 19, 0.75));
+      border: 3px solid #FFD700;
+      color: #FFF;
+      font-size: clamp(0.5rem, 2.8vw, 0.62rem);
+      line-height: 1.45;
+    }
+    .challenge-rival-alert {
+      margin: 10px auto;
+      max-width: 520px;
+      padding: 10px 12px;
+      background: rgba(127, 29, 29, 0.45);
+      border: 2px solid rgba(248, 113, 113, 0.55);
+      color: #fecaca;
+      font-size: clamp(0.4rem, 2.4vw, 0.5rem);
+      line-height: 1.45;
+      text-align: left;
+    }
     .challenge-score-card-strong {
       background: rgba(0, 0, 0, 0.42);
       border-radius: 14px;
@@ -5086,7 +5130,7 @@
   </script>
 </head>
 <body>
-  <div id="screenVersion" class="screen-version-label" aria-hidden="true">v2.9</div>
+  <div id="screenVersion" class="screen-version-label" aria-hidden="true">v2.10</div>
   <div id="preloadScreen" class="screen">
     <div class="logo">Squirrel Street</div>
     <div class="menu-card">
@@ -5351,6 +5395,9 @@
         <p id="challengeBetweenLevelsSubtitle" class="challenge-between-sub">Scores and words update here while your rival finishes this level.</p>
       </div>
       <div id="challengeBetweenLevelsBody" class="challenge-between-body"></div>
+      <div class="challenge-between-footer">
+        <button type="button" id="challengeBetweenContinueBtn" class="button challenge-between-continue-btn hidden">Continue</button>
+      </div>
     </div>
   </div>
 
@@ -6520,6 +6567,7 @@
         challengeBetweenLevelsTitle: document.getElementById('challengeBetweenLevelsTitle'),
         challengeBetweenLevelsSubtitle: document.getElementById('challengeBetweenLevelsSubtitle'),
         challengeBetweenLevelsBody: document.getElementById('challengeBetweenLevelsBody'),
+        challengeBetweenContinueBtn: document.getElementById('challengeBetweenContinueBtn'),
         challengeActiveGamesSection: document.getElementById('challengeActiveGamesSection'),
         challengeActiveGamesHint: document.getElementById('challengeActiveGamesHint'),
         challengeActiveGamesList: document.getElementById('challengeActiveGamesList'),
@@ -7158,7 +7206,23 @@
       }
 
       function hideChallengeBetweenLevelsOverlay() {
+        if (dom.challengeBetweenContinueBtn) dom.challengeBetweenContinueBtn.classList.add('hidden');
         toggle(dom.challengeBetweenLevelsOverlay, false);
+      }
+
+      function waitForChallengeBetweenContinue() {
+        return new Promise((resolve) => {
+          if (!dom.challengeBetweenContinueBtn) {
+            setTimeout(resolve, 2800);
+            return;
+          }
+          dom.challengeBetweenContinueBtn.classList.remove('hidden');
+          const finish = () => {
+            dom.challengeBetweenContinueBtn.classList.add('hidden');
+            resolve();
+          };
+          dom.challengeBetweenContinueBtn.addEventListener('click', finish, { once: true });
+        });
       }
 
       let gameRunGeneration = 0;
@@ -7215,8 +7279,10 @@
         const hostRowYou = state.host_id === myPid;
         const guestRowYou = state.guest_id === myPid;
         const fmt = (v) => (v == null ? '—' : String(v));
-        const last =
-          round && round.summary ? String(round.summary) : state.last_round_summary ? String(state.last_round_summary) : '';
+        const hostLives = round && round.host_lives != null ? round.host_lives : state.host_lives;
+        const guestLives = round && round.guest_lives != null ? round.guest_lives : state.guest_lives;
+        const hostWordsLv = round && round.host_words != null ? round.host_words : null;
+        const guestWordsLv = round && round.guest_words != null ? round.guest_words : null;
         const history = Array.isArray(state.rounds)
           ? state.rounds
               .filter((r) => r.summary)
@@ -7225,16 +7291,22 @@
               .join('')
           : '';
         const waitingGuest = !state.guest_id;
-        let sub =
-          'Full-screen breakdown below; you can keep playing your run while numbers sync from the server.';
+        const bothDone = round && round.host_submitted && round.guest_submitted;
+        const levelResolved = round && round.resolved;
+        let sub = 'Review both players below, then tap Continue when you are ready.';
         if (waitingGuest) sub = 'Share your room code — a rival still needs to join before scores compare.';
-        else if (round && round.host_submitted && round.guest_submitted && round.resolved) {
-          sub = 'Both runs submitted — this level is settled on the server.';
-        } else if (round && round.host_submitted !== round.guest_submitted) {
-          sub = 'One score saved — waiting on your rival to finish this level.';
+        else if (state.status === 'completed') sub = 'Match finished — see the winner below.';
+        else if (levelResolved && round.summary) sub = 'Level settled — winner shown below.';
+        else if (bothDone && !levelResolved) sub = 'Both scores in — settling this level on the server…';
+        else if (round && round.host_submitted !== round.guest_submitted) {
+          sub = 'Waiting for your rival to finish this level. Stats update as they play.';
         }
         if (dom.challengeBetweenLevelsTitle) {
-          dom.challengeBetweenLevelsTitle.textContent = waitingGuest ? 'Waiting for rival to join' : `Level ${roundLevel} · matchup`;
+          dom.challengeBetweenLevelsTitle.textContent = waitingGuest
+            ? 'Waiting for rival to join'
+            : state.status === 'completed'
+              ? 'Match over'
+              : `Level ${roundLevel} · head-to-head`;
         }
         if (dom.challengeBetweenLevelsSubtitle) dom.challengeBetweenLevelsSubtitle.textContent = sub;
 
@@ -7246,41 +7318,94 @@
         const hostChips =
           waitingGuest || !round
             ? '<span class="challenge-chip pending">Room open</span>'
-            : `${chip(Boolean(round.host_submitted), 'Host submitted')}`;
+            : `${chip(Boolean(round.host_submitted), 'Host finished level')}`;
         const guestChips = waitingGuest
           ? '<span class="challenge-chip pending">Not joined</span>'
-          : `${chip(Boolean(round.guest_submitted), 'Guest submitted')}`;
+          : `${chip(Boolean(round.guest_submitted), 'Guest finished level')}`;
+
+        const rivalAlerts = [];
+        if (hel) {
+          const lv = state.host_eliminated_level ?? '?';
+          const livesLeft = state.host_eliminated_lives ?? hostLives ?? 0;
+          const who = hostRowYou ? 'You were' : `${hn} was`;
+          rivalAlerts.push(
+            `<div class="challenge-rival-alert">${who} eliminated at level ${escapeHtml(lv)} with ${escapeHtml(String(livesLeft))} ${Number(livesLeft) === 1 ? 'life' : 'lives'} remaining.</div>`
+          );
+        }
+        if (gel) {
+          const lv = state.guest_eliminated_level ?? '?';
+          const livesLeft = state.guest_eliminated_lives ?? guestLives ?? 0;
+          const who = guestRowYou ? 'You were' : `${gn} was`;
+          rivalAlerts.push(
+            `<div class="challenge-rival-alert">${who} eliminated at level ${escapeHtml(lv)} with ${escapeHtml(String(livesLeft))} ${Number(livesLeft) === 1 ? 'life' : 'lives'} remaining.</div>`
+          );
+        } else if (!hel && hostRowYou && guestLives != null) {
+          rivalAlerts.push(
+            `<div class="challenge-rival-alert" style="border-color:rgba(125,211,252,0.4);color:#bae6fd;">${gn} still playing — ${fmt(guestLives)} ${Number(guestLives) === 1 ? 'life' : 'lives'} left.</div>`
+          );
+        } else if (!gel && guestRowYou && hostLives != null) {
+          rivalAlerts.push(
+            `<div class="challenge-rival-alert" style="border-color:rgba(125,211,252,0.4);color:#bae6fd;">${hn} still playing — ${fmt(hostLives)} ${Number(hostLives) === 1 ? 'life' : 'lives'} left.</div>`
+          );
+        }
+
+        const levelWinnerHtml =
+          levelResolved && round.summary
+            ? `<div class="challenge-level-winner"><strong>Level ${escapeHtml(roundLevel)} winner</strong><br>${escapeHtml(round.summary)}</div>`
+            : '';
+
+        let matchWinnerHtml = '';
+        if (state.status === 'completed') {
+          let title = 'Match complete';
+          if (state.winner_id) {
+            const wn =
+              state.winner_id === state.host_id
+                ? state.host_name || 'Host'
+                : state.guest_name || 'Guest';
+            const youWon = state.winner_id === myPid;
+            title = youWon ? `You win! (${wn})` : `${escapeHtml(wn)} wins the match`;
+          } else if (!state.winner_id) {
+            title = 'Match tied';
+          }
+          matchWinnerHtml = `<div class="challenge-match-winner"><strong>${escapeHtml(title)}</strong><br>${escapeHtml(state.match_summary || '')}<br>Set ${hw}–${gw} · ${hp} vs ${gp} pts</div>`;
+        }
 
         const localHtml =
           localSnap &&
           (localSnap.roundPoints != null ||
             localSnap.wordsThisLevel != null ||
-            localSnap.wordsRunTotal != null)
-            ? `<div class="challenge-local-banner"><strong>You · this level:</strong> ${escapeHtml(String(localSnap.roundPoints ?? '—'))} pts · ${escapeHtml(String(localSnap.wordsThisLevel ?? '—'))} words this level · ${escapeHtml(String(localSnap.wordsRunTotal ?? '—'))} words total run</div>`
+            localSnap.wordsRunTotal != null ||
+            localSnap.livesRemaining != null)
+            ? `<div class="challenge-local-banner"><strong>You · level ${escapeHtml(roundLevel)}:</strong> ${escapeHtml(String(localSnap.roundPoints ?? '—'))} pts · ${escapeHtml(String(localSnap.wordsThisLevel ?? '—'))} words · ${escapeHtml(String(localSnap.livesRemaining ?? '—'))} lives left · ${escapeHtml(String(localSnap.wordsRunTotal ?? '—'))} words this run</div>`
             : '';
 
         dom.challengeBetweenLevelsBody.innerHTML = `
           ${localHtml}
+          ${matchWinnerHtml}
+          ${levelWinnerHtml}
+          ${rivalAlerts.join('')}
           <div class="challenge-score-grid-full">
             <div class="challenge-score-card-strong" style="${hostRowYou ? 'box-shadow:0 0 0 2px #facc15;' : ''}">
               <div style="color:#fcd34d;font-weight:bold;font-size:1.05em;">${hn}${hostRowYou ? ' (you)' : ''}</div>
-              <div class="challenge-stat-row"><span>Round pts (Lv ${escapeHtml(roundLevel)})</span><span>${fmt(hs)}</span></div>
+              <div class="challenge-stat-row"><span>Level ${escapeHtml(roundLevel)} pts</span><span>${fmt(hs)}</span></div>
+              <div class="challenge-stat-row"><span>Words this level</span><span>${fmt(hostWordsLv)}</span></div>
+              <div class="challenge-stat-row"><span>Lives left</span><span>${hel ? '0 (out)' : fmt(hostLives)}</span></div>
               <div class="challenge-stat-row"><span>Match pts</span><span>${fmt(hp)}</span></div>
               <div class="challenge-stat-row"><span>Words (match)</span><span>${fmt(hwds)}</span></div>
-              <div class="challenge-stat-row"><span>Levels won</span><span>${hw}${hel ? ' · out' : ''}</span></div>
+              <div class="challenge-stat-row"><span>Levels won</span><span>${hw}</span></div>
               <div>${hostChips}</div>
             </div>
             <div class="challenge-score-card-strong" style="${guestRowYou ? 'box-shadow:0 0 0 2px #facc15;' : ''}">
               <div style="color:#7dd3fc;font-weight:bold;font-size:1.05em;">${gn}${guestRowYou ? ' (you)' : ''}</div>
-              <div class="challenge-stat-row"><span>Round pts (Lv ${escapeHtml(roundLevel)})</span><span>${fmt(gs)}</span></div>
+              <div class="challenge-stat-row"><span>Level ${escapeHtml(roundLevel)} pts</span><span>${fmt(gs)}</span></div>
+              <div class="challenge-stat-row"><span>Words this level</span><span>${fmt(guestWordsLv)}</span></div>
+              <div class="challenge-stat-row"><span>Lives left</span><span>${gel ? '0 (out)' : fmt(guestLives)}</span></div>
               <div class="challenge-stat-row"><span>Match pts</span><span>${fmt(gp)}</span></div>
               <div class="challenge-stat-row"><span>Words (match)</span><span>${fmt(gwds)}</span></div>
-              <div class="challenge-stat-row"><span>Levels won</span><span>${gw}${gel ? ' · out' : ''}</span></div>
+              <div class="challenge-stat-row"><span>Levels won</span><span>${gw}</span></div>
               <div>${guestChips}</div>
             </div>
           </div>
-          ${last ? `<p style="margin-top:16px;font-size:clamp(0.38rem,2.2vw,0.48rem);color:#a7f3d0;line-height:1.5;">Latest: ${escapeHtml(last)}</p>` : ''}
-          ${state.match_summary ? `<p style="margin-top:10px;font-size:clamp(0.38rem,2.2vw,0.48rem);color:#fcd34d;line-height:1.5;">${escapeHtml(state.match_summary)}</p>` : ''}
           ${history ? `<div style="margin-top:14px;text-align:left;font-size:clamp(0.34rem,2vw,0.42rem);color:#cbd5e1;line-height:1.45;"><strong style="color:#94a3b8;">Recent rounds</strong>${history}</div>` : ''}
         `;
       }
@@ -7354,7 +7479,11 @@
           const row = await SquirrelApi.getChallenge(norm);
           if (!row || row.status !== 'active') {
             clearChallengeResume();
-            showToast('That match has ended.');
+            showToast(
+              row && row.match_summary
+                ? row.match_summary
+                : 'That match has ended (inactive for 24+ hours or both players finished).'
+            );
             void refreshActiveChallengesPanel();
             return;
           }
@@ -7528,34 +7657,46 @@
             if (!r.ok) return [];
             return r.json();
           },
-          async postChallengeRound(code, playerId, level, levelScore, wordsSpelled = 0) {
+          async postChallengeRound(code, playerId, level, levelScore, wordsSpelled = 0, livesRemaining = null, wordsThisLevel = null) {
             const root = apiRoot();
             if (!root || !code || code === 'offline') return null;
+            const body = {
+              player_id: playerId,
+              level: Math.floor(level),
+              level_score: Math.round(levelScore),
+              words_spelled: Math.max(0, Math.floor(Number(wordsSpelled) || 0))
+            };
+            if (livesRemaining != null && Number.isFinite(Number(livesRemaining))) {
+              body.lives_remaining = Math.max(0, Math.floor(Number(livesRemaining)));
+            }
+            if (wordsThisLevel != null && Number.isFinite(Number(wordsThisLevel))) {
+              body.words_this_level = Math.max(0, Math.floor(Number(wordsThisLevel)));
+            }
             const r = await fetch(`${root}/challenges/${encodeURIComponent(code.trim().toUpperCase())}/round`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                player_id: playerId,
-                level: Math.floor(level),
-                level_score: Math.round(levelScore),
-                words_spelled: Math.max(0, Math.floor(Number(wordsSpelled) || 0))
-              })
+              body: JSON.stringify(body)
             });
             if (!r.ok) return null;
             return r.json();
           },
-          async eliminateChallenge(code, playerId, level, levelScore, wordsSpelled) {
+          async eliminateChallenge(code, playerId, level, levelScore, wordsSpelled, livesRemaining = 0, wordsThisLevel = null) {
             const root = apiRoot();
             if (!root || !code || code === 'offline') return null;
+            const body = {
+              player_id: playerId,
+              level: Math.floor(level),
+              level_score: Math.round(levelScore),
+              words_spelled: Math.max(0, Math.floor(Number(wordsSpelled) || 0)),
+              lives_remaining: Math.max(0, Math.floor(Number(livesRemaining) || 0))
+            };
+            if (wordsThisLevel != null && Number.isFinite(Number(wordsThisLevel))) {
+              body.words_this_level = Math.max(0, Math.floor(Number(wordsThisLevel)));
+            }
             const r = await fetch(`${root}/challenges/${encodeURIComponent(code.trim().toUpperCase())}/eliminate`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                player_id: playerId,
-                level: Math.floor(level),
-                level_score: Math.round(levelScore),
-                words_spelled: Math.max(0, Math.floor(Number(wordsSpelled) || 0))
-              })
+              body: JSON.stringify(body)
             });
             if (!r.ok) return null;
             return r.json();
@@ -10485,6 +10626,16 @@
       // Changelog Data
       const CHANGELOG = [
         {
+          version: '2.10',
+          date: '2026-05-19',
+          changes: [
+            'Online challenges auto-close after 24 hours of inactivity',
+            'Between levels: full-screen pause shows both players stats, words this level, and lives left',
+            'Rival elimination alerts show level reached and lives remaining; each settled level declares a winner',
+            'Tap Continue after the level breakdown; match winner shown when the challenge ends'
+          ]
+        },
+        {
           version: '2.9',
           date: '2026-05-19',
           changes: [
@@ -10662,7 +10813,7 @@
         }
       ];
       
-      const CURRENT_VERSION = '2.9';
+      const CURRENT_VERSION = '2.10';
       const LAST_SEEN_VERSION_KEY = 'squirrelStreet.lastSeenVersion';
 
       function checkChangelogBadge() {
@@ -11740,12 +11891,16 @@
               typeof gameRef.wordsCompleted === 'number' && Number.isFinite(gameRef.wordsCompleted)
                 ? Math.max(0, Math.round(gameRef.wordsCompleted))
                 : wordsCount;
+            const wStart = Number.isFinite(gameRef.challengeWordsAtLevelStart) ? gameRef.challengeWordsAtLevelStart : 0;
+            const wordsThisLv = Math.max(0, Math.round(wc - wStart));
             const updated = await SquirrelApi.eliminateChallenge(
               challenge.code,
               getOrCreatePlayerId(),
               lvl,
               pts,
-              wc
+              wc,
+              0,
+              wordsThisLv
             );
             clearChallengeResume();
             void refreshActiveChallengesPanel();
@@ -16867,7 +17022,6 @@
                   return;
                 }
                 persistChallengeResume(this);
-                hideChallengeBetweenLevelsOverlay();
                 proceed();
               });
             return;
@@ -17185,7 +17339,8 @@
           level: finished,
           points: Math.max(0, Math.round(this.score - start)),
           wordsSpelled: wcRun,
-          wordsThisLevel: Math.max(0, Math.round(wcRun - wStart))
+          wordsThisLevel: Math.max(0, Math.round(wcRun - wStart)),
+          livesRemaining: Math.max(0, Math.floor(Number(this.lives) || 0))
         };
       };
 
@@ -17208,7 +17363,8 @@
         const localSnap = {
           roundPoints: round.points,
           wordsThisLevel: wordsThisLv,
-          wordsRunTotal: wcRun
+          wordsRunTotal: wcRun,
+          livesRemaining: Math.max(0, Math.floor(Number(this.lives) || 0))
         };
         const wordsForServer =
           round.wordsSpelled != null && Number.isFinite(round.wordsSpelled) ? Math.round(round.wordsSpelled) : wcRun;
@@ -17228,7 +17384,9 @@
             pid,
             round.level,
             round.points,
-            wordsForServer
+            wordsForServer,
+            localSnap.livesRemaining,
+            wordsThisLv
           );
           if (isStale()) {
             hideChallengeBetweenLevelsOverlay();
@@ -17269,11 +17427,32 @@
             return null;
           }
 
-          await sleep(400);
+          if (!isStale() && state) {
+            paintChallengeWaitPanel(state, round.level, pid, localSnap);
+          }
+
+          if (!isStale()) {
+            await waitForChallengeBetweenContinue();
+          }
+
+          if (isStale()) {
+            hideChallengeBetweenLevelsOverlay();
+            return null;
+          }
+          hideChallengeBetweenLevelsOverlay();
 
           if (!state) return null;
           if (state.status === 'completed' && state.match_summary) {
+            const myId = getOrCreatePlayerId();
+            const tied = !state.winner_id;
+            recordLocalMpResult(tied ? null : state.winner_id === myId, Math.round(this.score), wcRun);
             return state.match_summary;
+          }
+          const rr = Array.isArray(state.rounds)
+            ? state.rounds.find((x) => Number(x.level) === Number(round.level))
+            : null;
+          if (rr && rr.resolved && rr.summary) {
+            return `${rr.summary} (Set ${state.host_wins ?? 0}–${state.guest_wins ?? 0})`;
           }
           if (state.last_resolved_level >= round.level && state.last_round_summary) {
             return `${state.last_round_summary} (${state.host_wins ?? 0}–${state.guest_wins ?? 0})`;

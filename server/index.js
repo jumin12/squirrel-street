@@ -98,6 +98,8 @@ const migrateFriendCols = [
   'CREATE INDEX IF NOT EXISTS idx_friend_requests_from ON friend_requests(from_player_id, status)'
 ];
 
+const CHALLENGE_INACTIVITY_MS = 24 * 60 * 60 * 1000;
+
 const migrateChallengeCols = [
   'ALTER TABLE challenges ADD COLUMN IF NOT EXISTS host_eliminated BOOLEAN NOT NULL DEFAULT FALSE',
   'ALTER TABLE challenges ADD COLUMN IF NOT EXISTS guest_eliminated BOOLEAN NOT NULL DEFAULT FALSE',
@@ -106,7 +108,20 @@ const migrateChallengeCols = [
   'ALTER TABLE challenges ADD COLUMN IF NOT EXISTS host_words_accum INT NOT NULL DEFAULT 0',
   'ALTER TABLE challenges ADD COLUMN IF NOT EXISTS guest_words_accum INT NOT NULL DEFAULT 0',
   'ALTER TABLE challenges ADD COLUMN IF NOT EXISTS winner_id TEXT',
-  'ALTER TABLE challenges ADD COLUMN IF NOT EXISTS match_summary TEXT'
+  'ALTER TABLE challenges ADD COLUMN IF NOT EXISTS match_summary TEXT',
+  'ALTER TABLE challenges ADD COLUMN IF NOT EXISTS host_lives INT',
+  'ALTER TABLE challenges ADD COLUMN IF NOT EXISTS guest_lives INT',
+  'ALTER TABLE challenges ADD COLUMN IF NOT EXISTS host_eliminated_level INT',
+  'ALTER TABLE challenges ADD COLUMN IF NOT EXISTS guest_eliminated_level INT',
+  'ALTER TABLE challenges ADD COLUMN IF NOT EXISTS host_eliminated_lives INT',
+  'ALTER TABLE challenges ADD COLUMN IF NOT EXISTS guest_eliminated_lives INT'
+];
+
+const migrateChallengeRoundCols = [
+  'ALTER TABLE challenge_rounds ADD COLUMN IF NOT EXISTS host_lives INT',
+  'ALTER TABLE challenge_rounds ADD COLUMN IF NOT EXISTS guest_lives INT',
+  'ALTER TABLE challenge_rounds ADD COLUMN IF NOT EXISTS host_words INT',
+  'ALTER TABLE challenge_rounds ADD COLUMN IF NOT EXISTS guest_words INT'
 ];
 
 async function migrate() {
@@ -118,9 +133,25 @@ async function migrate() {
   for (const sql of migrateChallengeCols) {
     await pool.query(sql);
   }
+  for (const sql of migrateChallengeRoundCols) {
+    await pool.query(sql);
+  }
   for (const sql of migrateFriendCols) {
     await pool.query(sql);
   }
+}
+
+async function expireInactiveChallenges(client) {
+  const db = client || pool;
+  if (!db) return;
+  await db.query(
+    `UPDATE challenges
+     SET status = 'completed',
+         match_summary = COALESCE(match_summary, 'Match closed after 24 hours of inactivity.'),
+         updated_at = NOW()
+     WHERE status = 'active'
+       AND updated_at < NOW() - INTERVAL '24 hours'`
+  );
 }
 
 async function areFriends(client, a, b) {
@@ -145,13 +176,18 @@ function roundRowsToPayload(rounds = []) {
     host_submitted: Boolean(round.host_submitted),
     guest_submitted: Boolean(round.guest_submitted),
     resolved: Boolean(round.resolved),
-    summary: round.summary || null
+    summary: round.summary || null,
+    host_lives: round.host_lives != null ? Number(round.host_lives) : null,
+    guest_lives: round.guest_lives != null ? Number(round.guest_lives) : null,
+    host_words: round.host_words != null ? Number(round.host_words) : null,
+    guest_words: round.guest_words != null ? Number(round.guest_words) : null
   }));
 }
 
 async function getRecentRounds(client, challengeId, limit = 12) {
   const { rows } = await client.query(
-    `SELECT level, host_score, guest_score, host_submitted, guest_submitted, resolved, summary
+    `SELECT level, host_score, guest_score, host_submitted, guest_submitted, resolved, summary,
+            host_lives, guest_lives, host_words, guest_words
      FROM challenge_rounds
      WHERE challenge_id = $1
      ORDER BY level DESC
@@ -192,6 +228,12 @@ function rowToChallenge(r, rounds = []) {
     winner_id: r.winner_id || null,
     match_summary: r.match_summary || null,
     created_at: r.created_at || null,
+    host_lives: r.host_lives != null ? Number(r.host_lives) : null,
+    guest_lives: r.guest_lives != null ? Number(r.guest_lives) : null,
+    host_eliminated_level: r.host_eliminated_level != null ? Number(r.host_eliminated_level) : null,
+    guest_eliminated_level: r.guest_eliminated_level != null ? Number(r.guest_eliminated_level) : null,
+    host_eliminated_lives: r.host_eliminated_lives != null ? Number(r.host_eliminated_lives) : null,
+    guest_eliminated_lives: r.guest_eliminated_lives != null ? Number(r.guest_eliminated_lives) : null,
     rounds: payloadRounds
   };
 }
@@ -244,7 +286,17 @@ async function resolveStoredRounds(client, challengeId) {
   }
 }
 
-async function submitChallengeScore(client, row, playerId, level, points, wordsSpelled = 0, eliminated = false) {
+async function submitChallengeScore(
+  client,
+  row,
+  playerId,
+  level,
+  points,
+  wordsSpelled = 0,
+  eliminated = false,
+  livesRemaining = null,
+  wordsThisLevel = null
+) {
   const isHost = row.host_id === playerId;
   const isGuest = row.guest_id === playerId;
   if (!isHost && !isGuest) {
@@ -259,6 +311,14 @@ async function submitChallengeScore(client, row, playerId, level, points, wordsS
   const lvl = Math.max(Number(row.start_level) || 1, Math.floor(Number(level) || row.start_level || 1));
   const pts = Math.max(0, Math.round(Number(points) || 0));
   const words = Math.max(0, Math.floor(Number(wordsSpelled) || 0));
+  const lives =
+    livesRemaining != null && Number.isFinite(Number(livesRemaining))
+      ? Math.max(0, Math.floor(Number(livesRemaining)))
+      : null;
+  const wordsLv =
+    wordsThisLevel != null && Number.isFinite(Number(wordsThisLevel))
+      ? Math.max(0, Math.floor(Number(wordsThisLevel)))
+      : null;
 
   await client.query(
     `INSERT INTO challenge_rounds (challenge_id, level, updated_at)
@@ -278,9 +338,12 @@ async function submitChallengeScore(client, row, playerId, level, points, wordsS
     if (isHost) {
       await client.query(
         `UPDATE challenge_rounds
-         SET host_score = $3, host_submitted = TRUE, updated_at = NOW()
+         SET host_score = $3, host_submitted = TRUE,
+             host_lives = COALESCE($4, host_lives),
+             host_words = COALESCE($5, host_words),
+             updated_at = NOW()
          WHERE challenge_id = $1 AND level = $2`,
-        [row.id, lvl, pts]
+        [row.id, lvl, pts, lives, wordsLv]
       );
       await client.query(
         `UPDATE challenges SET
@@ -289,17 +352,23 @@ async function submitChallengeScore(client, row, playerId, level, points, wordsS
            current_level = GREATEST(current_level, $4),
            round_host_score = $2,
            host_submitted_round = TRUE,
+           host_lives = COALESCE($6, host_lives),
            host_eliminated = CASE WHEN $5 THEN TRUE ELSE host_eliminated END,
+           host_eliminated_level = CASE WHEN $5 THEN $4 ELSE host_eliminated_level END,
+           host_eliminated_lives = CASE WHEN $5 THEN COALESCE($6, 0) ELSE host_eliminated_lives END,
            updated_at = NOW()
          WHERE id = $1`,
-        [row.id, pts, words, lvl + 1, eliminated]
+        [row.id, pts, words, lvl, eliminated, lives]
       );
     } else {
       await client.query(
         `UPDATE challenge_rounds
-         SET guest_score = $3, guest_submitted = TRUE, updated_at = NOW()
+         SET guest_score = $3, guest_submitted = TRUE,
+             guest_lives = COALESCE($4, guest_lives),
+             guest_words = COALESCE($5, guest_words),
+             updated_at = NOW()
          WHERE challenge_id = $1 AND level = $2`,
-        [row.id, lvl, pts]
+        [row.id, lvl, pts, lives, wordsLv]
       );
       await client.query(
         `UPDATE challenges SET
@@ -308,10 +377,13 @@ async function submitChallengeScore(client, row, playerId, level, points, wordsS
            current_level = GREATEST(current_level, $4),
            round_guest_score = $2,
            guest_submitted_round = TRUE,
+           guest_lives = COALESCE($6, guest_lives),
            guest_eliminated = CASE WHEN $5 THEN TRUE ELSE guest_eliminated END,
+           guest_eliminated_level = CASE WHEN $5 THEN $4 ELSE guest_eliminated_level END,
+           guest_eliminated_lives = CASE WHEN $5 THEN COALESCE($6, 0) ELSE guest_eliminated_lives END,
            updated_at = NOW()
          WHERE id = $1`,
-        [row.id, pts, words, lvl + 1, eliminated]
+        [row.id, pts, words, lvl, eliminated, lives]
       );
     }
   } else if (eliminated) {
@@ -319,9 +391,15 @@ async function submitChallengeScore(client, row, playerId, level, points, wordsS
       `UPDATE challenges SET
          host_eliminated = CASE WHEN $2 THEN TRUE ELSE host_eliminated END,
          guest_eliminated = CASE WHEN $3 THEN TRUE ELSE guest_eliminated END,
+         host_eliminated_level = CASE WHEN $2 THEN $4 ELSE host_eliminated_level END,
+         guest_eliminated_level = CASE WHEN $3 THEN $4 ELSE guest_eliminated_level END,
+         host_eliminated_lives = CASE WHEN $2 THEN COALESCE($5, 0) ELSE host_eliminated_lives END,
+         guest_eliminated_lives = CASE WHEN $3 THEN COALESCE($5, 0) ELSE guest_eliminated_lives END,
+         host_lives = CASE WHEN $2 THEN COALESCE($5, host_lives) ELSE host_lives END,
+         guest_lives = CASE WHEN $3 THEN COALESCE($5, guest_lives) ELSE guest_lives END,
          updated_at = NOW()
        WHERE id = $1`,
-      [row.id, isHost, isGuest]
+      [row.id, isHost, isGuest, lvl, lives]
     );
   }
 
@@ -575,6 +653,7 @@ app.get('/api/challenges/history/:playerId', async (req, res) => {
 app.get('/api/challenges/active/:playerId', async (req, res) => {
   if (!pool) return res.status(503).json({ error: 'Database not configured' });
   try {
+    await expireInactiveChallenges();
     const playerId = req.params.playerId;
     if (!playerId || typeof playerId !== 'string') {
       return res.status(400).json({ error: 'player_id required' });
@@ -608,6 +687,7 @@ app.get('/api/challenges/active/:playerId', async (req, res) => {
 app.get('/api/challenges/:code', async (req, res) => {
   if (!pool) return res.status(503).json({ error: 'Database not configured' });
   try {
+    await expireInactiveChallenges();
     const c = req.params.code.trim().toUpperCase();
     const { rows } = await pool.query('SELECT * FROM challenges WHERE code = $1', [c]);
     const row = rows[0];
@@ -625,7 +705,7 @@ app.post('/api/challenges/:code/round', async (req, res) => {
   const client = await pool.connect();
   try {
     const c = req.params.code.trim().toUpperCase();
-    const { player_id, level, level_score, words_spelled } = req.body || {};
+    const { player_id, level, level_score, words_spelled, lives_remaining, words_this_level } = req.body || {};
     if (!player_id || level == null || level_score == null) {
       return res.status(400).json({ error: 'player_id, level, level_score required' });
     }
@@ -634,6 +714,7 @@ app.post('/api/challenges/:code/round', async (req, res) => {
     const words = Math.max(0, Math.floor(Number(words_spelled) || 0));
 
     await client.query('BEGIN');
+    await expireInactiveChallenges(client);
     const { rows } = await client.query('SELECT * FROM challenges WHERE code = $1 FOR UPDATE', [c]);
     const row = rows[0];
     if (!row) {
@@ -644,7 +725,7 @@ app.post('/api/challenges/:code/round', async (req, res) => {
       await client.query('ROLLBACK');
       return res.status(410).json({ error: 'inactive' });
     }
-    await submitChallengeScore(client, row, player_id, lvl, pts, words, false);
+    await submitChallengeScore(client, row, player_id, lvl, pts, words, false, lives_remaining, words_this_level);
     const { rows: rows3 } = await client.query('SELECT * FROM challenges WHERE id = $1 FOR UPDATE', [row.id]);
     const cur = rows3[0];
     await finalizeMatchIfNeeded(client, cur);
@@ -672,7 +753,7 @@ app.post('/api/challenges/:code/eliminate', async (req, res) => {
   const client = await pool.connect();
   try {
     const c = req.params.code.trim().toUpperCase();
-    const { player_id, level, level_score, words_spelled } = req.body || {};
+    const { player_id, level, level_score, words_spelled, lives_remaining, words_this_level } = req.body || {};
     if (!player_id || level == null || level_score == null) {
       return res.status(400).json({ error: 'player_id, level, level_score required' });
     }
@@ -681,6 +762,7 @@ app.post('/api/challenges/:code/eliminate', async (req, res) => {
     const words = Math.max(0, Math.floor(Number(words_spelled) || 0));
 
     await client.query('BEGIN');
+    await expireInactiveChallenges(client);
     const { rows } = await client.query('SELECT * FROM challenges WHERE code = $1 FOR UPDATE', [c]);
     const row = rows[0];
     if (!row) {
@@ -712,7 +794,7 @@ app.post('/api/challenges/:code/eliminate', async (req, res) => {
       return res.json(rowToChallenge(fr[0], rounds));
     }
 
-    await submitChallengeScore(client, row, player_id, lvl, pts, words, true);
+    await submitChallengeScore(client, row, player_id, lvl, pts, words, true, lives_remaining, words_this_level);
     const { rows: rows3 } = await client.query('SELECT * FROM challenges WHERE id = $1 FOR UPDATE', [row.id]);
     const cur = rows3[0];
     await finalizeMatchIfNeeded(client, cur);
