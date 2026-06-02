@@ -5018,6 +5018,48 @@
       font-size: 0.48rem !important;
       padding: 12px 18px !important;
     }
+    .challenge-top-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: stretch;
+    }
+    .challenge-top-actions .pill-button {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    #startHostedRunButton.challenge-start-top {
+      flex: 1.2 1 120px;
+      margin: 0;
+      font-size: 0.44rem !important;
+      padding: 10px 12px !important;
+      min-height: 2.4em;
+    }
+    #startHostedRunButton.challenge-start-top:disabled {
+      opacity: 0.42;
+      cursor: not-allowed;
+      filter: grayscale(0.45);
+      pointer-events: none;
+    }
+    .challenge-profile-friends {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(93, 64, 55, 0.5);
+      text-align: left;
+    }
+    .challenge-profile-friends-title {
+      font-size: 0.4rem;
+      color: #fcd34d;
+      margin: 0 0 6px 0;
+    }
+    .challenge-opponent-actions {
+      margin: 10px auto 0;
+      max-width: 520px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
     .challenge-level-winner {
       margin: 14px auto;
       max-width: 520px;
@@ -5239,15 +5281,21 @@
             </div>
             <p id="challengeProfileMpLocal" class="challenge-profile-mp"></p>
             <p id="challengeProfileMpOnline" class="challenge-profile-mp online"></p>
+            <div id="challengeProfileFriends" class="challenge-profile-friends hidden">
+              <p class="challenge-profile-friends-title">Friends</p>
+              <div id="challengeProfileFriendsList" class="friends-list"></div>
+              <button type="button" id="challengeProfileAddFriendsBtn" class="pill-button ghost challenge-profile-stats-btn">Find players in leaderboard</button>
+            </div>
             <button type="button" id="openChallengeProfileButton" class="pill-button ghost challenge-profile-stats-btn">View full stats</button>
             <button type="button" id="challengeProfileShareInviteButton" class="pill-button challenge-profile-stats-btn">Share invite link</button>
           </div>
         </div>
       </div>
-      <p style="font-size: 0.5rem; margin-bottom: 12px; line-height: 1.5; text-align: left;">Same seed per run. After <strong>each level</strong>, your score saves to the server and you can keep going while your rival catches up.</p>
-      <div class="pill-buttons" style="margin-bottom: 12px;">
+      <p style="font-size: 0.5rem; margin-bottom: 12px; line-height: 1.5; text-align: left;">Same seed per run. Play on your schedule — after <strong>each level</strong> review stats and tap <strong>Continue</strong>. Your rival gets notified when they catch up.</p>
+      <div class="pill-buttons challenge-top-actions" style="margin-bottom: 12px;">
         <button type="button" id="challengeTabHost" class="pill-button selected">Host</button>
         <button type="button" id="challengeTabJoin" class="pill-button">Join</button>
+        <button type="button" id="startHostedRunButton" class="button challenge-start-top" disabled>Start run</button>
       </div>
       <div id="challengeHostPanel">
         <p id="challengeVersusHint" style="font-size: 0.48rem; color: #7dd3fc; min-height: 1.2em;"></p>
@@ -5268,9 +5316,7 @@
           </div>
           <button type="button" id="challengeShareRoomButton" class="pill-button ghost hidden invite-room-btn">Share room link</button>
         </div>
-        <p style="font-size: 0.5rem;">Uses the starting level from your Biomes selector (open Biomes first if you want a specific level).</p>
-        <button type="button" id="regenerateChallengeCodeButton" class="pill-button ghost" style="width: 100%; margin-top: 8px; font-size: 0.42rem;">New room code</button>
-        <button id="startHostedRunButton" class="button hidden" style="width: 100%; margin-top: 10px;">Start challenge run</button>
+        <p style="font-size: 0.5rem;">Uses the starting level from your Biomes selector (open Biomes first if you want a specific level). Tap <strong>Host</strong> to create a room code, then <strong>Start run</strong>.</p>
       </div>
       <div id="challengeJoinPanel" class="hidden">
         <label style="font-size: 0.45rem; display: block; margin-bottom: 4px;">Your name for scoring</label>
@@ -6552,7 +6598,9 @@
         challengeShareInviteButton: document.getElementById('challengeShareInviteButton'),
         challengeShareRoomButton: document.getElementById('challengeShareRoomButton'),
         challengeProfileShareInviteButton: document.getElementById('challengeProfileShareInviteButton'),
-        regenerateChallengeCodeButton: document.getElementById('regenerateChallengeCodeButton'),
+        challengeProfileFriends: document.getElementById('challengeProfileFriends'),
+        challengeProfileFriendsList: document.getElementById('challengeProfileFriendsList'),
+        challengeProfileAddFriendsBtn: document.getElementById('challengeProfileAddFriendsBtn'),
         startHostedRunButton: document.getElementById('startHostedRunButton'),
         challengeHostCodeDisplay: document.getElementById('challengeHostCodeDisplay'),
         challengeHostStatus: document.getElementById('challengeHostStatus'),
@@ -7083,13 +7131,166 @@
         })();
       }
 
+      function updateStartHostedButtonState() {
+        const btn = dom.startHostedRunButton;
+        if (!btn) return;
+        const onHost = dom.challengeTabHost && dom.challengeTabHost.classList.contains('selected');
+        const ready = Boolean(hostChallengePayload);
+        btn.disabled = !onHost || !ready;
+      }
+
+      function getChallengeOpponentLabel(state, myPid) {
+        if (!state) return 'Opponent';
+        const isHost = state.host_id === myPid;
+        if (isHost) {
+          return state.guest_id ? state.guest_name || 'Guest' : 'Waiting for rival';
+        }
+        return state.host_name || 'Host';
+      }
+
+      function buildOpponentFriendActionHtml(oppId, oppName) {
+        if (!oppId || !SquirrelApi.isConfigured()) return '';
+        const rel = getFriendRelation(oppId);
+        const safeName = escapeHtml(oppName || 'Player');
+        if (rel === 'friends') {
+          return `<div class="challenge-opponent-actions"><span class="challenge-chip submitted">Friends with ${safeName}</span><button type="button" class="pill-button ghost leaderboard-friend-btn challenge-opp-challenge-btn" data-opp-id="${escapeHtml(oppId)}">Challenge ${safeName}</button></div>`;
+        }
+        if (rel === 'pending_out') {
+          return `<div class="challenge-opponent-actions"><span class="challenge-chip pending">Friend request sent to ${safeName}</span></div>`;
+        }
+        if (rel === 'pending_in') {
+          return `<div class="challenge-opponent-actions"><button type="button" class="pill-button leaderboard-friend-btn challenge-opp-accept-btn" data-opp-id="${escapeHtml(oppId)}">Accept friend · ${safeName}</button></div>`;
+        }
+        return `<div class="challenge-opponent-actions"><button type="button" class="pill-button ghost leaderboard-friend-btn challenge-opp-add-btn" data-opp-id="${escapeHtml(oppId)}" data-opp-name="${safeName}">Add ${safeName} as friend</button><button type="button" class="pill-button ghost leaderboard-friend-btn challenge-opp-challenge-btn" data-opp-id="${escapeHtml(oppId)}">Challenge ${safeName}</button></div>`;
+      }
+
+      async function pollChallengeOpponentActivity(gameRef) {
+        const meta = gameRef && gameRef.challengeMeta;
+        if (!meta || meta.code === 'offline' || !SquirrelApi.isConfigured()) return;
+        let state;
+        try {
+          state = await SquirrelApi.getChallenge(meta.code);
+        } catch (e) {
+          return;
+        }
+        if (!state) return;
+        const pid = getOrCreatePlayerId();
+        if (state.last_rejoin_player_id && state.last_rejoin_player_id !== pid && state.last_rejoin_at) {
+          const t = new Date(state.last_rejoin_at).getTime();
+          if (Number.isFinite(t) && (!gameRef._lastRejoinNoticeAt || t > gameRef._lastRejoinNoticeAt)) {
+            gameRef._lastRejoinNoticeAt = t;
+            const nm =
+              state.last_rejoin_player_id === state.host_id ? state.host_name : state.guest_name;
+            showToast(`${nm || 'Your rival'} rejoined the match`);
+          }
+        }
+        if (!state.guest_id) return;
+        const rounds = Array.isArray(state.rounds) ? state.rounds : [];
+        const round = rounds.length ? rounds[rounds.length - 1] : null;
+        if (!round) return;
+        const isHost = state.host_id === pid;
+        const rivalSubmitted = isHost ? round.guest_submitted : round.host_submitted;
+        if (!rivalSubmitted) return;
+        const key = `${round.level}:${rivalSubmitted}:${Boolean(round.resolved)}`;
+        if (gameRef._lastRivalActivityKey === key) return;
+        gameRef._lastRivalActivityKey = key;
+        const betweenOpen =
+          dom.challengeBetweenLevelsOverlay &&
+          !dom.challengeBetweenLevelsOverlay.classList.contains('hidden');
+        if (betweenOpen) return;
+        const rivalName = isHost ? state.guest_name : state.host_name;
+        if (round.resolved && round.summary) {
+          showToast(`${rivalName || 'Rival'}: ${round.summary}`);
+        } else {
+          showToast(`${rivalName || 'Your rival'} finished level ${round.level}`);
+        }
+      }
+
+      function wireOpponentFriendActions(container) {
+        if (!container) return;
+        container.querySelectorAll('.challenge-opp-add-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const id = btn.getAttribute('data-opp-id');
+            const name = btn.getAttribute('data-opp-name') || 'Player';
+            void sendFriendRequestTo(id, name);
+          });
+        });
+        container.querySelectorAll('.challenge-opp-accept-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const id = btn.getAttribute('data-opp-id');
+            void (async () => {
+              const res = await SquirrelApi.respondFriendRequest(getOrCreatePlayerId(), id, true);
+              if (res.ok) {
+                showToast('Friend request accepted.');
+                await refreshFriendsPanel();
+                void refreshChallengeProfileFriends();
+              }
+            })();
+          });
+        });
+        container.querySelectorAll('.challenge-opp-challenge-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const id = btn.getAttribute('data-opp-id');
+            const fr = cachedFriendState.friends.find((f) => f.player_id === id);
+            leaderboardChallengeTarget = { id, name: (fr && fr.display_name) || 'Player' };
+            updateChallengeVersusHint();
+            if (dom.challengeTabHost) dom.challengeTabHost.click();
+            showToast(`Tap Host if you need a new room code for ${leaderboardChallengeTarget.name}.`);
+          });
+        });
+      }
+
+      async function refreshChallengeProfileFriends() {
+        if (!dom.challengeProfileFriends || !dom.challengeProfileFriendsList) return;
+        if (!SquirrelApi.isConfigured()) {
+          dom.challengeProfileFriends.classList.add('hidden');
+          return;
+        }
+        dom.challengeProfileFriends.classList.remove('hidden');
+        dom.challengeProfileFriendsList.textContent = '';
+        await refreshFriendsPanel();
+        if (!cachedFriendState.friends.length) {
+          const p = document.createElement('p');
+          p.className = 'stats-panel-hint';
+          p.style.margin = '0';
+          p.textContent = 'No friends yet — add players from the leaderboard.';
+          dom.challengeProfileFriendsList.appendChild(p);
+          return;
+        }
+        cachedFriendState.friends.slice(0, 6).forEach((friend) => {
+          const row = document.createElement('div');
+          row.className = 'friend-row';
+          const name = document.createElement('span');
+          name.className = 'friend-row-name';
+          name.textContent = friend.display_name || 'Player';
+          const actions = document.createElement('div');
+          actions.className = 'friend-row-actions';
+          const challengeBtn = document.createElement('button');
+          challengeBtn.type = 'button';
+          challengeBtn.className = 'pill-button ghost leaderboard-friend-btn';
+          challengeBtn.textContent = 'Challenge';
+          challengeBtn.addEventListener('click', () => {
+            leaderboardChallengeTarget = {
+              id: friend.player_id,
+              name: friend.display_name || 'Player'
+            };
+            updateChallengeVersusHint();
+            if (dom.challengeTabHost) dom.challengeTabHost.click();
+          });
+          actions.appendChild(challengeBtn);
+          row.appendChild(name);
+          row.appendChild(actions);
+          dom.challengeProfileFriendsList.appendChild(row);
+        });
+      }
+
       function showChallengeHostTab() {
         if (dom.challengeTabHost) dom.challengeTabHost.classList.add('selected');
         if (dom.challengeTabJoin) dom.challengeTabJoin.classList.remove('selected');
         if (dom.challengeHostPanel) dom.challengeHostPanel.classList.remove('hidden');
         if (dom.challengeJoinPanel) dom.challengeJoinPanel.classList.add('hidden');
         updateChallengeVersusHint();
-        void createHostedChallengeRoom(true);
+        updateStartHostedButtonState();
       }
 
       function hostChallengeDisplayNameForApi() {
@@ -7293,20 +7494,23 @@
         const waitingGuest = !state.guest_id;
         const bothDone = round && round.host_submitted && round.guest_submitted;
         const levelResolved = round && round.resolved;
-        let sub = 'Review both players below, then tap Continue when you are ready.';
-        if (waitingGuest) sub = 'Share your room code — a rival still needs to join before scores compare.';
-        else if (state.status === 'completed') sub = 'Match finished — see the winner below.';
+        const vsName = getChallengeOpponentLabel(state, myPid);
+        let sub = 'Review both players below, then tap Continue for the next level.';
+        if (waitingGuest) {
+          sub =
+            'Your score is saved. Share your room code — tap Continue when ready (your rival can join and catch up later).';
+        } else if (state.status === 'completed') sub = 'Match finished — see the winner below.';
         else if (levelResolved && round.summary) sub = 'Level settled — winner shown below.';
         else if (bothDone && !levelResolved) sub = 'Both scores in — settling this level on the server…';
         else if (round && round.host_submitted !== round.guest_submitted) {
-          sub = 'Waiting for your rival to finish this level. Stats update as they play.';
+          sub = 'Your rival can finish this level later — stats update when they play. Tap Continue when you are ready.';
         }
         if (dom.challengeBetweenLevelsTitle) {
           dom.challengeBetweenLevelsTitle.textContent = waitingGuest
-            ? 'Waiting for rival to join'
+            ? 'Your challenge · waiting for rival'
             : state.status === 'completed'
-              ? 'Match over'
-              : `Level ${roundLevel} · head-to-head`;
+              ? `Match over · vs ${vsName}`
+              : `vs ${vsName} · Level ${roundLevel}`;
         }
         if (dom.challengeBetweenLevelsSubtitle) dom.challengeBetweenLevelsSubtitle.textContent = sub;
 
@@ -7379,11 +7583,16 @@
             ? `<div class="challenge-local-banner"><strong>You · level ${escapeHtml(roundLevel)}:</strong> ${escapeHtml(String(localSnap.roundPoints ?? '—'))} pts · ${escapeHtml(String(localSnap.wordsThisLevel ?? '—'))} words · ${escapeHtml(String(localSnap.livesRemaining ?? '—'))} lives left · ${escapeHtml(String(localSnap.wordsRunTotal ?? '—'))} words this run</div>`
             : '';
 
+        const oppId = hostRowYou ? state.guest_id : state.host_id;
+        const oppName = hostRowYou ? state.guest_name : state.host_name;
+        const oppActions = oppId ? buildOpponentFriendActionHtml(oppId, oppName) : '';
+
         dom.challengeBetweenLevelsBody.innerHTML = `
           ${localHtml}
           ${matchWinnerHtml}
           ${levelWinnerHtml}
           ${rivalAlerts.join('')}
+          ${oppActions}
           <div class="challenge-score-grid-full">
             <div class="challenge-score-card-strong" style="${hostRowYou ? 'box-shadow:0 0 0 2px #facc15;' : ''}">
               <div style="color:#fcd34d;font-weight:bold;font-size:1.05em;">${hn}${hostRowYou ? ' (you)' : ''}</div>
@@ -7408,6 +7617,7 @@
           </div>
           ${history ? `<div style="margin-top:14px;text-align:left;font-size:clamp(0.34rem,2vw,0.42rem);color:#cbd5e1;line-height:1.45;"><strong style="color:#94a3b8;">Recent rounds</strong>${history}</div>` : ''}
         `;
+        wireOpponentFriendActions(dom.challengeBetweenLevelsBody);
       }
 
       async function refreshActiveChallengesPanel() {
@@ -7419,7 +7629,7 @@
           return;
         }
         dom.challengeActiveGamesHint.textContent =
-          'Online matches you can still continue — tap Rejoin (saved progress on this device is restored when available).';
+          'Matches with an opponent — tap Rejoin to see both players’ stats first (saved progress on this device is restored when available).';
         const pid = getOrCreatePlayerId();
         let rows = [];
         try {
@@ -7442,11 +7652,9 @@
           left.className = 'challenge-active-card-info';
           const opp =
             row.host_id === pid
-              ? row.guest_id
-                ? `vs ${escapeHtml(row.guest_name || 'Guest')}`
-                : 'Waiting for guest to join'
+              ? `vs ${escapeHtml(row.guest_name || 'Guest')}`
               : `vs ${escapeHtml(row.host_name || 'Host')}`;
-          left.innerHTML = `<strong>${escapeHtml(row.code)}</strong><br>${opp}<br><span class="muted">World level ~${escapeHtml(String(row.current_level ?? '?'))} · set ${escapeHtml(String(row.host_wins ?? 0))}–${escapeHtml(String(row.guest_wins ?? 0))}</span>`;
+          left.innerHTML = `<strong>${escapeHtml(row.code)}</strong><br>${opp}<br><span class="muted">Level ~${escapeHtml(String(row.current_level ?? '?'))} · ${escapeHtml(String(row.host_total_points ?? 0))} vs ${escapeHtml(String(row.guest_total_points ?? 0))} pts · set ${escapeHtml(String(row.host_wins ?? 0))}–${escapeHtml(String(row.guest_wins ?? 0))}</span>`;
           const btn = document.createElement('button');
           btn.type = 'button';
           btn.className = 'pill-button';
@@ -7495,6 +7703,12 @@
             showToast('You are not part of that match.');
             return;
           }
+          if (isHost && !row.guest_id) {
+            clearChallengeResume();
+            showToast('No opponent has joined this match yet — share your room code first.');
+            void refreshActiveChallengesPanel();
+            return;
+          }
           if ((isHost && row.host_eliminated) || (isGuest && row.guest_eliminated)) {
             clearChallengeResume();
             showToast('You were eliminated from that match.');
@@ -7522,8 +7736,34 @@
             if (Number.isFinite(Number(disk.lives))) resumeLives = Math.max(1, Math.floor(Number(disk.lives)));
             resumeWords = Math.max(0, Math.floor(Number(disk.wordsCompleted) || 0));
           }
+          const opponentName = getChallengeOpponentLabel(row, pid);
+          if (SquirrelApi.isConfigured()) {
+            await refreshFriendsPanel();
+          }
+          try {
+            await SquirrelApi.notifyChallengeRejoin(norm, pid);
+          } catch (e) {
+            console.warn(e);
+          }
           toggle(dom.challengeOverlay, false);
           setChallengeProfilePanelOpen(false);
+          const rejoinSnap =
+            disk && disk.code === norm
+              ? {
+                  roundPoints: resumeScore,
+                  wordsThisLevel: null,
+                  wordsRunTotal: resumeWords,
+                  livesRemaining: resumeLives
+                }
+              : null;
+          showChallengeBetweenLevelsOverlay();
+          paintChallengeWaitPanel(row, sl, pid, rejoinSnap);
+          if (dom.challengeBetweenLevelsSubtitle) {
+            dom.challengeBetweenLevelsSubtitle.textContent = `${opponentName} was notified that you rejoined. Review the match, then tap Continue.`;
+          }
+          await waitForChallengeBetweenContinue();
+          hideChallengeBetweenLevelsOverlay();
+          showToast(`Continuing vs ${opponentName}`);
           beginGameFromMenu(sl, {
             runSeed: seedNum,
             resumeScore,
@@ -7555,7 +7795,7 @@
         } else {
           dom.challengeHostCodeDisplay.textContent = `Code: ${payload.code}`;
         }
-        if (dom.startHostedRunButton) dom.startHostedRunButton.classList.remove('hidden');
+        updateStartHostedButtonState();
         updateChallengeRoomShareButton();
       }
 
@@ -7633,6 +7873,17 @@
             });
             if (!r.ok) return null;
             return r.json();
+          },
+          async notifyChallengeRejoin(code, playerId) {
+            const root = apiRoot();
+            if (!root || !code || !playerId) return null;
+            const r = await fetch(`${root}/challenges/${encodeURIComponent(code.trim().toUpperCase())}/rejoin`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ player_id: playerId })
+            });
+            if (!r.ok) return null;
+            return r.json().catch(() => ({}));
           },
           async getChallenge(code) {
             const root = apiRoot();
@@ -10626,6 +10877,18 @@
       // Changelog Data
       const CHANGELOG = [
         {
+          version: '2.11',
+          date: '2026-05-19',
+          changes: [
+            'Between levels: Continue screen shows you and your opponent stats (points, words, lives) before the next level',
+            'Async challenges — start without waiting; play back-and-forth with rival activity and rejoin notifications',
+            'Rejoin shows opponent name and full match stats; rival is notified; cannot rejoin until a guest has joined',
+            'Friends on profile and level screens — add, accept, and challenge friends from leaderboard or stats',
+            'Host tab creates the room code; Start run moved next to Host/Join and stays disabled until you tap Host',
+            'Removed separate New room code button; resume saved progress when you leave the app until you lose'
+          ]
+        },
+        {
           version: '2.10',
           date: '2026-05-19',
           changes: [
@@ -10813,7 +11076,7 @@
         }
       ];
       
-      const CURRENT_VERSION = '2.10';
+      const CURRENT_VERSION = '2.11';
       const LAST_SEEN_VERSION_KEY = 'squirrelStreet.lastSeenVersion';
 
       function checkChangelogBadge() {
@@ -13444,6 +13707,19 @@
 
         update(dt) {
           this.hitCooldown = Math.max(0, this.hitCooldown - dt);
+
+          if (
+            this.challengeMeta &&
+            this.challengeMeta.code !== 'offline' &&
+            SquirrelApi.isConfigured() &&
+            this.phase === 'running'
+          ) {
+            this._challengePollT = (this._challengePollT || 0) + dt;
+            if (this._challengePollT >= 42) {
+              this._challengePollT = 0;
+              void pollChallengeOpponentActivity(this);
+            }
+          }
           
           // Handle time slow powerup
           let effectiveDt = dt;
@@ -17399,27 +17675,29 @@
             return null;
           }
 
-          const deadline = Date.now() + 120000;
-          while (Date.now() < deadline && state && state.status === 'active') {
-            if (isStale()) {
-              hideChallengeBetweenLevelsOverlay();
-              return null;
+          const waitingGuest = !state.guest_id;
+          if (!waitingGuest) {
+            const deadline = Date.now() + 45000;
+            while (Date.now() < deadline && state && state.status === 'active') {
+              if (isStale()) {
+                hideChallengeBetweenLevelsOverlay();
+                return null;
+              }
+              const rr = Array.isArray(state.rounds)
+                ? state.rounds.find((x) => Number(x.level) === Number(round.level))
+                : null;
+              if (rr && rr.host_submitted && rr.guest_submitted && rr.resolved) break;
+              if (Number(state.last_resolved_level) >= Number(round.level) && rr && rr.resolved) break;
+              await sleep(1300);
+              if (isStale()) {
+                hideChallengeBetweenLevelsOverlay();
+                return null;
+              }
+              const next = await SquirrelApi.getChallenge(meta.code);
+              if (!next) break;
+              state = next;
+              paintChallengeWaitPanel(state, round.level, pid, localSnap);
             }
-            const rr = Array.isArray(state.rounds)
-              ? state.rounds.find((x) => Number(x.level) === Number(round.level))
-              : null;
-            const waitingGuest = !state.guest_id;
-            if (!waitingGuest && rr && rr.host_submitted && rr.guest_submitted && rr.resolved) break;
-            if (Number(state.last_resolved_level) >= Number(round.level) && rr && rr.resolved) break;
-            await sleep(1300);
-            if (isStale()) {
-              hideChallengeBetweenLevelsOverlay();
-              return null;
-            }
-            const next = await SquirrelApi.getChallenge(meta.code);
-            if (!next) break;
-            state = next;
-            paintChallengeWaitPanel(state, round.level, pid, localSnap);
           }
 
           if (isStale()) {
@@ -17516,7 +17794,7 @@
         const startLevel = currentSelectedLevel;
         if (dom.challengeHostStatus) dom.challengeHostStatus.textContent = '';
         if (forceNew) hostChallengePayload = null;
-        if (dom.startHostedRunButton) dom.startHostedRunButton.classList.add('hidden');
+        updateStartHostedButtonState();
 
         if (!forceNew && hostChallengePayload) {
           applyHostChallengePayloadToUi(hostChallengePayload);
@@ -17571,8 +17849,8 @@
           applyHostChallengePayloadToUi(hostChallengePayload);
           if (dom.challengeHostStatus) {
             dom.challengeHostStatus.textContent = reserved
-              ? 'Only your selected opponent can join. Tap Start when ready.'
-              : 'Share this code. Tap Start challenge run when you are ready.';
+              ? 'Only your selected opponent can join. Tap Start run when ready — they can play later.'
+              : 'Share this code. Tap Start run when ready — rivals can join and catch up anytime.';
           }
           showToast(`Room code: ${created.code}`);
           leaderboardChallengeTarget = null;
@@ -17616,6 +17894,7 @@
             refreshChallengeResumeUi();
             setChallengeProfilePanelOpen(false);
             refreshChallengeProfileCorner();
+            void refreshFriendsPanel();
             void refreshActiveChallengesPanel();
             showChallengeHostTab();
           });
@@ -17623,32 +17902,40 @@
         if (dom.closeChallengeOverlayButton) {
           dom.closeChallengeOverlayButton.addEventListener('click', () => {
             hostChallengePayload = null;
-            if (dom.startHostedRunButton) dom.startHostedRunButton.classList.add('hidden');
+            updateStartHostedButtonState();
             toggle(dom.challengeOverlay, false);
           });
         }
         if (dom.challengeTabHost && dom.challengeTabJoin && dom.challengeHostPanel && dom.challengeJoinPanel) {
           dom.challengeTabHost.addEventListener('click', () => {
             showChallengeHostTab();
+            void createHostedChallengeRoom(false);
           });
           dom.challengeTabJoin.addEventListener('click', () => {
             dom.challengeTabJoin.classList.add('selected');
             dom.challengeTabHost.classList.remove('selected');
             dom.challengeJoinPanel.classList.remove('hidden');
             dom.challengeHostPanel.classList.add('hidden');
+            updateStartHostedButtonState();
             if (dom.challengeJoinDisplayNameInput) dom.challengeJoinDisplayNameInput.value = loadDisplayName();
           });
         }
-        if (dom.regenerateChallengeCodeButton) {
-          dom.regenerateChallengeCodeButton.addEventListener('click', () => {
-            void createHostedChallengeRoom(true);
+        if (dom.challengeProfileAddFriendsBtn) {
+          dom.challengeProfileAddFriendsBtn.addEventListener('click', () => {
+            toggle(dom.challengeOverlay, false);
+            showAchievementsTab('stats');
+            refreshStatsPanel();
+            toggle(dom.achievementsOverlay, true);
           });
         }
         if (dom.challengeProfileToggle) {
           dom.challengeProfileToggle.addEventListener('click', () => {
             const willOpen = dom.challengeProfilePanel && dom.challengeProfilePanel.classList.contains('hidden');
             setChallengeProfilePanelOpen(willOpen);
-            if (willOpen) refreshChallengeProfileCorner();
+            if (willOpen) {
+              refreshChallengeProfileCorner();
+              void refreshChallengeProfileFriends();
+            }
           });
         }
         if (dom.openChallengeProfileButton) {
@@ -17702,13 +17989,11 @@
         if (dom.startHostedRunButton) {
           dom.startHostedRunButton.addEventListener('click', () => {
             if (!hostChallengePayload) {
-              showToast('Open the Host tab to create a room code or seed first.');
+              showToast('Tap Host first to create a room code or seed.');
               return;
             }
             const p = hostChallengePayload;
             beginGameFromMenu(p.startLevel, { runSeed: p.seed, challenge: { code: p.code, role: p.role } });
-            hostChallengePayload = null;
-            dom.startHostedRunButton.classList.add('hidden');
           });
         }
         if (dom.joinChallengeButton) {

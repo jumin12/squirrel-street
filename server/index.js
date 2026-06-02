@@ -114,7 +114,9 @@ const migrateChallengeCols = [
   'ALTER TABLE challenges ADD COLUMN IF NOT EXISTS host_eliminated_level INT',
   'ALTER TABLE challenges ADD COLUMN IF NOT EXISTS guest_eliminated_level INT',
   'ALTER TABLE challenges ADD COLUMN IF NOT EXISTS host_eliminated_lives INT',
-  'ALTER TABLE challenges ADD COLUMN IF NOT EXISTS guest_eliminated_lives INT'
+  'ALTER TABLE challenges ADD COLUMN IF NOT EXISTS guest_eliminated_lives INT',
+  'ALTER TABLE challenges ADD COLUMN IF NOT EXISTS last_rejoin_player_id TEXT',
+  'ALTER TABLE challenges ADD COLUMN IF NOT EXISTS last_rejoin_at TIMESTAMPTZ'
 ];
 
 const migrateChallengeRoundCols = [
@@ -234,6 +236,8 @@ function rowToChallenge(r, rounds = []) {
     guest_eliminated_level: r.guest_eliminated_level != null ? Number(r.guest_eliminated_level) : null,
     host_eliminated_lives: r.host_eliminated_lives != null ? Number(r.host_eliminated_lives) : null,
     guest_eliminated_lives: r.guest_eliminated_lives != null ? Number(r.guest_eliminated_lives) : null,
+    last_rejoin_player_id: r.last_rejoin_player_id || null,
+    last_rejoin_at: r.last_rejoin_at || null,
     rounds: payloadRounds
   };
 }
@@ -669,6 +673,7 @@ app.get('/api/challenges/active/:playerId', async (req, res) => {
               status, updated_at
        FROM challenges
        WHERE status = 'active'
+         AND guest_id IS NOT NULL
          AND (
            (host_id = $1 AND host_eliminated = FALSE)
            OR (guest_id = $1 AND guest_eliminated = FALSE)
@@ -681,6 +686,35 @@ app.get('/api/challenges/active/:playerId', async (req, res) => {
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'active_list_failed' });
+  }
+});
+
+app.post('/api/challenges/:code/rejoin', async (req, res) => {
+  if (!pool) return res.status(503).json({ error: 'Database not configured' });
+  try {
+    const c = req.params.code.trim().toUpperCase();
+    const { player_id } = req.body || {};
+    if (!player_id || typeof player_id !== 'string') {
+      return res.status(400).json({ error: 'player_id required' });
+    }
+    const { rows } = await pool.query('SELECT * FROM challenges WHERE code = $1', [c]);
+    const row = rows[0];
+    if (!row) return res.status(404).json({ error: 'not_found' });
+    if (row.status !== 'active') return res.status(410).json({ error: 'inactive' });
+    const isHost = row.host_id === player_id;
+    const isGuest = row.guest_id === player_id;
+    if (!isHost && !isGuest) return res.status(403).json({ error: 'not_in_challenge' });
+    if (isHost && !row.guest_id) {
+      return res.status(400).json({ error: 'no_opponent' });
+    }
+    await pool.query(
+      `UPDATE challenges SET last_rejoin_player_id = $1, last_rejoin_at = NOW(), updated_at = NOW() WHERE code = $2`,
+      [player_id, c]
+    );
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'rejoin_notify_failed' });
   }
 });
 
