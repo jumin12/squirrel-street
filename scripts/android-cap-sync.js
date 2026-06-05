@@ -85,6 +85,26 @@ function copyWebAssetsFromRepo() {
   } else {
     console.warn('[android-cap-sync] Could not read CURRENT_VERSION from copied index.html');
   }
+
+  const srcIndex = path.join(repoRoot, 'index.html');
+  if (fs.existsSync(srcIndex)) {
+    const srcHtml = fs.readFileSync(srcIndex, 'utf8');
+    const srcVer = srcHtml.match(/const CURRENT_VERSION = '([^']+)'/);
+    const dstVer = html.match(/const CURRENT_VERSION = '([^']+)'/);
+    if (srcVer && dstVer && srcVer[1] !== dstVer[1]) {
+      console.error(
+        `[android-cap-sync] Version mismatch after copy (repo v${srcVer[1]} vs www v${dstVer[1]}).`
+      );
+      process.exit(1);
+    }
+    if (srcHtml.includes('regenerateChallengeCodeButton') && !srcHtml.includes('regenerateChallengeCodeButton:')) {
+      console.warn('[android-cap-sync] Repo still contains regenerateChallengeCodeButton — expected removed.');
+    }
+    if (html.includes('id="regenerateChallengeCodeButton"')) {
+      console.error('[android-cap-sync] Stale UI: New room code button still in bundled index.html.');
+      process.exit(1);
+    }
+  }
 }
 
 function patchGradleFile(filePath, versionCode, versionName) {
@@ -150,5 +170,12 @@ const result = spawnSync('npx', ['cap', 'sync', 'android'], {
   stdio: 'inherit',
   shell: true
 });
+
+if (result.status === 0) {
+  console.log(
+    '\n[android-cap-sync] Done. In Android Studio: Build > Clean Project, then Build > Generate Signed Bundle/APK.\n' +
+      'Uninstall the old app from your phone before installing the new APK so WebView cache clears.\n'
+  );
+}
 
 process.exit(result.status === null ? 1 : result.status);

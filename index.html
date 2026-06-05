@@ -4607,9 +4607,9 @@
       border: none !important;
       justify-content: space-evenly !important; /* Distribute numbers across the bar */
       width: 90%; /* Restrict width to keep numbers centered in art */
-      margin-top: 4px !important;
-      padding-top: clamp(16px, 4.8vw, 28px) !important;
-      align-items: center !important;
+      margin-top: 0 !important;
+      padding-top: clamp(6px, 2.2vw, 14px) !important;
+      align-items: flex-start !important;
     }
 
     .hud-card {
@@ -4620,7 +4620,7 @@
       width: 20%; /* Give each stat equal width within the stats container */
       display: flex;
       justify-content: center;
-      align-items: center;
+      align-items: flex-start;
     }
 
     /* Horizontal Nudges */
@@ -4649,8 +4649,8 @@
             background-position: center top !important;
         }
         .hud-stats {
-            margin-top: 6px !important;
-            padding-top: 22px !important;
+            margin-top: 0 !important;
+            padding-top: 12px !important;
             width: 90% !important; /* 90% of the constrained 520px width */
         }
         .hud-card:nth-child(4) {
@@ -4669,6 +4669,8 @@
         font-family: 'Press Start 2P', monospace;
         font-weight: normal !important;
         margin: 0 !important;
+        transform: translateY(-2px);
+        line-height: 1.1;
     }
 
     /* Pause Button (Settings/Gear) in HUD */
@@ -4942,8 +4944,8 @@
       justify-content: flex-start;
       align-items: stretch;
       padding: 0;
-      background: rgba(15, 23, 42, 0.96);
-      z-index: 120;
+      background: rgba(15, 23, 42, 0.98);
+      z-index: 200;
     }
     #challengeBetweenLevelsOverlay.challenge-between-overlay .modal.challenge-between-modal {
       max-width: none;
@@ -5172,7 +5174,7 @@
   </script>
 </head>
 <body>
-  <div id="screenVersion" class="screen-version-label" aria-hidden="true">v2.10</div>
+  <div id="screenVersion" class="screen-version-label" aria-hidden="true">v2.12</div>
   <div id="preloadScreen" class="screen">
     <div class="logo">Squirrel Street</div>
     <div class="menu-card">
@@ -7400,6 +7402,50 @@
         const m = Math.floor((left % 3600000) / 60000);
         dom.challengeResumeHint.textContent = `Resume match ${payload.code} (${h}h ${m}m left). Same device & player id.`;
         dom.challengeResumePanel.classList.remove('hidden');
+      }
+
+      function paintLocalChallengeBetweenPanel(round, gameRef) {
+        const pid = getOrCreatePlayerId();
+        const wcRun = Math.max(0, Math.round(Number(gameRef.wordsCompleted) || 0));
+        const wordsThisLv =
+          round.wordsThisLevel != null && Number.isFinite(round.wordsThisLevel)
+            ? Math.max(0, Math.round(round.wordsThisLevel))
+            : 0;
+        const localSnap = {
+          roundPoints: round.points,
+          wordsThisLevel: wordsThisLv,
+          wordsRunTotal: wcRun,
+          livesRemaining: Math.max(0, Math.floor(Number(gameRef.lives) || 0))
+        };
+        const isGuest = gameRef.challengeMeta && gameRef.challengeMeta.role === 'guest';
+        const youName = loadDisplayName() || 'You';
+        const fakeState = {
+          host_name: isGuest ? 'Host (offline)' : youName,
+          guest_name: isGuest ? youName : 'Rival (offline)',
+          host_id: isGuest ? 'offline-host' : pid,
+          guest_id: isGuest ? pid : null,
+          host_wins: 0,
+          guest_wins: 0,
+          host_total_points: isGuest ? 0 : Math.round(gameRef.score),
+          guest_total_points: isGuest ? Math.round(gameRef.score) : 0,
+          host_words_accum: isGuest ? 0 : wcRun,
+          guest_words_accum: isGuest ? wcRun : 0,
+          rounds: [
+            {
+              level: round.level,
+              host_score: isGuest ? null : round.points,
+              guest_score: isGuest ? round.points : null,
+              host_submitted: !isGuest,
+              guest_submitted: isGuest,
+              host_words: isGuest ? null : wordsThisLv,
+              guest_words: isGuest ? wordsThisLv : null,
+              host_lives: isGuest ? null : localSnap.livesRemaining,
+              guest_lives: isGuest ? localSnap.livesRemaining : null
+            }
+          ],
+          status: 'active'
+        };
+        paintChallengeWaitPanel(fakeState, round.level, pid, localSnap);
       }
 
       function showChallengeBetweenLevelsOverlay() {
@@ -10877,6 +10923,16 @@
       // Changelog Data
       const CHANGELOG = [
         {
+          version: '2.12',
+          date: '2026-05-19',
+          changes: [
+            'Fixed between-level screen flashing away — stats stay visible until you tap Continue and the next level loads',
+            'HUD score/level/lives numbers moved up into the top bar art on Android',
+            'Version label and Android bundle now stay in sync (run npm run android:sync before rebuilding the APK)',
+            'Challenge between-level pause works for all challenge runs, including when the server is slow or offline'
+          ]
+        },
+        {
           version: '2.11',
           date: '2026-05-19',
           changes: [
@@ -11076,7 +11132,7 @@
         }
       ];
       
-      const CURRENT_VERSION = '2.11';
+      const CURRENT_VERSION = '2.12';
       const LAST_SEEN_VERSION_KEY = 'squirrelStreet.lastSeenVersion';
 
       function checkChangelogBadge() {
@@ -17265,27 +17321,56 @@
         finishLevelTransition() {
           const proceed = () => {
             const prevLevel = this.level - 1;
+            const afterLevelReady = () => hideChallengeBetweenLevelsOverlay();
+            const runTransition = () => {
+              this.startLevelTransition(false, afterLevelReady);
+            };
             const shouldShowAd = prevLevel > 0 && (prevLevel % 2 === 0 || isBossLevel(prevLevel));
             if (shouldShowAd) {
-              showAd(() => {
-                this.startLevelTransition();
-              });
+              showAd(runTransition);
             } else {
-              this.startLevelTransition();
+              runTransition();
             }
           };
 
           const pending = this._pendingChallengeRound;
-          if (
-            pending &&
-            this.challengeMeta &&
-            SquirrelApi.isConfigured() &&
-            this.challengeMeta.code !== 'offline'
-          ) {
+          if (pending && this.challengeMeta) {
             this._pendingChallengeRound = null;
             this.phase = 'paused';
             this.stopLoop();
+            showChallengeBetweenLevelsOverlay();
+            if (dom.challengeBetweenLevelsTitle) {
+              dom.challengeBetweenLevelsTitle.textContent = `Level ${pending.level} complete`;
+            }
+            if (dom.challengeBetweenLevelsSubtitle) {
+              dom.challengeBetweenLevelsSubtitle.textContent = 'Loading match stats…';
+            }
+            if (dom.challengeBetweenLevelsBody) {
+              dom.challengeBetweenLevelsBody.innerHTML =
+                '<p style="color:#94a3b8;margin:12px 0;">Saving your score and fetching rival stats…</p>';
+            }
+            if (dom.challengeBetweenContinueBtn) {
+              dom.challengeBetweenContinueBtn.classList.add('hidden');
+            }
+
             const syncGen = this._runGeneration;
+            const runLocalPause = () => {
+              paintLocalChallengeBetweenPanel(pending, this);
+              return waitForChallengeBetweenContinue().then(() => {
+                if (syncGen !== gameRunGeneration || this._runGeneration !== syncGen) return;
+                persistChallengeResume(this);
+                proceed();
+              });
+            };
+
+            if (
+              this.challengeMeta.code === 'offline' ||
+              !SquirrelApi.isConfigured()
+            ) {
+              runLocalPause();
+              return;
+            }
+
             this.syncChallengeRoundOnServer(pending)
               .then((msg) => {
                 if (syncGen !== gameRunGeneration || this._runGeneration !== syncGen) return;
@@ -17305,12 +17390,12 @@
           proceed();
         }
 
-        startLevelTransition(isRestart = false) {
+        startLevelTransition(isRestart = false, onTransitionComplete = null) {
           this.resetTimeSlowEffect();
           this.pendingAdvance = null;
           const container = dom.gameScreen.querySelector('.canvas-container');
           if (!container) {
-            this.completeLevelTransition(isRestart);
+            this.completeLevelTransition(isRestart, null, onTransitionComplete);
             return;
           }
 
@@ -17323,7 +17408,7 @@
 
           const handleFadeOut = () => {
             container.removeEventListener('transitionend', handleFadeOut);
-            this.completeLevelTransition(isRestart, container);
+            this.completeLevelTransition(isRestart, container, onTransitionComplete);
           };
 
           container.classList.add('fade-out');
@@ -17337,7 +17422,7 @@
             startFadeOut();
           }
         }
-        completeLevelTransition(isRestart, container) {
+        completeLevelTransition(isRestart, container, onTransitionComplete = null) {
           this.phase = 'running';
           this.prepareLevel();
           if (this.challengeMeta) {
@@ -17345,11 +17430,19 @@
           }
           this.startLoop();
 
-          if (!container) return;
+          if (!container) {
+            if (typeof onTransitionComplete === 'function') {
+              onTransitionComplete();
+            }
+            return;
+          }
 
           const handleFadeIn = () => {
             container.classList.remove('fade-in', 'transitioning');
             container.removeEventListener('transitionend', handleFadeIn);
+            if (typeof onTransitionComplete === 'function') {
+              onTransitionComplete();
+            }
           };
 
           container.classList.remove('fade-out');
@@ -17714,10 +17807,8 @@
           }
 
           if (isStale()) {
-            hideChallengeBetweenLevelsOverlay();
             return null;
           }
-          hideChallengeBetweenLevelsOverlay();
 
           if (!state) return null;
           if (state.status === 'completed' && state.match_summary) {
@@ -17738,7 +17829,14 @@
           return 'Score saved — keep playing while your rival catches up.';
         } catch (e) {
           console.warn(e);
-          hideChallengeBetweenLevelsOverlay();
+          if (dom.challengeBetweenLevelsSubtitle) {
+            dom.challengeBetweenLevelsSubtitle.textContent =
+              'Could not reach the server — review your stats below, then tap Continue.';
+          }
+          paintLocalChallengeBetweenPanel(round, this);
+          if (!isStale()) {
+            await waitForChallengeBetweenContinue();
+          }
           return null;
         }
       };
