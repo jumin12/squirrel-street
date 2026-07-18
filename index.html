@@ -4568,27 +4568,29 @@
         image-rendering: pixelated;
     }
 
-    /* HUD Top UI */
+    /* HUD Top UI — art is 249×33; lock aspect ratio and pin numbers to well centers */
     .hud {
-      position: absolute !important; /* Force to top */
-      top: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      width: 100% !important;
+      --hud-art-aspect: 249 / 33;
+      position: absolute !important;
+      top: env(safe-area-inset-top, 0px) !important;
+      left: 50% !important;
+      right: auto !important;
+      transform: translateX(-50%) !important;
+      width: min(100%, 520px) !important;
       z-index: 100;
-      
-      background: url('art/ui/topui.png') center top no-repeat !important;
-      background-size: 100% 100% !important; /* Stretches to fill container */
-      image-rendering: pixelated; /* Prevent "glitched" look on high-res screens */
-      padding: env(safe-area-inset-top) 0 0 0 !important; /* Add space for Android notches/status bars */
-      align-items: flex-start !important;
-      min-height: 60px; /* Increased minimum height to prevent squishing */
-      height: calc(14vw + env(safe-area-inset-top)); /* Responsive height including safe area */
-      max-height: 120px;
+      box-sizing: border-box !important;
+      background: url('art/ui/topui.png') center center / 100% 100% no-repeat !important;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      padding: 0 !important;
+      margin: 0 !important;
+      aspect-ratio: var(--hud-art-aspect);
+      height: auto !important;
+      min-height: 0 !important;
+      max-height: none !important;
       pointer-events: none;
-      display: flex;
-      flex-direction: row;
-      justify-content: center;
+      display: block !important;
+      overflow: visible;
     }
     
     .hud > * {
@@ -4602,60 +4604,49 @@
     }
 
     .hud-stats {
+      position: absolute !important;
+      inset: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
       background: transparent !important;
       box-shadow: none !important;
       border: none !important;
-      justify-content: space-evenly !important; /* Distribute numbers across the bar */
-      width: 90%; /* Restrict width to keep numbers centered in art */
-      margin-top: 0 !important;
-      padding-top: clamp(6px, 2.2vw, 14px) !important;
-      align-items: flex-start !important;
+      display: block !important;
+      flex: none !important;
+      gap: 0 !important;
+      overflow: visible !important;
     }
 
     .hud-card {
+      position: absolute !important;
+      top: 54% !important;
+      transform: translate(-50%, -50%) !important;
+      width: 18% !important;
+      height: 38% !important;
+      margin: 0 !important;
       background: transparent !important;
       border: none !important;
       box-shadow: none !important;
       padding: 0 !important;
-      width: 20%; /* Give each stat equal width within the stats container */
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
+      min-width: 0 !important;
+      display: flex !important;
+      justify-content: center !important;
+      align-items: center !important;
+      flex-direction: row !important;
     }
 
-    /* Horizontal Nudges */
-    .hud-card:nth-child(1) { /* Score */
-      transform: translateX(-1%);
-    }
-    .hud-card:nth-child(2) { /* Level */
-      transform: translateX(-15%);
-    }
-    .hud-card:nth-child(3) { /* High Score */
-        transform: translateX(-15%);
-    }
-    .hud-card:nth-child(4) { /* Lives */
-        transform: translateX(-40%);
-        margin-top: 0 !important;
-    }
+    /* Well centers measured from art/ui/topui.png (249×33); leave far-right for pause */
+    .hud-card:nth-child(1) { left: 13.05%; width: 20%; } /* Level */
+    .hud-card:nth-child(2) { left: 34.74%; width: 20%; } /* Score */
+    .hud-card:nth-child(3) { left: 60.04%; width: 16%; } /* High Score */
+    .hud-card:nth-child(4) { left: 78.3%; width: 10%; } /* Lives well right of heart */
 
-    /* Small Adjustments for very wide screens (tablets landscape / desktop) */
-    @media (min-aspect-ratio: 1/1) {
-        .hud {
-            height: 90px;
-            width: min(100%, 520px) !important; /* Constrain HUD width to game width on PC */
-            left: 50% !important;
-            transform: translateX(-50%) !important;
-            background-size: 100% 100% !important; /* Stretches to fill the now-constrained container */
-            background-position: center top !important;
-        }
-        .hud-stats {
-            margin-top: 0 !important;
-            padding-top: 12px !important;
-            width: 90% !important; /* 90% of the constrained 520px width */
-        }
-        .hud-card:nth-child(4) {
-             margin-top: 0 !important;
-        }
+    @media (max-width: 360px) {
+      .hud-card {
+        top: 55% !important;
+      }
     }
     
     .hud-card h4 {
@@ -4665,45 +4656,47 @@
     .hud-card p {
         color: #fff !important;
         text-shadow: 2px 2px 0 #3e2723, -1px -1px 0 #3e2723, 1px -1px 0 #3e2723, -1px 1px 0 #3e2723;
-        font-size: clamp(0.5rem, 2.0vw, 1.0rem) !important; /* Smaller numbers */
+        font-size: clamp(0.42rem, 2.6vw, 0.85rem) !important;
         font-family: 'Press Start 2P', monospace;
         font-weight: normal !important;
         margin: 0 !important;
-        transform: translateY(-2px);
-        line-height: 1.1;
+        padding: 0 !important;
+        transform: none !important;
+        line-height: 1 !important;
+        text-align: center;
+        white-space: nowrap;
+        width: 100%;
     }
 
     /* Pause Button (Settings/Gear) in HUD */
     #pauseButton {
-        width: 44px; /* Reduced from 50px */
-        height: 44px;
+        width: clamp(28px, 8vw, 44px);
+        height: clamp(28px, 8vw, 44px);
         background: transparent !important;
         border: none !important;
         box-shadow: none !important;
         padding: 0 !important;
         position: absolute;
-        top: calc(10px + env(safe-area-inset-top)); /* Adjust for notch */
-        right: 12px;
+        top: 50%;
+        right: 1.5%;
+        transform: translateY(-50%);
         margin: 0 !important;
+        z-index: 2;
     }
     
-    /* Slightly smaller on mobile devices */
     @media (max-width: 600px) {
         #pauseButton {
-            width: 36px; /* Reduced from 42px */
-            height: 36px;
-            top: 8px;
-            right: 8px;
+            width: clamp(26px, 9vw, 36px);
+            height: clamp(26px, 9vw, 36px);
+            right: 1%;
         }
     }
     
-    /* Even smaller on very small screens */
     @media (max-width: 360px) {
          #pauseButton {
-            width: 30px; /* Reduced from 36px */
-            height: 30px;
-            top: 6px;
-            right: 6px;
+            width: 28px;
+            height: 28px;
+            right: 0.5%;
         }
     }
     
@@ -5174,7 +5167,7 @@
   </script>
 </head>
 <body>
-  <div id="screenVersion" class="screen-version-label" aria-hidden="true">v2.13</div>
+  <div id="screenVersion" class="screen-version-label" aria-hidden="true">v2.14</div>
   <div id="preloadScreen" class="screen">
     <div class="logo">Squirrel Street</div>
     <div class="menu-card">
@@ -5356,10 +5349,10 @@
     <div class="hud">
       <div class="hud-stats">
         <div class="hud-card">
-          <p id="hudScore">0</p>
+          <p id="hudLevel">1</p>
         </div>
         <div class="hud-card">
-          <p id="hudLevel">1</p>
+          <p id="hudScore">0</p>
         </div>
         <div class="hud-card">
           <p id="hudHighScore">0</p>
@@ -10923,6 +10916,15 @@
       // Changelog Data
       const CHANGELOG = [
         {
+          version: '2.14',
+          date: '2026-07-17',
+          changes: [
+            'Top HUD numbers lock to the art wells on phone screens (aspect-locked bar, no stretch drift)',
+            'Level / Score / High Score / Lives order matches the top bar art',
+            'Challenge Host creates a room code as soon as Challenge Mode opens'
+          ]
+        },
+        {
           version: '2.13',
           date: '2026-05-19',
           changes: [
@@ -11141,7 +11143,7 @@
         }
       ];
       
-      const CURRENT_VERSION = '2.13';
+      const CURRENT_VERSION = '2.14';
       const LAST_SEEN_VERSION_KEY = 'squirrelStreet.lastSeenVersion';
 
       function checkChangelogBadge() {
@@ -18004,6 +18006,7 @@
             void refreshFriendsPanel();
             void refreshActiveChallengesPanel();
             showChallengeHostTab();
+            void createHostedChallengeRoom(false);
           });
         }
         if (dom.closeChallengeOverlayButton) {

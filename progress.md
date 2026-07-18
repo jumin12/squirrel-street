@@ -6,3 +6,11 @@ Original prompt: if the user selects the host button it should automatically gen
 - Challenge server is being updated to store per-level score submissions so players can continue independently instead of blocking on one shared current level.
 - Version bumped to in-game v2.4, package 2.4.0, and Android VERSION_CODE 29 / VERSION_NAME 2.4.0.
 - Verification: server syntax passes with `node --check server/index.js`; lints show no errors. Playwright CLI captured and inspected the preload screenshot successfully. The bundled skill client could not run directly on this Windows/CommonJS project because Node treated its ES module script as CommonJS.
+
+## 2026-07-17 — HUD alignment + v2.14
+- Fixed top HUD: aspect-locked `topui.png` (249/33), absolute % well centers, DOM order Level?Score?High?Lives.
+- Verified visually via Playwright on iPhone SE/12/14 Pro Max, Pixel 5, Galaxy S9+, 320/390/430 widths — aspect ~7.546 and well % stable (13/35/60/78).
+- Challenge Mode now calls `createHostedChallengeRoom(false)` on open; live API returned codes (e.g. L7MBXT, S4EGU9).
+- Versions: in-game **v2.14**, package **2.14.0**, Play `VERSION_CODE=39` / `VERSION_NAME=2.14.0`, iOS build 39.
+- Android sync: `npm run android:sync` from repo root.
+- Helper scripts: `scripts/hud-visual-check.js`, `scripts/mp-smoke.js` (local QA; screenshots under `tmp-hud-shots/`).
