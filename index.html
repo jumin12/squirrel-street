@@ -921,6 +921,34 @@
       text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.45);
     }
 
+    #usernameOverlay .modal {
+      max-width: 440px;
+      width: 92vw;
+    }
+
+    #usernameOverlayInput {
+      width: 100%;
+      font-size: 0.7rem;
+      padding: 12px 10px;
+      text-align: center;
+      border: 3px solid #5D4037;
+      background: rgba(0, 0, 0, 0.4);
+      color: #FFD700;
+      margin-bottom: 10px;
+    }
+
+    #usernameOverlayStatus {
+      font-size: 0.4rem;
+      color: #fca5a5;
+      min-height: 1.2em;
+      margin: 0 0 10px;
+      line-height: 1.45;
+    }
+
+    #usernameOverlayStatus:empty {
+      display: none;
+    }
+
     .stats-mp-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -5605,7 +5633,7 @@
   </script>
 </head>
 <body>
-  <div id="screenVersion" class="screen-version-label" aria-hidden="true">v2.17</div>
+  <div id="screenVersion" class="screen-version-label" aria-hidden="true">v2.18</div>
   <div id="preloadScreen" class="screen">
     <div class="logo">Squirrel Street</div>
     <div class="menu-card">
@@ -5691,6 +5719,16 @@
         <span class="play-mode-choice-desc">Friends, bots, or anyone waiting for a game.</span>
       </button>
       <button id="closePlayModeButton" class="pill-button ghost" style="width: 100%;">Back</button>
+    </div>
+  </div>
+
+  <div id="usernameOverlay" class="overlay hidden">
+    <div class="modal play-mode-modal">
+      <h2>Create a username</h2>
+      <p class="play-mode-lead" id="usernameOverlayHint">Pick a unique name so friends can find you. 3–24 letters or numbers.</p>
+      <input id="usernameOverlayInput" maxlength="24" placeholder="Username" autocomplete="username" spellcheck="false">
+      <p id="usernameOverlayStatus"></p>
+      <button type="button" id="usernameOverlaySaveButton" class="button challenge-start-run">Save username</button>
     </div>
   </div>
 
@@ -5794,7 +5832,23 @@
         <p id="challengeOfflineNote" class="challenge-section-hint hidden">Online challenges need a connection. Solo is still available from Play.</p>
       </div>
       <div class="pill-buttons challenge-modal-footer">
+        <button type="button" id="challengeHistoryButton" class="pill-button">Previous matches</button>
         <button id="closeChallengeOverlayButton" class="pill-button ghost">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="challengeHistoryOverlay" class="overlay hidden">
+    <div class="modal challenge-modal" style="max-width: 520px; width: 94vw;">
+      <div class="challenge-modal-header">
+        <h2>Previous matches</h2>
+      </div>
+      <div class="challenge-modal-scroll">
+        <p id="challengeHistoryHint" class="challenge-section-hint"></p>
+        <div id="challengeHistoryList" class="match-history-list"></div>
+      </div>
+      <div class="pill-buttons challenge-modal-footer">
+        <button type="button" id="closeChallengeHistoryButton" class="pill-button ghost">Back</button>
       </div>
     </div>
   </div>
@@ -7071,6 +7125,11 @@
         soloRunButton: document.getElementById('soloRunButton'),
         challengeModeMenuButton: document.getElementById('challengeModeMenuButton'),
         closePlayModeButton: document.getElementById('closePlayModeButton'),
+        usernameOverlay: document.getElementById('usernameOverlay'),
+        usernameOverlayHint: document.getElementById('usernameOverlayHint'),
+        usernameOverlayInput: document.getElementById('usernameOverlayInput'),
+        usernameOverlayStatus: document.getElementById('usernameOverlayStatus'),
+        usernameOverlaySaveButton: document.getElementById('usernameOverlaySaveButton'),
         challengeOverlay: document.getElementById('challengeOverlay'),
         challengeResumePanel: document.getElementById('challengeResumePanel'),
         challengeResumeHint: document.getElementById('challengeResumeHint'),
@@ -7093,6 +7152,11 @@
         challengeProfileFriendsList: document.getElementById('challengeProfileFriendsList'),
         challengeProfileAddFriendsBtn: document.getElementById('challengeProfileAddFriendsBtn'),
         closeChallengeOverlayButton: document.getElementById('closeChallengeOverlayButton'),
+        challengeHistoryButton: document.getElementById('challengeHistoryButton'),
+        challengeHistoryOverlay: document.getElementById('challengeHistoryOverlay'),
+        challengeHistoryHint: document.getElementById('challengeHistoryHint'),
+        challengeHistoryList: document.getElementById('challengeHistoryList'),
+        closeChallengeHistoryButton: document.getElementById('closeChallengeHistoryButton'),
         challengeBetweenLevelsOverlay: document.getElementById('challengeBetweenLevelsOverlay'),
         challengeBetweenLevelsTitle: document.getElementById('challengeBetweenLevelsTitle'),
         challengeBetweenLevelsSubtitle: document.getElementById('challengeBetweenLevelsSubtitle'),
@@ -7365,11 +7429,113 @@
         return `Squirrel-${getOrCreatePlayerId().slice(-4)}`;
       }
 
+      function hasChosenDisplayName() {
+        const raw = localStorage.getItem(STORAGE_KEYS.displayName);
+        return Boolean(raw && raw.trim());
+      }
+
       function saveDisplayName(name) {
         const trimmed = (name || '').trim().slice(0, 24);
         if (trimmed) {
           localStorage.setItem(STORAGE_KEYS.displayName, trimmed);
         }
+      }
+
+      function validateLocalUsername(raw) {
+        const name = String(raw || '').replace(/\s+/g, ' ').trim().slice(0, 24);
+        if (name.length < 3) return { ok: false, error: 'Use at least 3 characters.' };
+        if (!/^[A-Za-z0-9][A-Za-z0-9 ._\-]*$/.test(name) || !/[A-Za-z]/.test(name)) {
+          return { ok: false, error: 'Use letters or numbers. Spaces, _ and - are ok.' };
+        }
+        const reserved = ['player', 'host', 'guest', 'admin', 'squirrel', 'acorn bot', 'street bot', 'forest champ'];
+        if (reserved.indexOf(name.toLowerCase()) !== -1) {
+          return { ok: false, error: 'That name is reserved. Try another.' };
+        }
+        return { ok: true, name };
+      }
+
+      let pendingAfterUsername = null;
+
+      function setUsernameOverlayStatus(text) {
+        if (dom.usernameOverlayStatus) dom.usernameOverlayStatus.textContent = text || '';
+      }
+
+      function openUsernameOverlay(message) {
+        if (dom.usernameOverlayHint) {
+          dom.usernameOverlayHint.textContent =
+            message || 'Pick a unique name so friends can find you. 3–24 letters or numbers.';
+        }
+        setUsernameOverlayStatus('');
+        if (dom.usernameOverlayInput) {
+          dom.usernameOverlayInput.value = hasChosenDisplayName() ? loadDisplayName() : '';
+        }
+        toggle(dom.usernameOverlay, true);
+        setTimeout(() => {
+          try {
+            if (dom.usernameOverlayInput) dom.usernameOverlayInput.focus();
+          } catch (e) {}
+        }, 50);
+      }
+
+      function requireUsernameThen(fn) {
+        if (hasChosenDisplayName()) return true;
+        pendingAfterUsername = typeof fn === 'function' ? fn : null;
+        openUsernameOverlay();
+        return false;
+      }
+
+      async function claimAndSaveDisplayName(raw) {
+        const check = validateLocalUsername(raw);
+        if (!check.ok) {
+          setUsernameOverlayStatus(check.error);
+          showToast(check.error);
+          return false;
+        }
+        if (SquirrelApi.isConfigured()) {
+          const res = await SquirrelApi.claimDisplayName(getOrCreatePlayerId(), check.name);
+          if (res.error === 'name_taken') {
+            const msg = 'That username is taken. Pick another.';
+            setUsernameOverlayStatus(msg);
+            showToast(msg);
+            return false;
+          }
+          if (res.error === 'reserved_name' || res.error === 'invalid_name') {
+            const msg = 'That username is not allowed. Pick another.';
+            setUsernameOverlayStatus(msg);
+            showToast(msg);
+            return false;
+          }
+          if (!res.ok) {
+            if (res.status === 404 || res.status === 501) {
+              saveDisplayName(check.name);
+              syncChallengeNameInputsFromStorage();
+              if (dom.statsDisplayNameInput) dom.statsDisplayNameInput.value = loadDisplayName();
+              return true;
+            }
+            const msg = 'Could not check that name online. Try again.';
+            setUsernameOverlayStatus(msg);
+            showToast(msg);
+            return false;
+          }
+          saveDisplayName(res.display_name || check.name);
+        } else {
+          saveDisplayName(check.name);
+        }
+        syncChallengeNameInputsFromStorage();
+        if (dom.statsDisplayNameInput) dom.statsDisplayNameInput.value = loadDisplayName();
+        return true;
+      }
+
+      async function submitUsernameOverlay() {
+        const raw = dom.usernameOverlayInput ? dom.usernameOverlayInput.value : '';
+        const ok = await claimAndSaveDisplayName(raw);
+        if (!ok) return;
+        toggle(dom.usernameOverlay, false);
+        setUsernameOverlayStatus('');
+        showToast(`Username saved: ${loadDisplayName()}`);
+        const next = pendingAfterUsername;
+        pendingAfterUsername = null;
+        if (typeof next === 'function') next();
       }
 
       function syncChallengeNameInputsFromStorage() {
@@ -7810,7 +7976,7 @@
         saveLocalMpStats(cur);
       }
 
-      const CHALLENGE_RESUME_MAX_MS = 24 * 60 * 60 * 1000;
+      const CHALLENGE_RESUME_MAX_MS = 48 * 60 * 60 * 1000;
 
       function persistChallengeResume(gameRef) {
         try {
@@ -7861,7 +8027,7 @@
         const left = CHALLENGE_RESUME_MAX_MS - (Date.now() - payload.savedAt);
         const h = Math.floor(left / 3600000);
         const m = Math.floor((left % 3600000) / 60000);
-        dom.challengeResumeHint.textContent = `Resume ${payload.code} · ${h}h ${m}m left on this device.`;
+        dom.challengeResumeHint.textContent = `Saved match · ${h}h ${m}m left on this device.`;
         dom.challengeResumePanel.classList.remove('hidden');
       }
 
@@ -8192,7 +8358,7 @@
             showToast(
               row && row.match_summary
                 ? row.match_summary
-                : 'That match has ended (inactive for 24+ hours or both players finished).'
+                : 'That match has ended (inactive for 2 days or both players finished).'
             );
             void refreshActiveChallengesPanel();
             return;
@@ -8393,6 +8559,20 @@
             if (!r.ok) return [];
             return r.json();
           },
+          async claimDisplayName(playerId, displayName) {
+            const root = apiRoot();
+            if (!root || !playerId) return { ok: false, error: 'offline' };
+            const r = await fetch(`${root}/players/claim-name`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                player_id: playerId,
+                display_name: String(displayName || '').trim().slice(0, 24)
+              })
+            });
+            const data = await r.json().catch(() => ({}));
+            return { ok: r.ok, status: r.status, ...data };
+          },
           async joinChallenge(code, guestId, guestName) {
             const root = apiRoot();
             if (!root) return null;
@@ -8426,10 +8606,10 @@
             if (!r.ok) return null;
             return r.json();
           },
-          async fetchChallengeHistory(playerId, limit = 12) {
+          async fetchChallengeHistory(playerId, limit = 20) {
             const root = apiRoot();
             if (!root || !playerId) return [];
-            const url = `${root}/challenges/history/${encodeURIComponent(playerId)}?limit=${Math.max(1, Math.min(30, Math.floor(limit) || 12))}`;
+            const url = `${root}/challenges/history/${encodeURIComponent(playerId)}?limit=${Math.max(1, Math.min(40, Math.floor(limit) || 20))}`;
             const r = await fetch(url);
             if (!r.ok) return [];
             return r.json();
@@ -11401,6 +11581,15 @@
       // Changelog Data
       const CHANGELOG = [
         {
+          version: '2.18',
+          date: '2026-08-12',
+          changes: [
+            'Matches expire after 2 days of inactivity instead of 24 hours',
+            'Previous matches button shows completed challenge results (win / loss / tie)',
+            'Usernames must be unique — first-time players are asked to create one before playing'
+          ]
+        },
+        {
           version: '2.17',
           date: '2026-08-12',
           changes: [
@@ -11658,7 +11847,7 @@
         }
       ];
       
-      const CURRENT_VERSION = '2.17';
+      const CURRENT_VERSION = '2.18';
       const LAST_SEEN_VERSION_KEY = 'squirrelStreet.lastSeenVersion';
 
       function checkChangelogBadge() {
@@ -12435,6 +12624,48 @@
         }
       }
 
+      function fillMatchHistoryList(listEl, history, myId) {
+        if (!listEl) return;
+        listEl.textContent = '';
+        if (!history || !history.length) {
+          const empty = document.createElement('div');
+          empty.className = 'match-history-item';
+          empty.textContent = 'No completed matches yet.';
+          listEl.appendChild(empty);
+          return;
+        }
+        history.forEach((match) => {
+          const item = document.createElement('div');
+          const hostName = match.host_name || 'Host';
+          const guestName = match.guest_name || 'Guest';
+          const hostPts = match.host_total_points ?? 0;
+          const guestPts = match.guest_total_points ?? 0;
+          const won = match.winner_id === myId;
+          const tied = !match.winner_id;
+          item.className = 'match-history-item' + (tied ? '' : won ? ' win' : ' loss');
+          const result = document.createElement('span');
+          result.className = 'match-history-result';
+          result.textContent = tied ? 'TIE' : won ? 'WIN' : 'LOSS';
+          const body = document.createElement('div');
+          body.className = 'match-history-body';
+          const youWereHost = match.host_id === myId;
+          const oppName = youWereHost ? guestName : hostName;
+          const title = document.createElement('strong');
+          title.textContent = `vs ${oppName}`;
+          const detail = document.createElement('div');
+          detail.className = 'muted';
+          const parts = [`${yourPts}–${oppPts} pts`];
+          if (whenText) parts.push(whenText);
+          if (match.match_summary) parts.push(match.match_summary);
+          detail.textContent = parts.join(' · ');
+          body.appendChild(title);
+          body.appendChild(detail);
+          item.appendChild(result);
+          item.appendChild(body);
+          listEl.appendChild(item);
+        });
+      }
+
       async function refreshStatsPanel() {
         if (dom.statsLocalHighScore) dom.statsLocalHighScore.textContent = String(loadHighScore());
         if (dom.statsLocalHighestLevel) dom.statsLocalHighestLevel.textContent = String(loadHighestLevel());
@@ -12640,42 +12871,8 @@
           wrap.appendChild(line);
         });
         if (dom.statsMatchHistoryList) {
-          const history = await SquirrelApi.fetchChallengeHistory(myId, 8);
-          dom.statsMatchHistoryList.textContent = '';
-          if (!history.length) {
-            const empty = document.createElement('div');
-            empty.className = 'match-history-item';
-          empty.textContent = 'No completed matches yet.';
-            dom.statsMatchHistoryList.appendChild(empty);
-          } else {
-            history.forEach((match) => {
-              const item = document.createElement('div');
-              const hostName = match.host_name || 'Host';
-              const guestName = match.guest_name || 'Guest';
-              const hostPts = match.host_total_points ?? 0;
-              const guestPts = match.guest_total_points ?? 0;
-              const won = match.winner_id === myId;
-              const tied = !match.winner_id;
-              item.className = 'match-history-item' + (tied ? '' : won ? ' win' : ' loss');
-              const result = document.createElement('span');
-              result.className = 'match-history-result';
-              result.textContent = tied ? 'TIE' : won ? 'WIN' : 'LOSS';
-              const body = document.createElement('div');
-              body.className = 'match-history-body';
-              const youWereHost = match.host_id === myId;
-              const oppName = youWereHost ? guestName : hostName;
-              const title = document.createElement('strong');
-              title.textContent = `vs ${oppName}`;
-              const detail = document.createElement('div');
-              detail.className = 'muted';
-              detail.textContent = `${hostName} ${hostPts} – ${guestName} ${guestPts}${match.match_summary ? ` · ${match.match_summary}` : ''}`;
-              body.appendChild(title);
-              body.appendChild(detail);
-              item.appendChild(result);
-              item.appendChild(body);
-              dom.statsMatchHistoryList.appendChild(item);
-            });
-          }
+          const history = await SquirrelApi.fetchChallengeHistory(myId, 20);
+          fillMatchHistoryList(dom.statsMatchHistoryList, history, myId);
         }
       }
 
@@ -12684,6 +12881,9 @@
       }
 
       function beginGameFromMenu(startLevel, runOptions) {
+        if (!requireUsernameThen(() => beginGameFromMenu(startLevel, runOptions))) {
+          return;
+        }
         if (!game) {
           showToast('Game still loading — try again in a moment.');
           return;
@@ -18775,12 +18975,40 @@
       }
 
       function openChallengeLobby() {
+        if (!requireUsernameThen(openChallengeLobby)) return;
         toggle(dom.playModeOverlay, false);
         toggle(dom.challengeOverlay, true);
         syncChallengeNameInputsFromStorage();
         setChallengeProfilePanelOpen(false);
         refreshChallengeProfileCorner();
         void refreshChallengeLobby();
+      }
+
+      async function openChallengeHistoryOverlay() {
+        if (!requireUsernameThen(() => void openChallengeHistoryOverlay())) return;
+        toggle(dom.challengeHistoryOverlay, true);
+        if (dom.challengeHistoryHint) {
+          dom.challengeHistoryHint.textContent = SquirrelApi.isConfigured()
+            ? 'Loading previous matches…'
+            : 'Connect online to see previous match results.';
+        }
+        if (!dom.challengeHistoryList) return;
+        if (!SquirrelApi.isConfigured()) {
+          fillMatchHistoryList(dom.challengeHistoryList, [], getOrCreatePlayerId());
+          return;
+        }
+        let history = [];
+        try {
+          history = await SquirrelApi.fetchChallengeHistory(getOrCreatePlayerId(), 30);
+        } catch (e) {
+          console.warn(e);
+        }
+        if (dom.challengeHistoryHint) {
+          dom.challengeHistoryHint.textContent = history.length
+            ? 'Completed matches and their results.'
+            : '';
+        }
+        fillMatchHistoryList(dom.challengeHistoryList, history, getOrCreatePlayerId());
       }
 
       function bindUI() {
@@ -18795,11 +19023,28 @@
         });
 
         dom.playButton.addEventListener('click', () => {
+          if (!requireUsernameThen(() => toggle(dom.playModeOverlay, true))) return;
           toggle(dom.playModeOverlay, true);
         });
 
-        if (dom.closePlayModeButton) {
-          dom.closePlayModeButton.addEventListener('click', () => toggle(dom.playModeOverlay, false));
+        if (dom.usernameOverlaySaveButton) {
+          dom.usernameOverlaySaveButton.addEventListener('click', () => void submitUsernameOverlay());
+        }
+        if (dom.usernameOverlayInput) {
+          dom.usernameOverlayInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              void submitUsernameOverlay();
+            }
+          });
+        }
+        if (dom.challengeHistoryButton) {
+          dom.challengeHistoryButton.addEventListener('click', () => void openChallengeHistoryOverlay());
+        }
+        if (dom.closeChallengeHistoryButton) {
+          dom.closeChallengeHistoryButton.addEventListener('click', () => {
+            toggle(dom.challengeHistoryOverlay, false);
+          });
         }
         if (dom.soloRunButton) {
           dom.soloRunButton.addEventListener('click', () => {
@@ -18846,10 +19091,10 @@
         if (dom.challengeSaveDisplayName) {
           dom.challengeSaveDisplayName.addEventListener('click', () => {
             const v = dom.challengeDisplayNameInput ? dom.challengeDisplayNameInput.value : '';
-            saveDisplayName(v);
-            syncChallengeNameInputsFromStorage();
-            if (dom.statsDisplayNameInput) dom.statsDisplayNameInput.value = loadDisplayName();
-            showToast('Display name saved');
+            void (async () => {
+              const ok = await claimAndSaveDisplayName(v);
+              if (ok) showToast('Username saved');
+            })();
           });
         }
         if (dom.challengeContinueButton) {
@@ -19023,23 +19268,25 @@
         if (dom.statsSaveDisplayName) {
           dom.statsSaveDisplayName.addEventListener('click', () => {
             const v = dom.statsDisplayNameInput ? dom.statsDisplayNameInput.value : '';
-            saveDisplayName(v);
-            syncChallengeNameInputsFromStorage();
-            showToast('Display name saved');
-            let wc = 0;
-            try {
-              const arr = loadSpelledWords();
-              wc = Array.isArray(arr) ? arr.length : 0;
-            } catch (e) {
-              wc = 0;
-            }
-            void SquirrelApi.submitLeaderboardIfBetter(
-              getOrCreatePlayerId(),
-              loadDisplayName(),
-              loadHighScore(),
-              loadHighestLevel(),
-              wc
-            );
+            void (async () => {
+              const ok = await claimAndSaveDisplayName(v);
+              if (!ok) return;
+              showToast('Username saved');
+              let wc = 0;
+              try {
+                const arr = loadSpelledWords();
+                wc = Array.isArray(arr) ? arr.length : 0;
+              } catch (e) {
+                wc = 0;
+              }
+              void SquirrelApi.submitLeaderboardIfBetter(
+                getOrCreatePlayerId(),
+                loadDisplayName(),
+                loadHighScore(),
+                loadHighestLevel(),
+                wc
+              );
+            })();
           });
         }
         if (dom.statsRefreshLeaderboard) {
@@ -19420,6 +19667,9 @@
           setTimeout(() => {
             toggle(dom.preloadScreen, false);
             toggle(dom.menuScreen, true);
+            if (!hasChosenDisplayName()) {
+              openUsernameOverlay();
+            }
           }, 100);
         }, { once: true });
         

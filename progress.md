@@ -29,6 +29,13 @@ Original prompt: if the user selects the host button it should automatically gen
 - Versions: in-game **v2.17**, package **2.17.0**, Play `VERSION_CODE=42` / `VERSION_NAME=2.17.0`, iOS build 42.
 - Android sync: `npm run android:sync` from repo root.
 
+## 2026-08-12 — Unique usernames, match history, 2-day expiry + v2.18
+- Challenges expire after 2 days of inactivity (server + local resume window).
+- Challenge lobby has a Previous matches button with win/loss/tie results.
+- First-time players must create a unique username before Play or Challenges. Duplicate names are rejected online.
+- Versions: in-game **v2.18**, package **2.18.0**, Play `VERSION_CODE=43` / `VERSION_NAME=2.18.0`, iOS build 43.
+- Android sync: `npm run android:sync` from repo root.
+
 ## TODOs / next
 - Live two-device challenge playtest (host share ? join ? between-level Continue).
 - Facebook friends remain API/invite based; no Facebook SDK in this pass.

@@ -98,7 +98,7 @@ const migrateFriendCols = [
   'CREATE INDEX IF NOT EXISTS idx_friend_requests_from ON friend_requests(from_player_id, status)'
 ];
 
-const CHALLENGE_INACTIVITY_MS = 24 * 60 * 60 * 1000;
+const CHALLENGE_INACTIVITY_MS = 48 * 60 * 60 * 1000;
 
 const migrateChallengeCols = [
   'ALTER TABLE challenges ADD COLUMN IF NOT EXISTS host_eliminated BOOLEAN NOT NULL DEFAULT FALSE',
@@ -151,6 +151,17 @@ async function migrate() {
   for (const sql of migrateFriendCols) {
     await pool.query(sql);
   }
+  try {
+    await pool.query(
+      `CREATE UNIQUE INDEX IF NOT EXISTS idx_leaderboard_display_name_ci
+       ON leaderboard (LOWER(BTRIM(display_name)))
+       WHERE player_id NOT LIKE 'bot:%'
+         AND BTRIM(display_name) <> ''
+         AND LOWER(BTRIM(display_name)) <> 'player'`
+    );
+  } catch (e) {
+    console.warn('Unique username index skipped (existing duplicates?):', e.message);
+  }
 }
 
 async function expireInactiveChallenges(client) {
@@ -159,10 +170,10 @@ async function expireInactiveChallenges(client) {
   await db.query(
     `UPDATE challenges
      SET status = 'completed',
-         match_summary = COALESCE(match_summary, 'Match closed after 24 hours of inactivity.'),
+         match_summary = COALESCE(match_summary, 'Match closed after 2 days of inactivity.'),
          updated_at = NOW()
      WHERE status = 'active'
-       AND updated_at < NOW() - INTERVAL '24 hours'`
+       AND updated_at < NOW() - INTERVAL '2 days'`
   );
 }
 
@@ -263,6 +274,53 @@ const BOT_PROFILES = {
 
 function isBotPlayerId(id) {
   return typeof id === 'string' && id.startsWith('bot:');
+}
+
+const RESERVED_PLAYER_NAMES = new Set([
+  'player',
+  'host',
+  'guest',
+  'admin',
+  'squirrel',
+  'acorn bot',
+  'street bot',
+  'forest champ'
+]);
+
+function normalizePlayerName(raw) {
+  return String(raw || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 24);
+}
+
+function validatePlayerName(name) {
+  if (!name || name.length < 3 || name.length > 24) {
+    return { ok: false, error: 'invalid_name' };
+  }
+  if (!/^[A-Za-z0-9][A-Za-z0-9 ._\-]*$/.test(name)) {
+    return { ok: false, error: 'invalid_name' };
+  }
+  if (!/[A-Za-z]/.test(name)) {
+    return { ok: false, error: 'invalid_name' };
+  }
+  if (RESERVED_PLAYER_NAMES.has(name.toLowerCase())) {
+    return { ok: false, error: 'reserved_name' };
+  }
+  return { ok: true };
+}
+
+async function findPlayerIdWithName(client, name, excludePlayerId) {
+  const db = client || pool;
+  const { rows } = await db.query(
+    `SELECT player_id FROM leaderboard
+     WHERE LOWER(BTRIM(display_name)) = LOWER(BTRIM($1))
+       AND ($2 = '' OR player_id <> $2)
+       AND player_id NOT LIKE 'bot:%'
+     LIMIT 1`,
+    [name, excludePlayerId || '']
+  );
+  return rows[0] ? rows[0].player_id : null;
 }
 
 function challengeIsBot(row) {
@@ -579,7 +637,9 @@ app.post('/api/leaderboard', async (req, res) => {
     if (!player_id || typeof player_id !== 'string') {
       return res.status(400).json({ error: 'player_id required' });
     }
-    const name = (display_name || 'Player').toString().slice(0, 24);
+    const requestedName = normalizePlayerName(display_name);
+    const nameCheck = requestedName ? validatePlayerName(requestedName) : { ok: false };
+    let name = nameCheck.ok ? requestedName : '';
     const score = Math.max(0, Math.floor(Number(high_score) || 0));
     const level = Math.max(1, Math.floor(Number(highest_level) || 1));
     const words = Math.max(0, Math.floor(Number(words_spelled) || 0));
@@ -587,10 +647,18 @@ app.post('/api/leaderboard', async (req, res) => {
       facebook_id && typeof facebook_id === 'string' ? facebook_id.slice(0, 64) : null;
 
     const cur = await pool.query(
-      'SELECT high_score, highest_level, words_spelled, facebook_id FROM leaderboard WHERE player_id = $1',
+      'SELECT high_score, highest_level, words_spelled, facebook_id, display_name FROM leaderboard WHERE player_id = $1',
       [player_id]
     );
     const prev = cur.rows[0];
+    if (name) {
+      const takenBy = await findPlayerIdWithName(pool, name, player_id);
+      if (takenBy) {
+        name = prev && prev.display_name ? prev.display_name : 'Player';
+      }
+    } else {
+      name = prev && prev.display_name ? prev.display_name : 'Player';
+    }
     const nextHigh = prev ? Math.max(score, Number(prev.high_score) || 0) : score;
     const nextLevel = prev ? Math.max(level, Number(prev.highest_level) || 0) : level;
     const nextWords = prev ? Math.max(words, Number(prev.words_spelled) || 0) : words;
@@ -732,12 +800,12 @@ app.get('/api/challenges/history/:playerId', async (req, res) => {
   if (!pool) return res.status(503).json({ error: 'Database not configured' });
   try {
     const playerId = req.params.playerId;
-    const limit = Math.min(30, Math.max(1, parseInt(req.query.limit, 10) || 12));
+    const limit = Math.min(40, Math.max(1, parseInt(req.query.limit, 10) || 20));
     const { rows } = await pool.query(
       `SELECT code, start_level, current_level, host_id, host_name, guest_id, guest_name,
               host_wins, guest_wins, host_total_points, guest_total_points,
               host_words_accum, guest_words_accum, winner_id, match_summary,
-              status, updated_at
+              vs_bot, bot_difficulty, status, updated_at
        FROM challenges
        WHERE status = 'completed'
          AND (host_id = $1 OR guest_id = $1)
@@ -1126,6 +1194,51 @@ app.post('/api/challenges/:code/eliminate', async (req, res) => {
     res.status(500).json({ error: 'eliminate_failed' });
   } finally {
     client.release();
+  }
+});
+
+app.get('/api/players/name-available', async (req, res) => {
+  if (!pool) return res.status(503).json({ error: 'Database not configured' });
+  try {
+    const q = normalizePlayerName(req.query.q);
+    const exclude = typeof req.query.exclude === 'string' ? req.query.exclude : '';
+    const check = validatePlayerName(q);
+    if (!check.ok) return res.json({ available: false, error: check.error });
+    const takenBy = await findPlayerIdWithName(pool, q, exclude);
+    res.json({ available: !takenBy, display_name: q });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'name_check_failed' });
+  }
+});
+
+app.post('/api/players/claim-name', async (req, res) => {
+  if (!pool) return res.status(503).json({ error: 'Database not configured' });
+  try {
+    const { player_id, display_name } = req.body || {};
+    if (!player_id || typeof player_id !== 'string') {
+      return res.status(400).json({ error: 'player_id required' });
+    }
+    const name = normalizePlayerName(display_name);
+    const check = validatePlayerName(name);
+    if (!check.ok) return res.status(400).json({ error: check.error });
+    const takenBy = await findPlayerIdWithName(pool, name, player_id);
+    if (takenBy) return res.status(409).json({ error: 'name_taken' });
+    await pool.query(
+      `INSERT INTO leaderboard (player_id, display_name, updated_at)
+       VALUES ($1, $2, NOW())
+       ON CONFLICT (player_id) DO UPDATE SET
+         display_name = EXCLUDED.display_name,
+         updated_at = NOW()`,
+      [player_id, name]
+    );
+    res.json({ ok: true, display_name: name });
+  } catch (e) {
+    if (e && e.code === '23505') {
+      return res.status(409).json({ error: 'name_taken' });
+    }
+    console.error(e);
+    res.status(500).json({ error: 'name_claim_failed' });
   }
 });
 
