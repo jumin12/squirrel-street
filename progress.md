@@ -14,3 +14,14 @@ Original prompt: if the user selects the host button it should automatically gen
 - Versions: in-game **v2.14**, package **2.14.0**, Play `VERSION_CODE=39` / `VERSION_NAME=2.14.0`, iOS build 39.
 - Android sync: `npm run android:sync` from repo root.
 - Helper scripts: `scripts/hud-visual-check.js`, `scripts/mp-smoke.js` (local QA; screenshots under `tmp-hud-shots/`).
+
+## 2026-08-12 — Challenge lobby / stats UX + v2.16
+- Rebuilt Play, Challenge, Stats, and between-level screens to match the wood/gold UI (removed slate-blue overlay look and competing Host/Join/Start row).
+- Host: big room code + Copy/Share + full-width Start run. Join: code + Join run. Profile/name/invites live in one profile panel. Active matches sit at the top when present.
+- Stats: tile grid for wins/losses/pts/words, Win/Loss history cards, player-facing copy.
+- Versions: in-game **v2.16**, package **2.16.0**, Play `VERSION_CODE=41` / `VERSION_NAME=2.16.0`, iOS build 41.
+- Android sync: `npm run android:sync` from repo root.
+
+## TODOs / next
+- Live two-device challenge playtest (host share ? join ? between-level Continue).
+- Facebook friends remain API/invite based; no Facebook SDK in this pass.

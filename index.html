@@ -877,6 +877,70 @@
       filter: drop-shadow(1px 1px 0px rgba(0,0,0,0.4));
     }
 
+    .play-mode-modal {
+      max-width: 440px;
+      width: 92vw;
+    }
+
+    .play-mode-lead {
+      font-size: 0.5rem;
+      margin: 0 0 16px;
+      line-height: 1.5;
+      color: #FFF;
+    }
+
+    .play-mode-choice {
+      display: flex;
+      width: 100%;
+      margin: 0 0 12px 0;
+      padding: 16px 18px !important;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 8px;
+      text-align: left;
+      min-height: 4.4em;
+    }
+
+    .play-mode-choice-title {
+      display: block;
+      font-size: 0.62rem;
+      color: #FFD700;
+      text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.55);
+    }
+
+    .play-mode-choice-desc {
+      display: block;
+      font-size: 0.4rem;
+      line-height: 1.45;
+      text-transform: none;
+      letter-spacing: 0;
+      white-space: normal;
+      color: #FFF;
+      text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.45);
+    }
+
+    .stats-mp-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .stats-mp-grid .menu-stat {
+      padding: 10px 12px;
+      min-width: 0;
+    }
+
+    .stats-mp-grid .menu-stat-label {
+      font-size: 0.38rem;
+    }
+
+    .stats-mp-grid .menu-stat-value {
+      font-size: 0.72rem;
+      color: #FFD700;
+    }
+
     .controls {
       position: relative;
       display: flex;
@@ -1207,6 +1271,10 @@
       line-height: 1.45;
     }
 
+    .stats-panel-hint:empty {
+      display: none;
+    }
+
     .stats-name-row {
       display: flex;
       gap: 8px;
@@ -1234,8 +1302,10 @@
 
     #challengeOverlay .modal.challenge-modal {
       position: relative;
+      display: flex;
+      flex-direction: column;
       max-height: min(90vh, calc(var(--app-height, 100vh) - 20px));
-      overflow-y: auto;
+      overflow: hidden;
       background: linear-gradient(rgba(46, 29, 16, 0.92), rgba(28, 18, 10, 0.96)), url('art/images/background1.png');
       background-size: cover, cover;
       background-position: center, center;
@@ -1243,31 +1313,42 @@
     }
 
     .challenge-modal-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 8px;
+      flex-shrink: 0;
+      margin-bottom: 10px;
       text-align: left;
     }
 
     .challenge-modal-header h2 {
       margin: 0;
-      flex: 1;
       text-align: left;
+    }
+
+    .challenge-modal-scroll {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-right: 2px;
+    }
+
+    .challenge-modal-footer {
+      flex-shrink: 0;
+      margin-top: 12px;
     }
 
     .challenge-profile-corner {
       position: relative;
       flex-shrink: 0;
       z-index: 2;
-      max-width: min(220px, 46vw);
+      width: 100%;
+      max-width: none;
+      margin-bottom: 10px;
     }
 
     .challenge-profile-toggle {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       width: 100%;
       padding: 8px 10px;
       border: 3px solid #5D4037;
@@ -1293,8 +1374,8 @@
     }
 
     .challenge-profile-skin-preview {
-      width: 42px;
-      height: 42px;
+      width: 46px;
+      height: 46px;
       flex-shrink: 0;
       background: #4E3625;
       border: 2px solid #5D4037;
@@ -1315,20 +1396,20 @@
     .challenge-profile-toggle-text {
       display: flex;
       flex-direction: column;
-      gap: 1px;
+      gap: 2px;
       min-width: 0;
       flex: 1;
     }
 
     .challenge-profile-toggle-label {
-      font-size: 0.32rem;
+      font-size: 0.34rem;
       color: rgba(255, 215, 0, 0.85);
       text-transform: uppercase;
       letter-spacing: 0.04em;
     }
 
     .challenge-profile-toggle strong {
-      font-size: 0.44rem;
+      font-size: 0.48rem;
       color: #FFD700;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -1336,12 +1417,12 @@
     }
 
     .challenge-profile-toggle span#challengeProfileChipMp {
-      font-size: 0.34rem;
+      font-size: 0.38rem;
       color: rgba(255, 255, 255, 0.82);
     }
 
     .challenge-profile-chevron {
-      font-size: 0.34rem;
+      font-size: 0.36rem;
       color: #FFD700;
       transition: transform 0.2s ease;
     }
@@ -1351,7 +1432,7 @@
     }
 
     .challenge-profile-panel label {
-      font-size: 0.38rem;
+      font-size: 0.4rem;
       color: rgba(255, 215, 0, 0.9);
       display: block;
       margin-bottom: 6px;
@@ -1366,15 +1447,15 @@
     .challenge-profile-name-row input {
       flex: 1;
       min-width: 0;
-      font-size: 0.44rem;
-      padding: 6px 8px;
+      font-size: 0.48rem;
+      padding: 8px 10px;
       border: 2px solid #5D4037;
       background: rgba(0, 0, 0, 0.35);
       color: #FFF;
     }
 
     .challenge-profile-panel .challenge-profile-mp {
-      font-size: 0.38rem;
+      font-size: 0.4rem;
       color: #FFF;
       margin: 4px 0 0;
       line-height: 1.45;
@@ -1388,33 +1469,11 @@
     .challenge-profile-stats-btn {
       width: 100%;
       margin-top: 10px;
-      font-size: 0.36rem !important;
+      font-size: 0.4rem !important;
     }
 
     .challenge-profile-chip {
       display: none;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 2px;
-      max-width: 140px;
-      padding: 6px 10px;
-      border-radius: 10px;
-      border: 2px solid rgba(125, 211, 252, 0.45);
-      background: linear-gradient(135deg, rgba(30, 64, 175, 0.55), rgba(15, 23, 42, 0.85));
-      color: #f8fafc;
-      font-size: 0.38rem;
-      line-height: 1.35;
-      cursor: pointer;
-      text-align: right;
-    }
-
-    .challenge-profile-chip strong {
-      font-size: 0.42rem;
-      color: #fcd34d;
-      max-width: 120px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
     }
 
     .challenge-profile-panel {
@@ -1429,8 +1488,68 @@
       text-align: left;
     }
 
+    .challenge-profile-panel .invite-link-row {
+      margin-top: 10px;
+    }
+
     .challenge-profile-panel.hidden {
       display: none !important;
+    }
+
+    .challenge-resume-card,
+    .challenge-matches-section {
+      margin-bottom: 12px;
+      padding: 10px 12px;
+      background: rgba(74, 44, 26, 0.72);
+      border: 3px solid #FFD700;
+      box-shadow:
+        inset 2px 2px 0 rgba(205, 133, 63, 0.3),
+        inset -2px -2px 0 rgba(0, 0, 0, 0.4),
+        2px 2px 0 rgba(0, 0, 0, 0.5);
+      text-align: left;
+    }
+
+    .challenge-matches-section {
+      border-color: #5D4037;
+    }
+
+    .challenge-section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .challenge-section-head h3 {
+      margin: 0;
+      font-size: 0.5rem;
+      color: #FFD700;
+      text-transform: uppercase;
+      text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+    }
+
+    .challenge-refresh-btn {
+      font-size: 0.36rem !important;
+      padding: 8px 10px !important;
+      margin: 0;
+    }
+
+    .challenge-section-hint {
+      font-size: 0.38rem;
+      color: rgba(255, 255, 255, 0.78);
+      margin: 0 0 8px;
+      line-height: 1.45;
+    }
+
+    .challenge-section-hint:empty {
+      display: none;
+    }
+
+    .challenge-matches-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
 
     .challenge-active-card {
@@ -1463,9 +1582,22 @@
       color: rgba(255, 255, 255, 0.72);
     }
 
+    .challenge-versus-hint {
+      font-size: 0.44rem;
+      color: #FFD700;
+      min-height: 0;
+      margin: 0 0 10px;
+      line-height: 1.45;
+      text-align: left;
+    }
+
+    .challenge-versus-hint:empty {
+      display: none;
+    }
+
     .challenge-host-code-block {
-      margin: 10px 0 14px;
-      padding: 12px;
+      margin: 0 0 12px;
+      padding: 14px 12px;
       background: rgba(74, 44, 26, 0.55);
       border: 3px solid #5D4037;
       box-shadow:
@@ -1473,9 +1605,118 @@
         inset -2px -2px 0 rgba(0, 0, 0, 0.4);
     }
 
+    .challenge-code-label {
+      margin: 0 0 8px;
+      font-size: 0.38rem;
+      color: #c8a16a;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      text-align: center;
+    }
+
+    .challenge-code-value {
+      font-size: 0.7rem;
+      color: #FFD700;
+      margin: 0;
+      text-align: center;
+      min-height: 1.4em;
+      line-height: 1.3;
+      text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.55);
+      word-break: break-word;
+    }
+
+    .challenge-code-value.is-code {
+      font-size: 1.05rem;
+      letter-spacing: 0.22em;
+      cursor: pointer;
+    }
+
+    .challenge-host-status {
+      font-size: 0.4rem;
+      color: rgba(255, 255, 255, 0.82);
+      text-align: center;
+      margin: 10px 0 0;
+      line-height: 1.45;
+    }
+
+    .challenge-host-status:empty {
+      display: none;
+    }
+
+    .challenge-host-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .challenge-host-actions .pill-button {
+      flex: 1 1 120px;
+      min-width: 0;
+    }
+
+    .challenge-start-run {
+      width: 100%;
+      margin: 0 0 8px 0;
+      font-size: 0.52rem !important;
+      padding: 14px 16px !important;
+    }
+
+    .challenge-host-note,
+    .challenge-field-label {
+      font-size: 0.4rem;
+      color: rgba(255, 255, 255, 0.8);
+      line-height: 1.45;
+      margin: 0;
+      text-align: left;
+    }
+
+    .challenge-field-label {
+      display: block;
+      margin-bottom: 6px;
+      color: #FFD700;
+    }
+
+    .challenge-code-input {
+      width: 100%;
+      font-size: 1rem;
+      padding: 12px 10px;
+      text-transform: uppercase;
+      text-align: center;
+      letter-spacing: 0.16em;
+      border: 3px solid #5D4037;
+      background: rgba(0, 0, 0, 0.4);
+      color: #FFD700;
+      margin-bottom: 10px;
+    }
+
+    .challenge-offline-details {
+      font-size: 0.42rem;
+      margin-top: 14px;
+      line-height: 1.5;
+      text-align: left;
+      color: #FFF;
+    }
+
+    .challenge-offline-details summary {
+      cursor: pointer;
+      color: #FFD700;
+    }
+
+    .challenge-offline-details input {
+      width: 100%;
+      font-size: 0.7rem;
+      padding: 8px;
+      margin-top: 4px;
+      border: 2px solid #5D4037;
+      background: rgba(0, 0, 0, 0.35);
+      color: #FFF;
+    }
+
     #challengeOverlay #challengeHostPanel.hidden,
     #challengeOverlay #challengeJoinPanel.hidden,
-    #challengeOverlay #challengeResumePanel.hidden {
+    #challengeOverlay #challengeResumePanel.hidden,
+    #challengeOverlay #challengeActiveGamesSection.hidden {
       display: none;
     }
 
@@ -2007,6 +2248,15 @@
       padding: 12px 18px;
     }
 
+    .pill-button.selected {
+      color: #FFD700;
+      box-shadow:
+        inset 3px 3px 0px rgba(255, 215, 0, 0.28),
+        inset -3px -3px 0px rgba(0, 0, 0, 0.3),
+        0 0 0 3px #FFD700,
+        3px 6px 0px 3px rgba(0, 0, 0, 0.5);
+    }
+
     /* Dictionary Modal Styling */
     .dictionary-modal {
       max-width: 95vw !important;
@@ -2225,22 +2475,24 @@
       top: 78px;
       left: 50%;
       transform: translateX(-50%) translateY(-20px);
-      background: linear-gradient(180deg, rgba(12, 18, 32, 0.95), rgba(24, 33, 52, 0.94));
-      padding: 16px 28px;
-      border-radius: 18px;
-      border: 3px solid rgba(236, 201, 75, 0.65);
-      color: #FDE68A;
-      font-weight: 500;
+      background: #5D4037;
+      background-image: linear-gradient(to bottom, #6D4C41, #4E342E);
+      padding: 12px 18px;
+      border-radius: 0;
+      border: 3px solid #5D4037;
+      color: #FFD700;
+      font-weight: 400;
       letter-spacing: 0px;
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.35s ease, transform 0.35s ease;
       z-index: 130;
-      font-size: 0.6rem;
-      box-shadow: 
-        0 0 12px rgba(255, 215, 0, 0.25),
-        6px 8px 18px rgba(0,0,0,0.45);
-      text-shadow: 0 0 4px rgba(253, 224, 71, 0.4);
+      font-size: 0.48rem;
+      box-shadow:
+        inset 2px 2px 0 rgba(205, 133, 63, 0.35),
+        inset -2px -2px 0 rgba(0, 0, 0, 0.45),
+        3px 4px 0 rgba(0, 0, 0, 0.55);
+      text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.55);
       max-width: 420px;
       line-height: 1.4;
       text-align: center;
@@ -5002,17 +5254,50 @@
       line-height: 1.5;
     }
     .match-history-item {
-      padding: 9px 10px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 12px;
       background: rgba(74, 44, 26, 0.55);
       border: 2px solid #5D4037;
       color: #FFF;
       text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.35);
     }
+    .match-history-result {
+      flex-shrink: 0;
+      min-width: 3.2em;
+      padding: 5px 7px;
+      text-align: center;
+      font-size: 0.34rem;
+      color: #FFD700;
+      border: 2px solid #5D4037;
+      background: rgba(0, 0, 0, 0.35);
+    }
+    .match-history-item.win .match-history-result {
+      color: #86efac;
+      border-color: #3d6b3d;
+    }
+    .match-history-item.loss .match-history-result {
+      color: #fca5a5;
+      border-color: #7f1d1d;
+    }
+    .match-history-body {
+      min-width: 0;
+      flex: 1;
+    }
+    .match-history-body strong {
+      color: #FFD700;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .match-history-body .muted {
+      color: rgba(255, 255, 255, 0.75);
+    }
     #challengeBetweenLevelsOverlay.challenge-between-overlay {
       justify-content: flex-start;
       align-items: stretch;
       padding: 0;
-      background: rgba(15, 23, 42, 0.98);
+      background: rgba(28, 18, 10, 0.96);
       z-index: 200;
     }
     #challengeBetweenLevelsOverlay.challenge-between-overlay .modal.challenge-between-modal {
@@ -5028,7 +5313,9 @@
       flex-direction: column;
       text-align: center;
       padding: clamp(14px, 3vh, 28px) clamp(12px, 4vw, 22px);
-      background: linear-gradient(165deg, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.99));
+      background: linear-gradient(rgba(46, 29, 16, 0.94), rgba(28, 18, 10, 0.97)), url('art/images/background1.png');
+      background-size: cover, cover;
+      background-position: center, center;
       overflow: hidden;
     }
     .challenge-between-header {
@@ -5038,12 +5325,12 @@
     .challenge-between-header h2 {
       margin: 0 0 6px 0;
       font-size: clamp(0.65rem, 3.5vw, 0.95rem);
-      color: #fcd34d;
+      color: #FFD700;
     }
     .challenge-between-sub {
       margin: 0;
       font-size: clamp(0.42rem, 2.4vw, 0.52rem);
-      color: #94a3b8;
+      color: rgba(255, 255, 255, 0.82);
       line-height: 1.5;
       max-width: 520px;
       margin-left: auto;
@@ -5058,7 +5345,7 @@
       -webkit-overflow-scrolling: touch;
       font-size: clamp(0.42rem, 2.5vw, 0.52rem);
       line-height: 1.55;
-      color: #e2e8f0;
+      color: #FFF;
       text-align: center;
     }
     .challenge-score-grid-full {
@@ -5093,19 +5380,13 @@
       flex-wrap: wrap;
       gap: 8px;
       align-items: stretch;
+      margin-bottom: 12px;
     }
     .challenge-top-actions .pill-button {
       flex: 1 1 auto;
       min-width: 0;
     }
-    #startHostedRunButton.challenge-start-top {
-      flex: 1.2 1 120px;
-      margin: 0;
-      font-size: 0.44rem !important;
-      padding: 10px 12px !important;
-      min-height: 2.4em;
-    }
-    #startHostedRunButton.challenge-start-top:disabled {
+    #startHostedRunButton.challenge-start-run:disabled {
       opacity: 0.42;
       cursor: not-allowed;
       filter: grayscale(0.45);
@@ -5135,7 +5416,7 @@
       max-width: 520px;
       padding: 12px 14px;
       background: linear-gradient(135deg, rgba(255, 215, 0, 0.22), rgba(74, 44, 26, 0.85));
-      border: 2px solid #FFD700;
+      border: 3px solid #FFD700;
       color: #FFD700;
       font-size: clamp(0.44rem, 2.6vw, 0.56rem);
       line-height: 1.5;
@@ -5155,58 +5436,77 @@
       margin: 10px auto;
       max-width: 520px;
       padding: 10px 12px;
-      background: rgba(127, 29, 29, 0.45);
-      border: 2px solid rgba(248, 113, 113, 0.55);
-      color: #fecaca;
+      background: rgba(74, 44, 26, 0.75);
+      border: 3px solid #5D4037;
+      color: #FFF;
       font-size: clamp(0.4rem, 2.4vw, 0.5rem);
       line-height: 1.45;
       text-align: left;
     }
+    .challenge-rival-alert.still-playing {
+      border-color: #FFD700;
+      color: #FFD700;
+    }
     .challenge-score-card-strong {
-      background: rgba(0, 0, 0, 0.42);
-      border-radius: 14px;
+      background: rgba(74, 44, 26, 0.72);
       padding: clamp(12px, 2.5vw, 18px);
-      border: 1px solid rgba(148, 163, 184, 0.22);
+      border: 3px solid #5D4037;
+      box-shadow:
+        inset 2px 2px 0 rgba(205, 133, 63, 0.3),
+        inset -2px -2px 0 rgba(0, 0, 0, 0.4);
       font-size: clamp(0.4rem, 2.3vw, 0.5rem);
       line-height: 1.55;
+    }
+    .challenge-score-card-strong.you {
+      border-color: #FFD700;
+      box-shadow:
+        inset 2px 2px 0 rgba(205, 133, 63, 0.3),
+        inset -2px -2px 0 rgba(0, 0, 0, 0.4),
+        0 0 0 2px rgba(255, 215, 0, 0.35);
+    }
+    .challenge-score-card-name {
+      color: #FFD700;
+      font-weight: bold;
+      font-size: 1.05em;
+      margin-bottom: 6px;
     }
     .challenge-stat-row {
       display: flex;
       justify-content: space-between;
       gap: 8px;
       margin-top: 6px;
-      color: #cbd5e1;
+      color: rgba(255, 255, 255, 0.82);
     }
     .challenge-stat-row span:last-child {
-      color: #f8fafc;
+      color: #FFF;
       font-variant-numeric: tabular-nums;
     }
     .challenge-chip {
       display: inline-block;
       margin-top: 8px;
       padding: 4px 8px;
-      border-radius: 999px;
+      border: 2px solid #5D4037;
       font-size: 0.34rem;
       letter-spacing: 0.03em;
+      background: rgba(0, 0, 0, 0.3);
     }
     .challenge-chip.submitted {
-      background: rgba(34, 197, 94, 0.2);
+      background: rgba(34, 197, 94, 0.18);
       color: #bbf7d0;
-      border: 1px solid rgba(74, 222, 128, 0.35);
+      border-color: #3d6b3d;
     }
     .challenge-chip.pending {
       background: rgba(251, 191, 36, 0.12);
-      color: #fcd34d;
-      border: 1px solid rgba(251, 191, 36, 0.35);
+      color: #FFD700;
+      border-color: #8a6a12;
     }
     .challenge-local-banner {
       margin-top: 14px;
       padding: 10px 12px;
-      border-radius: 12px;
-      background: rgba(59, 130, 246, 0.15);
-      border: 1px solid rgba(125, 211, 252, 0.28);
+      background: rgba(74, 44, 26, 0.8);
+      border: 3px solid #FFD700;
       font-size: clamp(0.38rem, 2.2vw, 0.48rem);
-      color: #bae6fd;
+      color: #FFF;
       max-width: 720px;
       margin-left: auto;
       margin-right: auto;
@@ -5221,12 +5521,20 @@
       font-size: 0.42rem;
     }
     .challenge-score-card {
-      background: rgba(0,0,0,0.35);
-      border-radius: 10px;
+      background: rgba(74, 44, 26, 0.65);
       padding: 10px;
-      border: 1px solid rgba(255,255,255,0.1);
+      border: 3px solid #5D4037;
     }
-    #gameOverMatchSummary { margin-top: 10px; padding: 10px; background: rgba(34,197,94,0.15); border-radius: 8px; font-size: 0.42rem; color: #bbf7d0; }
+    #gameOverMatchSummary,
+    #challengeOutcomeBanner {
+      margin-top: 10px;
+      padding: 10px 12px;
+      background: rgba(74, 44, 26, 0.75);
+      border: 3px solid #FFD700;
+      font-size: 0.42rem;
+      color: #FFF;
+      line-height: 1.5;
+    }
   </style>
   <script>
     /* API for leaderboard + challenges (same host as this file on Render is fine). */
@@ -5242,7 +5550,7 @@
   </script>
 </head>
 <body>
-  <div id="screenVersion" class="screen-version-label" aria-hidden="true">v2.15</div>
+  <div id="screenVersion" class="screen-version-label" aria-hidden="true">v2.16</div>
   <div id="preloadScreen" class="screen">
     <div class="logo">Squirrel Street</div>
     <div class="menu-card">
@@ -5316,21 +5624,27 @@
   </div>
 
   <div id="playModeOverlay" class="overlay hidden">
-    <div class="modal" style="max-width: 440px; width: 92vw;">
+    <div class="modal play-mode-modal">
       <h2>Play</h2>
-      <p style="font-size: 0.55rem; margin-bottom: 16px;">Choose how you want to run the forest.</p>
-      <div class="menu-buttons" style="flex-direction: column; width: 100%;">
-        <button id="soloRunButton" class="button" style="width: 100%;">Solo run</button>
-        <button id="challengeModeMenuButton" class="button" style="width: 100%;">Challenge mode</button>
-        <button id="closePlayModeButton" class="pill-button ghost" style="width: 100%;">Cancel</button>
-      </div>
+      <p class="play-mode-lead">Choose how you want to run the forest.</p>
+      <button id="soloRunButton" class="button play-mode-choice">
+        <span class="play-mode-choice-title">Solo</span>
+        <span class="play-mode-choice-desc">A classic run. Beat your high score.</span>
+      </button>
+      <button id="challengeModeMenuButton" class="button play-mode-choice">
+        <span class="play-mode-choice-title">Challenge a friend</span>
+        <span class="play-mode-choice-desc">Same seed. Play on your own time.</span>
+      </button>
+      <button id="closePlayModeButton" class="pill-button ghost" style="width: 100%;">Back</button>
     </div>
   </div>
 
   <div id="challengeOverlay" class="overlay hidden">
     <div class="modal challenge-modal" style="max-width: 520px; width: 94vw;">
       <div class="challenge-modal-header">
-        <h2>Challenge mode</h2>
+        <h2>Challenge a friend</h2>
+      </div>
+      <div class="challenge-modal-scroll">
         <div class="challenge-profile-corner" id="challengeProfileCorner">
           <button type="button" id="challengeProfileToggle" class="challenge-profile-toggle" aria-expanded="false" aria-controls="challengeProfilePanel">
             <div class="challenge-profile-skin-preview" aria-hidden="true">
@@ -5354,67 +5668,62 @@
             <div id="challengeProfileFriends" class="challenge-profile-friends hidden">
               <p class="challenge-profile-friends-title">Friends</p>
               <div id="challengeProfileFriendsList" class="friends-list"></div>
-              <button type="button" id="challengeProfileAddFriendsBtn" class="pill-button ghost challenge-profile-stats-btn">Find players in leaderboard</button>
+              <button type="button" id="challengeProfileAddFriendsBtn" class="pill-button ghost challenge-profile-stats-btn">Find players on the chart</button>
             </div>
-            <button type="button" id="openChallengeProfileButton" class="pill-button ghost challenge-profile-stats-btn">View full stats</button>
-            <button type="button" id="challengeProfileShareInviteButton" class="pill-button challenge-profile-stats-btn">Share invite link</button>
+            <div class="invite-link-row">
+              <button type="button" id="challengeCopyInviteButton" class="pill-button">Copy invite</button>
+              <button type="button" id="challengeShareInviteButton" class="pill-button ghost">Share invite</button>
+            </div>
+            <button type="button" id="openChallengeProfileButton" class="pill-button ghost challenge-profile-stats-btn">Full stats</button>
+            <button type="button" id="challengeProfileShareInviteButton" class="pill-button challenge-profile-stats-btn hidden">Share invite link</button>
           </div>
         </div>
-      </div>
-      <p style="font-size: 0.5rem; margin-bottom: 12px; line-height: 1.5; text-align: left;">Same seed per run. Play on your schedule — after <strong>each level</strong> review stats and tap <strong>Continue</strong>. Your rival gets notified when they catch up.</p>
-      <div class="pill-buttons challenge-top-actions" style="margin-bottom: 12px;">
-        <button type="button" id="challengeTabHost" class="pill-button selected">Host</button>
-        <button type="button" id="challengeTabJoin" class="pill-button">Join</button>
-        <button type="button" id="startHostedRunButton" class="button challenge-start-top" disabled>Start run</button>
-      </div>
-      <div id="challengeHostPanel">
-        <p id="challengeVersusHint" style="font-size: 0.48rem; color: #7dd3fc; min-height: 1.2em;"></p>
-        <div class="challenge-host-code-block">
-          <p id="challengeHostCodeDisplay" style="font-size: 0.75rem; color: #fcd34d; margin: 0; text-align: center; min-height: 1.5em;"></p>
-          <p id="challengeHostStatus" style="font-size: 0.45rem; color: #94a3b8; text-align: center; margin: 8px 0 0;"></p>
+        <div id="challengeResumePanel" class="challenge-resume-card hidden">
+          <p id="challengeResumeHint" class="challenge-section-hint"></p>
+          <button type="button" id="challengeContinueButton" class="button challenge-start-run">Continue last match</button>
         </div>
-        <div id="challengeResumePanel" class="hidden" style="margin-bottom: 12px; padding: 10px; background: rgba(0,0,0,0.35); border-radius: 10px; border: 1px solid rgba(250, 204, 21, 0.35);">
-          <p id="challengeResumeHint" style="font-size: 0.45rem; color: #fcd34d; margin: 0 0 8px 0; line-height: 1.45;"></p>
-          <button type="button" id="challengeContinueButton" class="button" style="width: 100%;">Continue last match</button>
-        </div>
-        <div class="stats-wood-panel invite-section">
-          <h3 class="stats-panel-title">Invite friends</h3>
-          <p class="stats-panel-hint">Share your link anywhere — friends keep their own in-game profile when they open it.</p>
-          <div class="invite-link-row">
-            <button type="button" id="challengeCopyInviteButton" class="pill-button">Copy invite link</button>
-            <button type="button" id="challengeShareInviteButton" class="pill-button ghost">Share link</button>
+        <div id="challengeActiveGamesSection" class="challenge-matches-section hidden">
+          <div class="challenge-section-head">
+            <h3>Your matches</h3>
+            <button type="button" id="challengeRefreshActiveButton" class="pill-button ghost challenge-refresh-btn">Refresh</button>
           </div>
-          <button type="button" id="challengeShareRoomButton" class="pill-button ghost hidden invite-room-btn">Share room link</button>
+          <p id="challengeActiveGamesHint" class="challenge-section-hint"></p>
+          <div id="challengeActiveGamesList" class="challenge-matches-list"></div>
         </div>
-        <p style="font-size: 0.5rem;">Uses the starting level from your Biomes selector (open Biomes first if you want a specific level). Tap <strong>Host</strong> to create a room code, then <strong>Start run</strong>.</p>
-      </div>
-      <div id="challengeJoinPanel" class="hidden">
-        <label style="font-size: 0.45rem; display: block; margin-bottom: 4px;">Your name for scoring</label>
-        <p style="font-size: 0.38rem; color: #94a3b8; margin: 0 0 6px 0; line-height: 1.45;">Saved on this device. Must differ from the host’s name.</p>
-        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-          <input id="challengeJoinDisplayNameInput" maxlength="24" style="flex: 1; min-width: 0; font-size: 0.52rem; padding: 8px;">
-          <button type="button" id="challengeJoinSaveDisplayName" class="pill-button" style="font-size: 0.4rem;">Save</button>
+        <div class="pill-buttons challenge-top-actions">
+          <button type="button" id="challengeTabHost" class="pill-button selected">Host</button>
+          <button type="button" id="challengeTabJoin" class="pill-button">Join</button>
         </div>
-        <label style="font-size: 0.5rem; display: block; margin-bottom: 6px;">Enter code (online)</label>
-        <input id="challengeCodeInput" maxlength="8" style="width: 100%; font-size: 1rem; padding: 10px; text-transform: uppercase;" placeholder="ABC123">
-        <button id="joinChallengeButton" class="button" style="width: 100%; margin-top: 10px;">Load &amp; start</button>
-        <details style="font-size: 0.48rem; margin-top: 14px; line-height: 1.5;">
-          <summary style="cursor: pointer; color: #fcd34d;">Offline: use seed from host</summary>
-          <label style="display: block; margin-top: 8px;">Seed (host shares this number)</label>
-          <input id="offlineChallengeSeed" type="number" min="1" style="width: 100%; font-size: 0.8rem; padding: 8px;">
-          <label style="display: block; margin-top: 8px;">Starting level</label>
-          <input id="offlineChallengeStart" type="number" min="1" value="1" style="width: 100%; font-size: 0.8rem; padding: 8px;">
-          <button id="offlineChallengeStartButton" type="button" class="button" style="width: 100%; margin-top: 10px;">Start offline challenge</button>
-        </details>
-        <p id="challengeJoinStatus" style="font-size: 0.45rem; color: #94a3b8; margin-top: 8px; text-align: center;"></p>
+        <div id="challengeHostPanel">
+          <p id="challengeVersusHint" class="challenge-versus-hint"></p>
+          <div class="challenge-host-code-block">
+            <p class="challenge-code-label" id="challengeHostCodeLabel">Room code</p>
+            <p id="challengeHostCodeDisplay" class="challenge-code-value"></p>
+            <p id="challengeHostStatus" class="challenge-host-status"></p>
+          </div>
+          <div class="challenge-host-actions">
+            <button type="button" id="challengeCopyCodeButton" class="pill-button">Copy code</button>
+            <button type="button" id="challengeShareRoomButton" class="pill-button ghost">Share room</button>
+          </div>
+          <button type="button" id="startHostedRunButton" class="button challenge-start-run" disabled>Start run</button>
+          <p class="challenge-host-note">Starts from your Biomes checkpoint. Rival can join later.</p>
+        </div>
+        <div id="challengeJoinPanel" class="hidden">
+          <label class="challenge-field-label" for="challengeCodeInput">Enter room code</label>
+          <input id="challengeCodeInput" maxlength="8" class="challenge-code-input" placeholder="ABC123" autocomplete="off" spellcheck="false">
+          <button id="joinChallengeButton" class="button challenge-start-run">Join run</button>
+          <p id="challengeJoinStatus" class="challenge-host-status"></p>
+          <details class="challenge-offline-details">
+            <summary>No code? Use a seed</summary>
+            <label style="display: block; margin-top: 8px;">Seed from host</label>
+            <input id="offlineChallengeSeed" type="number" min="1">
+            <label style="display: block; margin-top: 8px;">Starting level</label>
+            <input id="offlineChallengeStart" type="number" min="1" value="1">
+            <button id="offlineChallengeStartButton" type="button" class="button challenge-start-run" style="margin-top: 10px;">Start offline challenge</button>
+          </details>
+        </div>
       </div>
-      <div id="challengeActiveGamesSection" style="margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(148,163,184,0.25); text-align: left;">
-        <p style="font-size: 0.5rem; color: #fcd34d; margin: 0 0 6px 0;">Your active challenges</p>
-        <p id="challengeActiveGamesHint" style="font-size: 0.38rem; color: #94a3b8; margin: 0 0 10px 0; line-height: 1.45;">Shows online matches you can still continue — tap Rejoin to jump back in.</p>
-        <div id="challengeActiveGamesList" style="display: flex; flex-direction: column; gap: 8px;"></div>
-        <button type="button" id="challengeRefreshActiveButton" class="pill-button ghost" style="width: 100%; margin-top: 10px; font-size: 0.42rem;">Refresh active challenges</button>
-      </div>
-      <div class="pill-buttons" style="margin-top: 16px;">
+      <div class="pill-buttons challenge-modal-footer">
         <button id="closeChallengeOverlayButton" class="pill-button ghost">Back</button>
       </div>
     </div>
@@ -5507,8 +5816,8 @@
   <div id="challengeBetweenLevelsOverlay" class="overlay hidden challenge-between-overlay">
     <div class="modal challenge-between-modal">
       <div class="challenge-between-header">
-        <h2 id="challengeBetweenLevelsTitle">Challenge sync</h2>
-        <p id="challengeBetweenLevelsSubtitle" class="challenge-between-sub">Scores and words update here while your rival finishes this level.</p>
+        <h2 id="challengeBetweenLevelsTitle">Level complete</h2>
+        <p id="challengeBetweenLevelsSubtitle" class="challenge-between-sub">Check both scores, then tap Continue.</p>
       </div>
       <div id="challengeBetweenLevelsBody" class="challenge-between-body"></div>
       <div class="challenge-between-footer">
@@ -5601,8 +5910,8 @@
     <div class="modal">
       <h2>You Lose</h2>
       <p id="gameOverMessage">Your squirrel is resting.</p>
-      <p id="gameOverMatchSummary" class="hidden" style="font-size: 0.42rem; line-height: 1.5; color: #bbf7d0; margin-top: 8px;"></p>
-      <p id="challengeOutcomeBanner" class="hidden" style="font-size: 0.48rem; line-height: 1.5; color: #a7f3d0; margin-top: 8px;"></p>
+      <p id="gameOverMatchSummary" class="hidden"></p>
+      <p id="challengeOutcomeBanner" class="hidden"></p>
       <div class="stat-block">
         <div class="stat-card">
           <strong id="finalScore">0</strong>
@@ -5940,17 +6249,48 @@
         <div id="statsTabPanel" class="achievements-container ach-tab-panel hidden">
           <div class="achievements-scroll stats-scroll">
             <section class="stats-wood-panel">
-              <h3 class="stats-panel-title">Multiplayer</h3>
-              <p id="statsLocalMpRow" class="stats-panel-row">Challenge wins 0 · losses 0 · score 0</p>
-              <p id="statsMpOnlineRow" class="stats-panel-row stats-panel-highlight"></p>
+              <h3 class="stats-panel-title">Challenge record</h3>
+              <div class="stats-mp-grid">
+                <div class="menu-stat">
+                  <span class="menu-stat-label">Wins</span>
+                  <span class="menu-stat-value" id="statsMpWins">0</span>
+                </div>
+                <div class="menu-stat">
+                  <span class="menu-stat-label">Losses</span>
+                  <span class="menu-stat-value" id="statsMpLosses">0</span>
+                </div>
+                <div class="menu-stat">
+                  <span class="menu-stat-label">Challenge pts</span>
+                  <span class="menu-stat-value" id="statsMpScore">0</span>
+                </div>
+                <div class="menu-stat">
+                  <span class="menu-stat-label">Words</span>
+                  <span class="menu-stat-value" id="statsMpWords">0</span>
+                </div>
+              </div>
+              <p id="statsMpOnlineRow" class="stats-panel-hint"></p>
+              <p id="statsLocalMpRow" class="hidden"></p>
             </section>
             <section class="stats-wood-panel">
-              <h3 class="stats-panel-title">Solo profile</h3>
-              <p class="stats-panel-row">High score: <span id="statsLocalHighScore">0</span> · Highest level: <span id="statsLocalHighestLevel">1</span> · Words spelled: <span id="statsLocalWordCount">0</span></p>
+              <h3 class="stats-panel-title">Solo</h3>
+              <div class="stats-mp-grid">
+                <div class="menu-stat">
+                  <span class="menu-stat-label">High score</span>
+                  <span class="menu-stat-value" id="statsLocalHighScore">0</span>
+                </div>
+                <div class="menu-stat">
+                  <span class="menu-stat-label">Highest level</span>
+                  <span class="menu-stat-value" id="statsLocalHighestLevel">1</span>
+                </div>
+                <div class="menu-stat">
+                  <span class="menu-stat-label">Words spelled</span>
+                  <span class="menu-stat-value" id="statsLocalWordCount">0</span>
+                </div>
+              </div>
             </section>
             <section class="stats-wood-panel">
-              <h3 class="stats-panel-title">Leaderboard name</h3>
-              <p class="stats-panel-hint">Shown on the global score chart (optional)</p>
+              <h3 class="stats-panel-title">Your name</h3>
+              <p class="stats-panel-hint">Shown on the global chart and in challenges.</p>
               <div class="stats-name-row">
                 <input id="statsDisplayNameInput" maxlength="24" placeholder="Your name">
                 <button type="button" id="statsSaveDisplayName" class="pill-button">Save</button>
@@ -5959,18 +6299,18 @@
             </section>
             <section class="stats-wood-panel">
               <h3 class="stats-panel-title">Friends</h3>
-              <p class="stats-panel-hint">Share your invite link or send requests from the score chart below.</p>
+              <p class="stats-panel-hint">Share your invite, or add players from the chart below.</p>
               <div class="invite-link-row">
-                <button type="button" id="statsCopyInviteButton" class="pill-button">Copy invite link</button>
-                <button type="button" id="statsShareInviteButton" class="pill-button ghost">Share link</button>
+                <button type="button" id="statsCopyInviteButton" class="pill-button">Copy invite</button>
+                <button type="button" id="statsShareInviteButton" class="pill-button ghost">Share invite</button>
               </div>
               <div id="statsFriendsIncoming" class="friends-list"></div>
               <div id="statsFriendsList" class="friends-list"></div>
             </section>
             <section class="stats-wood-panel">
-              <h3 class="stats-panel-title">Global score chart</h3>
+              <h3 class="stats-panel-title">Global chart</h3>
               <div id="statsLeaderboardList"></div>
-              <button type="button" id="statsRefreshLeaderboard" class="pill-button stats-refresh-btn">Refresh list</button>
+              <button type="button" id="statsRefreshLeaderboard" class="pill-button stats-refresh-btn">Refresh chart</button>
             </section>
             <section class="stats-wood-panel">
               <h3 class="stats-panel-title">Challenge history</h3>
@@ -6667,6 +7007,8 @@
         challengeCopyInviteButton: document.getElementById('challengeCopyInviteButton'),
         challengeShareInviteButton: document.getElementById('challengeShareInviteButton'),
         challengeShareRoomButton: document.getElementById('challengeShareRoomButton'),
+        challengeCopyCodeButton: document.getElementById('challengeCopyCodeButton'),
+        challengeHostCodeLabel: document.getElementById('challengeHostCodeLabel'),
         challengeProfileShareInviteButton: document.getElementById('challengeProfileShareInviteButton'),
         challengeProfileFriends: document.getElementById('challengeProfileFriends'),
         challengeProfileFriendsList: document.getElementById('challengeProfileFriendsList'),
@@ -6805,6 +7147,10 @@
         statsLocalHighestLevel: document.getElementById('statsLocalHighestLevel'),
         statsLocalWordCount: document.getElementById('statsLocalWordCount'),
         statsLocalMpRow: document.getElementById('statsLocalMpRow'),
+        statsMpWins: document.getElementById('statsMpWins'),
+        statsMpLosses: document.getElementById('statsMpLosses'),
+        statsMpScore: document.getElementById('statsMpScore'),
+        statsMpWords: document.getElementById('statsMpWords'),
         statsDisplayNameInput: document.getElementById('statsDisplayNameInput'),
         statsSaveDisplayName: document.getElementById('statsSaveDisplayName'),
         statsOnlineMessage: document.getElementById('statsOnlineMessage'),
@@ -6971,11 +7317,13 @@
         return `${base}${sep}${params.toString()}`;
       }
 
-      async function copyTextToClipboard(text) {
+      async function copyTextToClipboard(text, toastMessage) {
+        const okMsg = toastMessage || 'Link copied!';
+        const failMsg = toastMessage ? 'Could not copy.' : 'Could not copy link.';
         try {
           if (navigator.clipboard && navigator.clipboard.writeText) {
             await navigator.clipboard.writeText(text);
-            showToast('Link copied!');
+            showToast(okMsg);
             return true;
           }
         } catch (e) {
@@ -6991,10 +7339,10 @@
           ta.select();
           document.execCommand('copy');
           document.body.removeChild(ta);
-          showToast('Link copied!');
+          showToast(okMsg);
           return true;
         } catch (e2) {
-          showToast('Could not copy link.');
+          showToast(failMsg);
           return false;
         }
       }
@@ -7079,9 +7427,7 @@
             refreshChallengeProfileCorner();
             if (dom.challengeTabJoin) dom.challengeTabJoin.click();
             if (dom.challengeJoinStatus) {
-              dom.challengeJoinStatus.textContent = effectiveFrom
-                ? 'Room code loaded from invite — tap Load & start when ready.'
-                : 'Room code loaded from link — tap Load & start when ready.';
+              dom.challengeJoinStatus.textContent = 'Invite loaded. Tap Join run when you are ready.';
             }
           }, 600);
         }
@@ -7125,32 +7471,57 @@
             );
           });
         }
+        if (dom.challengeCopyCodeButton) {
+          dom.challengeCopyCodeButton.addEventListener('click', () => {
+            void copyCurrentChallengeCode();
+          });
+        }
+        if (dom.challengeHostCodeDisplay) {
+          dom.challengeHostCodeDisplay.addEventListener('click', () => {
+            void copyCurrentChallengeCode();
+          });
+        }
         if (dom.challengeShareRoomButton) {
           dom.challengeShareRoomButton.addEventListener('click', () => {
-            const code =
-              hostChallengePayload && hostChallengePayload.code && hostChallengePayload.code !== 'offline'
-                ? hostChallengePayload.code
-                : '';
-            if (!code || code.length < 4) {
-              showToast('Create a room code first.');
+            const payload = hostChallengePayload;
+            if (!payload) {
+              showToast('Room is still opening.');
+              return;
+            }
+            if (payload.code === 'offline') {
+              void copyTextToClipboard(String(payload.seed), 'Copied offline seed.');
               return;
             }
             void shareGameLink(
-              buildChallengeInviteUrl(code, getOrCreatePlayerId()),
+              buildChallengeInviteUrl(payload.code, getOrCreatePlayerId()),
               'Squirrel Street Challenge',
-              `Join my Squirrel Street challenge! Code: ${code}`
+              `Join my Squirrel Street challenge! Code: ${payload.code}`
             );
           });
         }
       }
 
+      function getCurrentHostShareValue() {
+        const payload = hostChallengePayload;
+        if (!payload) return null;
+        if (payload.code === 'offline') return String(payload.seed);
+        return payload.code || null;
+      }
+
+      async function copyCurrentChallengeCode() {
+        const value = getCurrentHostShareValue();
+        if (!value) {
+          showToast('Room is still opening.');
+          return;
+        }
+        const msg = hostChallengePayload && hostChallengePayload.code === 'offline' ? 'Copied seed.' : 'Copied room code.';
+        await copyTextToClipboard(value, msg);
+      }
+
       function updateChallengeRoomShareButton() {
-        if (!dom.challengeShareRoomButton) return;
-        const code =
-          hostChallengePayload && hostChallengePayload.code && hostChallengePayload.code !== 'offline'
-            ? hostChallengePayload.code
-            : null;
-        dom.challengeShareRoomButton.classList.toggle('hidden', !code);
+        const ready = Boolean(getCurrentHostShareValue());
+        if (dom.challengeShareRoomButton) dom.challengeShareRoomButton.disabled = !ready;
+        if (dom.challengeCopyCodeButton) dom.challengeCopyCodeButton.disabled = !ready;
       }
 
       function setChallengeProfilePanelOpen(open) {
@@ -7172,7 +7543,7 @@
         }
         if (dom.challengeProfileMpLocal) {
           dom.challengeProfileMpLocal.textContent =
-            `Local: ${mp.wins} wins · ${mp.losses} losses · ${mp.score} pts · ${mp.words} words`;
+            `${mp.wins} wins · ${mp.losses} losses · ${mp.score} pts`;
         }
         if (dom.challengeProfileMpOnline) {
           dom.challengeProfileMpOnline.textContent = SquirrelApi.isConfigured()
@@ -7188,10 +7559,10 @@
             if (!dom.challengeProfileMpOnline) return;
             if (row) {
               dom.challengeProfileMpOnline.textContent =
-                `Online: ${row.mp_wins ?? 0}W · ${row.mp_losses ?? 0}L · ${row.mp_total_score ?? 0} challenge pts`;
+                `Online ${row.mp_wins ?? 0}W · ${row.mp_losses ?? 0}L · ${row.mp_total_score ?? 0} pts`;
             } else {
               dom.challengeProfileMpOnline.textContent =
-                'No online record yet — finish a challenge match to sync.';
+                'No online record yet — finish a match to sync.';
             }
           } catch (e) {
             if (dom.challengeProfileMpOnline) {
@@ -7305,7 +7676,7 @@
             leaderboardChallengeTarget = { id, name: (fr && fr.display_name) || 'Player' };
             updateChallengeVersusHint();
             if (dom.challengeTabHost) dom.challengeTabHost.click();
-            showToast(`Tap Host if you need a new room code for ${leaderboardChallengeTarget.name}.`);
+            showToast(`Hosting vs ${leaderboardChallengeTarget.name}.`);
           });
         });
       }
@@ -7370,9 +7741,7 @@
       }
 
       function joinChallengeDisplayNameForApi() {
-        const v = dom.challengeJoinDisplayNameInput ? dom.challengeJoinDisplayNameInput.value.trim() : '';
-        if (v) return v.slice(0, 24);
-        return loadDisplayName();
+        return hostChallengeDisplayNameForApi();
       }
 
       function loadLocalMpStats() {
@@ -7468,7 +7837,7 @@
         const left = CHALLENGE_RESUME_MAX_MS - (Date.now() - payload.savedAt);
         const h = Math.floor(left / 3600000);
         const m = Math.floor((left % 3600000) / 60000);
-        dom.challengeResumeHint.textContent = `Resume match ${payload.code} (${h}h ${m}m left). Same device & player id.`;
+        dom.challengeResumeHint.textContent = `Resume ${payload.code} · ${h}h ${m}m left on this device.`;
         dom.challengeResumePanel.classList.remove('hidden');
       }
 
@@ -7609,22 +7978,21 @@
         const bothDone = round && round.host_submitted && round.guest_submitted;
         const levelResolved = round && round.resolved;
         const vsName = getChallengeOpponentLabel(state, myPid);
-        let sub = 'Review both players below, then tap Continue for the next level.';
+        let sub = 'Check both scores, then tap Continue.';
         if (waitingGuest) {
-          sub =
-            'Your score is saved. Share your room code — tap Continue when ready (your rival can join and catch up later).';
-        } else if (state.status === 'completed') sub = 'Match finished — see the winner below.';
-        else if (levelResolved && round.summary) sub = 'Level settled — winner shown below.';
-        else if (bothDone && !levelResolved) sub = 'Both scores in — settling this level on the server…';
+          sub = 'Your score is saved. Share the room code — your rival can catch up later.';
+        } else if (state.status === 'completed') sub = 'Match finished.';
+        else if (levelResolved && round.summary) sub = 'This level is settled.';
+        else if (bothDone && !levelResolved) sub = 'Both scores in — settling this level…';
         else if (round && round.host_submitted !== round.guest_submitted) {
-          sub = 'Your rival can finish this level later — stats update when they play. Tap Continue when you are ready.';
+          sub = 'Your rival can finish this level later. Tap Continue when you are ready.';
         }
         if (dom.challengeBetweenLevelsTitle) {
           dom.challengeBetweenLevelsTitle.textContent = waitingGuest
-            ? 'Your challenge · waiting for rival'
+            ? 'Waiting for a rival'
             : state.status === 'completed'
               ? `Match over · vs ${vsName}`
-              : `vs ${vsName} · Level ${roundLevel}`;
+              : `Level ${roundLevel} complete`;
         }
         if (dom.challengeBetweenLevelsSubtitle) dom.challengeBetweenLevelsSubtitle.textContent = sub;
 
@@ -7659,11 +8027,11 @@
           );
         } else if (!hel && hostRowYou && guestLives != null) {
           rivalAlerts.push(
-            `<div class="challenge-rival-alert" style="border-color:rgba(125,211,252,0.4);color:#bae6fd;">${gn} still playing — ${fmt(guestLives)} ${Number(guestLives) === 1 ? 'life' : 'lives'} left.</div>`
+            `<div class="challenge-rival-alert still-playing">${gn} still playing — ${fmt(guestLives)} ${Number(guestLives) === 1 ? 'life' : 'lives'} left.</div>`
           );
         } else if (!gel && guestRowYou && hostLives != null) {
           rivalAlerts.push(
-            `<div class="challenge-rival-alert" style="border-color:rgba(125,211,252,0.4);color:#bae6fd;">${hn} still playing — ${fmt(hostLives)} ${Number(hostLives) === 1 ? 'life' : 'lives'} left.</div>`
+            `<div class="challenge-rival-alert still-playing">${hn} still playing — ${fmt(hostLives)} ${Number(hostLives) === 1 ? 'life' : 'lives'} left.</div>`
           );
         }
 
@@ -7694,7 +8062,7 @@
             localSnap.wordsThisLevel != null ||
             localSnap.wordsRunTotal != null ||
             localSnap.livesRemaining != null)
-            ? `<div class="challenge-local-banner"><strong>You · level ${escapeHtml(roundLevel)}:</strong> ${escapeHtml(String(localSnap.roundPoints ?? '—'))} pts · ${escapeHtml(String(localSnap.wordsThisLevel ?? '—'))} words · ${escapeHtml(String(localSnap.livesRemaining ?? '—'))} lives left · ${escapeHtml(String(localSnap.wordsRunTotal ?? '—'))} words this run</div>`
+            ? `<div class="challenge-local-banner"><strong>You · level ${escapeHtml(roundLevel)}</strong><br>${escapeHtml(String(localSnap.roundPoints ?? '—'))} pts · ${escapeHtml(String(localSnap.wordsThisLevel ?? '—'))} words · ${escapeHtml(String(localSnap.livesRemaining ?? '—'))} lives</div>`
             : '';
 
         const oppId = hostRowYou ? state.guest_id : state.host_id;
@@ -7708,8 +8076,8 @@
           ${rivalAlerts.join('')}
           ${oppActions}
           <div class="challenge-score-grid-full">
-            <div class="challenge-score-card-strong" style="${hostRowYou ? 'box-shadow:0 0 0 2px #facc15;' : ''}">
-              <div style="color:#fcd34d;font-weight:bold;font-size:1.05em;">${hn}${hostRowYou ? ' (you)' : ''}</div>
+            <div class="challenge-score-card-strong${hostRowYou ? ' you' : ''}">
+              <div class="challenge-score-card-name">${hn}${hostRowYou ? ' (you)' : ''}</div>
               <div class="challenge-stat-row"><span>Level ${escapeHtml(roundLevel)} pts</span><span>${fmt(hs)}</span></div>
               <div class="challenge-stat-row"><span>Words this level</span><span>${fmt(hostWordsLv)}</span></div>
               <div class="challenge-stat-row"><span>Lives left</span><span>${hel ? '0 (out)' : fmt(hostLives)}</span></div>
@@ -7718,8 +8086,8 @@
               <div class="challenge-stat-row"><span>Levels won</span><span>${hw}</span></div>
               <div>${hostChips}</div>
             </div>
-            <div class="challenge-score-card-strong" style="${guestRowYou ? 'box-shadow:0 0 0 2px #facc15;' : ''}">
-              <div style="color:#7dd3fc;font-weight:bold;font-size:1.05em;">${gn}${guestRowYou ? ' (you)' : ''}</div>
+            <div class="challenge-score-card-strong${guestRowYou ? ' you' : ''}">
+              <div class="challenge-score-card-name">${gn}${guestRowYou ? ' (you)' : ''}</div>
               <div class="challenge-stat-row"><span>Level ${escapeHtml(roundLevel)} pts</span><span>${fmt(gs)}</span></div>
               <div class="challenge-stat-row"><span>Words this level</span><span>${fmt(guestWordsLv)}</span></div>
               <div class="challenge-stat-row"><span>Lives left</span><span>${gel ? '0 (out)' : fmt(guestLives)}</span></div>
@@ -7729,7 +8097,7 @@
               <div>${guestChips}</div>
             </div>
           </div>
-          ${history ? `<div style="margin-top:14px;text-align:left;font-size:clamp(0.34rem,2vw,0.42rem);color:#cbd5e1;line-height:1.45;"><strong style="color:#94a3b8;">Recent rounds</strong>${history}</div>` : ''}
+          ${history ? `<div class="challenge-local-banner" style="margin-top:14px;"><strong>Recent rounds</strong>${history}</div>` : ''}
         `;
         wireOpponentFriendActions(dom.challengeBetweenLevelsBody);
       }
@@ -7738,12 +8106,9 @@
         if (!dom.challengeActiveGamesList || !dom.challengeActiveGamesHint) return;
         dom.challengeActiveGamesList.textContent = '';
         if (!SquirrelApi.isConfigured()) {
-          dom.challengeActiveGamesHint.textContent =
-            'Cloud API not configured — active challenge list needs apiBaseUrl (solo/offline challenges stay local only).';
+          if (dom.challengeActiveGamesSection) dom.challengeActiveGamesSection.classList.add('hidden');
           return;
         }
-        dom.challengeActiveGamesHint.textContent =
-          'Matches with an opponent — tap Rejoin to see both players’ stats first (saved progress on this device is restored when available).';
         const pid = getOrCreatePlayerId();
         let rows = [];
         try {
@@ -7752,13 +8117,11 @@
           console.warn(e);
         }
         if (!rows.length) {
-          const em = document.createElement('p');
-          em.style.cssText = 'font-size:0.42rem;color:#64748b;margin:0;line-height:1.45;';
-          em.textContent =
-            'No active challenges right now. Leave an online match from the pause menu (without losing all lives) and it will appear here.';
-          dom.challengeActiveGamesList.appendChild(em);
+          if (dom.challengeActiveGamesSection) dom.challengeActiveGamesSection.classList.add('hidden');
           return;
         }
+        if (dom.challengeActiveGamesSection) dom.challengeActiveGamesSection.classList.remove('hidden');
+        dom.challengeActiveGamesHint.textContent = 'Tap Rejoin to jump back in.';
         rows.forEach((row) => {
           const card = document.createElement('div');
           card.className = 'challenge-active-card';
@@ -7768,7 +8131,7 @@
             row.host_id === pid
               ? `vs ${escapeHtml(row.guest_name || 'Guest')}`
               : `vs ${escapeHtml(row.host_name || 'Host')}`;
-          left.innerHTML = `<strong>${escapeHtml(row.code)}</strong><br>${opp}<br><span class="muted">Level ~${escapeHtml(String(row.current_level ?? '?'))} · ${escapeHtml(String(row.host_total_points ?? 0))} vs ${escapeHtml(String(row.guest_total_points ?? 0))} pts · set ${escapeHtml(String(row.host_wins ?? 0))}–${escapeHtml(String(row.guest_wins ?? 0))}</span>`;
+          left.innerHTML = `<strong>${escapeHtml(row.code)}</strong><br>${opp}<br><span class="muted">Level ${escapeHtml(String(row.current_level ?? '?'))} · ${escapeHtml(String(row.host_total_points ?? 0))}–${escapeHtml(String(row.guest_total_points ?? 0))} pts · set ${escapeHtml(String(row.host_wins ?? 0))}–${escapeHtml(String(row.guest_wins ?? 0))}</span>`;
           const btn = document.createElement('button');
           btn.type = 'button';
           btn.className = 'pill-button';
@@ -7904,11 +8267,12 @@
 
       function applyHostChallengePayloadToUi(payload) {
         if (!payload || !dom.challengeHostCodeDisplay) return;
-        if (payload.code === 'offline') {
-          dom.challengeHostCodeDisplay.textContent = `Seed for rival: ${payload.seed}`;
-        } else {
-          dom.challengeHostCodeDisplay.textContent = `Code: ${payload.code}`;
+        const offline = payload.code === 'offline';
+        if (dom.challengeHostCodeLabel) {
+          dom.challengeHostCodeLabel.textContent = offline ? 'Offline seed' : 'Room code';
         }
+        dom.challengeHostCodeDisplay.textContent = offline ? String(payload.seed) : payload.code;
+        dom.challengeHostCodeDisplay.classList.toggle('is-code', !offline);
         updateStartHostedButtonState();
         updateChallengeRoomShareButton();
       }
@@ -8223,7 +8587,7 @@
               void refreshActiveChallengesPanel();
               if (dom.challengeTabHost) dom.challengeTabHost.click();
               updateChallengeVersusHint();
-              showToast(`Challenge setup: ${friend.display_name || 'Player'}.`);
+              showToast(`Hosting vs ${friend.display_name || 'Player'}.`);
             });
             actions.appendChild(challengeBtn);
             row.appendChild(name);
@@ -10991,6 +11355,17 @@
       // Changelog Data
       const CHANGELOG = [
         {
+          version: '2.16',
+          date: '2026-08-12',
+          changes: [
+            'Challenge lobby rebuilt to match the rest of the game — wood panels, one clear Start run, no extra walls of text',
+            'Host shows a big room code with Copy / Share; Join is just a code and Join run',
+            'Active matches and Continue last match sit at the top when you have a game in progress',
+            'Stats tab uses the same tile layout as the main menu, with Win / Loss match history cards',
+            'Between-level and game-over challenge screens use the same forest wood look instead of a separate blue overlay'
+          ]
+        },
+        {
           version: '2.15',
           date: '2026-07-21',
           changes: [
@@ -11227,7 +11602,7 @@
         }
       ];
       
-      const CURRENT_VERSION = '2.15';
+      const CURRENT_VERSION = '2.16';
       const LAST_SEEN_VERSION_KEY = 'squirrelStreet.lastSeenVersion';
 
       function checkChangelogBadge() {
@@ -12008,6 +12383,10 @@
         if (dom.statsLocalHighScore) dom.statsLocalHighScore.textContent = String(loadHighScore());
         if (dom.statsLocalHighestLevel) dom.statsLocalHighestLevel.textContent = String(loadHighestLevel());
         const localMp = loadLocalMpStats();
+        if (dom.statsMpWins) dom.statsMpWins.textContent = String(localMp.wins);
+        if (dom.statsMpLosses) dom.statsMpLosses.textContent = String(localMp.losses);
+        if (dom.statsMpScore) dom.statsMpScore.textContent = String(localMp.score);
+        if (dom.statsMpWords) dom.statsMpWords.textContent = String(localMp.words);
         if (dom.statsLocalMpRow) {
           dom.statsLocalMpRow.textContent =
             `Challenge wins ${localMp.wins} · losses ${localMp.losses} · score ${localMp.score} · words ${localMp.words}`;
@@ -12021,8 +12400,8 @@
         if (dom.statsDisplayNameInput) dom.statsDisplayNameInput.value = loadDisplayName();
         if (dom.statsOnlineMessage) {
           dom.statsOnlineMessage.textContent = SquirrelApi.isConfigured()
-            ? 'Cloud sync is on. High scores and challenge rounds use your Render API. Gameplay stays on device.'
-            : 'Set window.SQUIRREL_ONLINE.apiBaseUrl in index.html to your Render service URL (see /server in this repo).';
+            ? 'This name shows on the global chart and in challenges.'
+            : 'Playing offline — scores stay on this device.';
         }
         if (!dom.statsLeaderboardList) return;
         if (dom.statsMpOnlineRow) dom.statsMpOnlineRow.textContent = '';
@@ -12032,7 +12411,7 @@
           dom.statsLeaderboardList.textContent = '';
           const p = document.createElement('p');
           p.className = 'stats-empty-note';
-          p.textContent = 'Local stats are above. Add apiBaseUrl to load other players scores.';
+          p.textContent = 'Local stats are above. Go online to see other players.';
           dom.statsLeaderboardList.appendChild(p);
           return;
         }
@@ -12076,7 +12455,7 @@
         if (!list.length) {
           const empty = document.createElement('p');
           empty.className = 'stats-empty-note';
-          empty.textContent = 'No cloud rows yet. Your profile is shown below until the first online score syncs.';
+          empty.textContent = 'No scores on the chart yet. Yours will show here after a run.';
           dom.statsLeaderboardList.appendChild(empty);
         }
         if (dom.statsMpOnlineRow) {
@@ -12085,10 +12464,14 @@
             const ml = selfRow.mp_losses ?? 0;
             const mt = selfRow.mp_total_score ?? 0;
             const ws = selfRow.mp_words_spelled ?? selfRow.words_spelled ?? 0;
-            dom.statsMpOnlineRow.innerHTML = `<strong>Online profile:</strong> MP wins ${mw} · losses ${ml} · challenge pts ${mt} · words spelled ${ws}${selfRow.local_only ? ' (waiting to sync)' : ''}`;
+            if (dom.statsMpWins) dom.statsMpWins.textContent = String(mw);
+            if (dom.statsMpLosses) dom.statsMpLosses.textContent = String(ml);
+            if (dom.statsMpScore) dom.statsMpScore.textContent = String(mt);
+            if (dom.statsMpWords) dom.statsMpWords.textContent = String(ws);
+            dom.statsMpOnlineRow.textContent = '';
           } else {
             dom.statsMpOnlineRow.textContent =
-              'Finish an online challenge match to record multiplayer wins and losses on the server.';
+              'Finish an online match to record wins and losses.';
           }
         }
         const wrap = document.createElement('div');
@@ -12128,7 +12511,7 @@
               void refreshActiveChallengesPanel();
               if (dom.challengeTabHost) dom.challengeTabHost.click();
               updateChallengeVersusHint();
-              showToast(`Challenge setup: ${row.display_name}. A room code is created on the Host tab.`);
+              showToast(`Hosting vs ${row.display_name}.`);
             });
           }
           nameRow.appendChild(nameBtn);
@@ -12216,19 +12599,34 @@
           if (!history.length) {
             const empty = document.createElement('div');
             empty.className = 'match-history-item';
-            empty.textContent = 'No completed challenge matches yet.';
+          empty.textContent = 'No completed matches yet.';
             dom.statsMatchHistoryList.appendChild(empty);
           } else {
             history.forEach((match) => {
               const item = document.createElement('div');
-              item.className = 'match-history-item';
               const hostName = match.host_name || 'Host';
               const guestName = match.guest_name || 'Guest';
               const hostPts = match.host_total_points ?? 0;
               const guestPts = match.guest_total_points ?? 0;
               const won = match.winner_id === myId;
               const tied = !match.winner_id;
-              item.textContent = `${tied ? 'Tie' : won ? 'Win' : 'Loss'} - ${hostName} ${hostPts} vs ${guestName} ${guestPts}. ${match.match_summary || ''}`;
+              item.className = 'match-history-item' + (tied ? '' : won ? ' win' : ' loss');
+              const result = document.createElement('span');
+              result.className = 'match-history-result';
+              result.textContent = tied ? 'TIE' : won ? 'WIN' : 'LOSS';
+              const body = document.createElement('div');
+              body.className = 'match-history-body';
+              const youWereHost = match.host_id === myId;
+              const oppName = youWereHost ? guestName : hostName;
+              const title = document.createElement('strong');
+              title.textContent = `vs ${oppName}`;
+              const detail = document.createElement('div');
+              detail.className = 'muted';
+              detail.textContent = `${hostName} ${hostPts} – ${guestName} ${guestPts}${match.match_summary ? ` · ${match.match_summary}` : ''}`;
+              body.appendChild(title);
+              body.appendChild(detail);
+              item.appendChild(result);
+              item.appendChild(body);
               dom.statsMatchHistoryList.appendChild(item);
             });
           }
@@ -12238,7 +12636,7 @@
       function updateChallengeVersusHint() {
         if (!dom.challengeVersusHint) return;
         if (leaderboardChallengeTarget) {
-          dom.challengeVersusHint.textContent = `Target opponent: ${leaderboardChallengeTarget.name} (only this player can join your code).`;
+          dom.challengeVersusHint.textContent = `Vs ${leaderboardChallengeTarget.name} — only they can join this room.`;
         } else {
           dom.challengeVersusHint.textContent = '';
         }
@@ -17995,7 +18393,10 @@
         }
 
         if (!SquirrelApi.isConfigured()) {
-          if (dom.challengeHostCodeDisplay) dom.challengeHostCodeDisplay.textContent = '';
+          if (dom.challengeHostCodeDisplay) {
+            dom.challengeHostCodeDisplay.textContent = '';
+            dom.challengeHostCodeDisplay.classList.remove('is-code');
+          }
           const seed = Math.floor(100000 + Math.random() * 899899999);
           hostChallengePayload = {
             startLevel,
@@ -18006,21 +18407,27 @@
           applyHostChallengePayloadToUi(hostChallengePayload);
           if (dom.challengeHostStatus) {
             dom.challengeHostStatus.textContent =
-              'Offline: tell your rival the seed — they enter it under Join → Offline. Tap Start when ready.';
+              'Offline: share this seed. Rival enters it under Join → No code? Use a seed.';
           }
-          showToast(`Challenge seed: ${seed}`);
           return;
         }
 
         if (hostChallengeCreating) return;
         hostChallengeCreating = true;
         try {
-          if (dom.challengeHostCodeDisplay) dom.challengeHostCodeDisplay.textContent = 'Generating code…';
-          if (dom.challengeHostStatus) dom.challengeHostStatus.textContent = 'Creating room…';
+          if (dom.challengeHostCodeDisplay) {
+            dom.challengeHostCodeDisplay.textContent = 'Opening room…';
+            dom.challengeHostCodeDisplay.classList.remove('is-code');
+          }
+          if (dom.challengeHostStatus) dom.challengeHostStatus.textContent = '';
           const reserved =
             leaderboardChallengeTarget && leaderboardChallengeTarget.id
               ? leaderboardChallengeTarget.id
               : undefined;
+          const reservedName =
+            leaderboardChallengeTarget && leaderboardChallengeTarget.name
+              ? leaderboardChallengeTarget.name
+              : 'your opponent';
           const created = await SquirrelApi.createChallenge(
             getOrCreatePlayerId(),
             hostChallengeDisplayNameForApi(),
@@ -18029,7 +18436,7 @@
           );
           if (!created || !created.code) {
             if (dom.challengeHostStatus) {
-              dom.challengeHostStatus.textContent = 'Could not create challenge. Is the API up?';
+              dom.challengeHostStatus.textContent = 'Could not create a room. Try again in a moment.';
             }
             return;
           }
@@ -18042,10 +18449,9 @@
           applyHostChallengePayloadToUi(hostChallengePayload);
           if (dom.challengeHostStatus) {
             dom.challengeHostStatus.textContent = reserved
-              ? 'Only your selected opponent can join. Tap Start run when ready — they can play later.'
-              : 'Share this code. Tap Start run when ready — rivals can join and catch up anytime.';
+              ? `Only ${reservedName} can join.`
+              : '';
           }
-          showToast(`Room code: ${created.code}`);
           leaderboardChallengeTarget = null;
           updateChallengeVersusHint();
         } finally {
@@ -18111,7 +18517,7 @@
             dom.challengeJoinPanel.classList.remove('hidden');
             dom.challengeHostPanel.classList.add('hidden');
             updateStartHostedButtonState();
-            if (dom.challengeJoinDisplayNameInput) dom.challengeJoinDisplayNameInput.value = loadDisplayName();
+            if (dom.challengeCodeInput) dom.challengeCodeInput.focus();
           });
         }
         if (dom.challengeProfileAddFriendsBtn) {
@@ -18183,7 +18589,7 @@
         if (dom.startHostedRunButton) {
           dom.startHostedRunButton.addEventListener('click', () => {
             if (!hostChallengePayload) {
-              showToast('Tap Host first to create a room code or seed.');
+              showToast('Room is still opening — wait a second.');
               return;
             }
             const p = hostChallengePayload;
@@ -18194,32 +18600,36 @@
           dom.joinChallengeButton.addEventListener('click', async () => {
             const code = (dom.challengeCodeInput.value || '').trim().toUpperCase();
             if (code.length < 4) {
-              if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = 'Enter the host’s code.';
+              if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = 'Enter the host’s room code.';
               return;
             }
             if (!SquirrelApi.isConfigured()) {
-              if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = 'Online codes need apiBaseUrl. Use offline seed below.';
+              if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = 'Online rooms need a connection. Use a seed below if you have one.';
               return;
             }
             if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = 'Checking code…';
             const preview = await SquirrelApi.getChallenge(code);
             if (!preview || preview.status !== 'active') {
-              if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = 'Invalid code or match already finished.';
+              if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = 'That code is invalid or the match already finished.';
               return;
             }
             const guestTryName = joinChallengeDisplayNameForApi();
             const hostNm = (preview.host_name || '').trim().toLowerCase();
             if (hostNm && guestTryName.trim().toLowerCase() === hostNm) {
+              setChallengeProfilePanelOpen(true);
+              if (dom.challengeDisplayNameInput) {
+                try { dom.challengeDisplayNameInput.focus(); } catch (e) {}
+              }
               if (dom.challengeJoinStatus) {
                 dom.challengeJoinStatus.textContent =
-                  'Pick a display name different from the host’s (edit yours above).';
+                  'Your name matches the host. Change it in Your profile, then join.';
               }
               return;
             }
             if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = 'Joining…';
             const row = await SquirrelApi.joinChallenge(code, getOrCreatePlayerId(), guestTryName);
             if (!row) {
-              if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = 'Could not join (wrong code, full, or wrong account).';
+              if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = 'Could not join. Check the code, or the room may be full.';
               return;
             }
             const seedNum = Number(row.seed);
@@ -18233,7 +18643,7 @@
             }
             saveDisplayName(guestTryName);
             syncChallengeNameInputsFromStorage();
-            showToast(`Joined challenge ${code} — level ${sl}`);
+            showToast(`Joined ${code}`);
             beginGameFromMenu(sl, { runSeed: seedNum, challenge: { code, role: 'guest' } });
           });
         }
