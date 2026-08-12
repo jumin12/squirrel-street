@@ -1758,10 +1758,15 @@
       margin: 0 0 12px;
     }
 
+    .challenge-search-wrap {
+      position: relative;
+      margin-bottom: 8px;
+    }
+
     .challenge-search-row {
       display: flex;
       gap: 6px;
-      margin-bottom: 8px;
+      margin-bottom: 0;
     }
 
     .challenge-search-row input {
@@ -1772,6 +1777,72 @@
       border: 2px solid #5D4037;
       background: rgba(0, 0, 0, 0.35);
       color: #FFF;
+    }
+
+    .challenge-search-suggest {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: auto;
+      bottom: calc(100% - 1px);
+      z-index: 12;
+      max-height: 220px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      background: rgba(46, 29, 16, 0.98);
+      border: 3px solid #5D4037;
+      box-shadow:
+        inset 2px 2px 0 rgba(205, 133, 63, 0.2),
+        3px 3px 0 rgba(0, 0, 0, 0.55);
+    }
+
+    .challenge-search-suggest.hidden {
+      display: none !important;
+    }
+
+    .challenge-search-suggest-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      width: 100%;
+      padding: 10px 12px;
+      border: 0;
+      border-bottom: 1px solid rgba(93, 64, 55, 0.65);
+      background: transparent;
+      color: #FFF;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .challenge-search-suggest-item:last-child {
+      border-bottom: 0;
+    }
+
+    .challenge-search-suggest-item:hover,
+    .challenge-search-suggest-item:focus,
+    .challenge-search-suggest-item.is-active {
+      background: rgba(93, 64, 55, 0.88);
+    }
+
+    .challenge-search-suggest-name {
+      font-size: 0.44rem;
+      color: #FFD700;
+      text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.45);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .challenge-search-suggest-name .match {
+      color: #FFF;
+      background: rgba(255, 215, 0, 0.22);
+    }
+
+    .challenge-search-suggest-meta {
+      flex-shrink: 0;
+      font-size: 0.34rem;
+      color: rgba(255, 255, 255, 0.72);
     }
 
     #challengeOverlay #challengeResumePanel.hidden,
@@ -5822,9 +5893,12 @@
           <div class="challenge-section-head">
             <h3>Find a player</h3>
           </div>
-          <div class="challenge-search-row">
-            <input id="challengePlayerSearchInput" maxlength="24" placeholder="Search username" autocomplete="off" spellcheck="false">
-            <button type="button" id="challengePlayerSearchButton" class="pill-button">Search</button>
+          <div class="challenge-search-wrap">
+            <div class="challenge-search-row">
+              <input id="challengePlayerSearchInput" maxlength="24" placeholder="Type a username…" autocomplete="off" spellcheck="false">
+              <button type="button" id="challengePlayerSearchButton" class="pill-button">Search</button>
+            </div>
+            <div id="challengeSearchSuggest" class="challenge-search-suggest hidden" role="listbox" aria-label="Username suggestions"></div>
           </div>
           <p id="challengeSearchHint" class="challenge-section-hint"></p>
           <div id="challengeSearchList" class="challenge-matches-list"></div>
@@ -7184,6 +7258,7 @@
         challengePlayerSearchButton: document.getElementById('challengePlayerSearchButton'),
         challengeSearchHint: document.getElementById('challengeSearchHint'),
         challengeSearchList: document.getElementById('challengeSearchList'),
+        challengeSearchSuggest: document.getElementById('challengeSearchSuggest'),
         challengeOfflineNote: document.getElementById('challengeOfflineNote'),
         levelSelectorButton: document.getElementById('levelSelectorButton'),
         achievementsButton: document.getElementById('achievementsButton'),
@@ -8548,16 +8623,18 @@
             const data = await r.json().catch(() => ({}));
             return { ok: r.ok, ...data };
           },
-          async searchPlayers(query, excludeId) {
+          async searchPlayers(query, excludeId, limit = 8) {
             const root = apiRoot();
             if (!root) return [];
             const q = String(query || '').trim();
-            if (q.length < 2) return [];
+            if (q.length < 1) return [];
             const params = new URLSearchParams({ q });
             if (excludeId) params.set('exclude', excludeId);
+            params.set('limit', String(Math.max(1, Math.min(12, Math.floor(limit) || 8))));
             const r = await fetch(`${root}/players/search?${params.toString()}`);
             if (!r.ok) return [];
-            return r.json();
+            const data = await r.json().catch(() => []);
+            return Array.isArray(data) ? data : [];
           },
           async claimDisplayName(playerId, displayName) {
             const root = apiRoot();
@@ -8703,9 +8780,12 @@
       function getFriendRelation(targetId) {
         const myId = getOrCreatePlayerId();
         if (!targetId || targetId === myId) return 'self';
-        if (cachedFriendState.friends.some((f) => f.player_id === targetId)) return 'friends';
-        if (cachedFriendState.outgoing.some((f) => f.player_id === targetId)) return 'pending_out';
-        if (cachedFriendState.incoming.some((f) => f.player_id === targetId)) return 'pending_in';
+        const friends = (cachedFriendState && cachedFriendState.friends) || [];
+        const outgoing = (cachedFriendState && cachedFriendState.outgoing) || [];
+        const incoming = (cachedFriendState && cachedFriendState.incoming) || [];
+        if (friends.some((f) => f.player_id === targetId)) return 'friends';
+        if (outgoing.some((f) => f.player_id === targetId)) return 'pending_out';
+        if (incoming.some((f) => f.player_id === targetId)) return 'pending_in';
         return 'none';
       }
 
@@ -8851,10 +8931,12 @@
           renderFriendsPanel();
           return;
         }
-        cachedFriendState = await SquirrelApi.fetchFriends(getOrCreatePlayerId());
-        if (!cachedFriendState || typeof cachedFriendState !== 'object') {
-          cachedFriendState = { friends: [], incoming: [], outgoing: [] };
-        }
+        const data = await SquirrelApi.fetchFriends(getOrCreatePlayerId());
+        cachedFriendState = {
+          friends: Array.isArray(data && data.friends) ? data.friends : [],
+          incoming: Array.isArray(data && data.incoming) ? data.incoming : [],
+          outgoing: Array.isArray(data && data.outgoing) ? data.outgoing : []
+        };
         renderFriendsPanel();
       }
 
@@ -18900,7 +18982,8 @@
           return;
         }
         await refreshFriendsPanel();
-        if (!cachedFriendState.friends.length) {
+        const friends = (cachedFriendState && cachedFriendState.friends) || [];
+        if (!friends.length) {
           if (dom.challengeFriendsPlayHint) {
             dom.challengeFriendsPlayHint.textContent = 'No friends yet — search a username or add someone from the chart.';
           }
@@ -18909,7 +18992,7 @@
         if (dom.challengeFriendsPlayHint) {
           dom.challengeFriendsPlayHint.textContent = 'Challenge a friend. They can play their turn later.';
         }
-        cachedFriendState.friends.forEach((friend) => {
+        friends.forEach((friend) => {
           appendChallengeActionCard(dom.challengeFriendsPlayList, {
             title: friend.display_name || 'Player',
             primaryLabel: 'Challenge',
@@ -18918,36 +19001,215 @@
         });
       }
 
-      async function runPlayerSearch() {
-        if (!dom.challengeSearchList) return;
+      let playerSearchTimer = null;
+      let playerSearchSeq = 0;
+      let playerSearchHighlightIndex = -1;
+      let lastPlayerSearchSuggestionRows = [];
+
+      function hidePlayerSearchSuggestions() {
+        playerSearchHighlightIndex = -1;
+        lastPlayerSearchSuggestionRows = [];
+        if (dom.challengeSearchSuggest) {
+          dom.challengeSearchSuggest.classList.add('hidden');
+          dom.challengeSearchSuggest.textContent = '';
+        }
+      }
+
+      function playerSearchSuggestionsVisible() {
+        return Boolean(
+          dom.challengeSearchSuggest &&
+          !dom.challengeSearchSuggest.classList.contains('hidden') &&
+          lastPlayerSearchSuggestionRows.length
+        );
+      }
+
+      function setPlayerSearchHighlight(index) {
+        const items = dom.challengeSearchSuggest
+          ? Array.from(dom.challengeSearchSuggest.querySelectorAll('.challenge-search-suggest-item'))
+          : [];
+        if (!items.length) {
+          playerSearchHighlightIndex = -1;
+          return;
+        }
+        playerSearchHighlightIndex = ((index % items.length) + items.length) % items.length;
+        items.forEach((el, i) => el.classList.toggle('is-active', i === playerSearchHighlightIndex));
+        items[playerSearchHighlightIndex].scrollIntoView({ block: 'nearest' });
+      }
+
+      function highlightUsernameMatch(name, query) {
+        const safeName = escapeHtml(name || 'Player');
+        const q = String(query || '').trim();
+        if (!q) return safeName;
+        const lower = (name || '').toLowerCase();
+        const idx = lower.indexOf(q.toLowerCase());
+        if (idx < 0) return safeName;
+        const before = escapeHtml((name || '').slice(0, idx));
+        const match = escapeHtml((name || '').slice(idx, idx + q.length));
+        const after = escapeHtml((name || '').slice(idx + q.length));
+        return `${before}<span class="match">${match}</span>${after}`;
+      }
+
+      function localUsernameMatches(query) {
+        const needle = String(query || '').trim().toLowerCase();
+        if (!needle) return [];
+        const mine = getOrCreatePlayerId();
+        const seen = {};
+        const out = [];
+        (cachedFriendState.friends || []).forEach((friend) => {
+          const name = friend.display_name || '';
+          if (!name.toLowerCase().includes(needle) || friend.player_id === mine || seen[friend.player_id]) return;
+          seen[friend.player_id] = true;
+          out.push({
+            player_id: friend.player_id,
+            display_name: name,
+            high_score: friend.high_score,
+            local_friend: true
+          });
+        });
+        return out;
+      }
+
+      function mergeUsernameSuggestions(localRows, remoteRows, query) {
+        const needle = String(query || '').trim().toLowerCase();
+        const mine = getOrCreatePlayerId();
+        const seen = {};
+        const merged = [];
+        function add(row) {
+          if (!row || !row.player_id || row.player_id === mine || seen[row.player_id]) return;
+          seen[row.player_id] = true;
+          merged.push(row);
+        }
+        (localRows || []).forEach(add);
+        (remoteRows || []).forEach(add);
+        merged.sort((a, b) => {
+          const an = String(a.display_name || '').toLowerCase();
+          const bn = String(b.display_name || '').toLowerCase();
+          const aExact = an === needle ? 0 : an.indexOf(needle) === 0 ? 1 : 2;
+          const bExact = bn === needle ? 0 : bn.indexOf(needle) === 0 ? 1 : 2;
+          if (aExact !== bExact) return aExact - bExact;
+          if (Boolean(a.local_friend) !== Boolean(b.local_friend)) return a.local_friend ? -1 : 1;
+          return (Number(b.high_score) || 0) - (Number(a.high_score) || 0);
+        });
+        return merged.slice(0, 8);
+      }
+
+      function showSelectedSearchPlayer(row) {
+        if (!dom.challengeSearchList || !row) return;
+        hidePlayerSearchSuggestions();
+        if (dom.challengePlayerSearchInput) {
+          dom.challengePlayerSearchInput.value = row.display_name || '';
+        }
         dom.challengeSearchList.textContent = '';
-        if (!requireOnlineChallenges()) return;
+        const relation = getFriendRelation(row.player_id);
+        if (dom.challengeSearchHint) {
+          dom.challengeSearchHint.textContent = relation === 'friends' ? 'Friend' : '';
+        }
+        appendChallengeActionCard(dom.challengeSearchList, {
+          title: row.display_name || 'Player',
+          subtitle: relation === 'friends' ? 'Friend' : `High score ${row.high_score || 0}`,
+          primaryLabel: 'Challenge',
+          onPrimary: () => void challengePlayerAndStart(row.player_id, row.display_name || 'Player'),
+          secondaryLabel: relation === 'friends' || relation === 'pending_out' ? null : 'Add friend',
+          onSecondary:
+            relation === 'friends' || relation === 'pending_out'
+              ? null
+              : () => void sendFriendRequestTo(row.player_id, row.display_name || 'Player')
+        });
+      }
+
+      function renderPlayerSearchSuggestions(rows, query) {
+        if (!dom.challengeSearchSuggest) return;
+        lastPlayerSearchSuggestionRows = rows.slice();
+        dom.challengeSearchSuggest.textContent = '';
+        if (!rows.length) {
+          hidePlayerSearchSuggestions();
+          return;
+        }
+        rows.forEach((row, index) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'challenge-search-suggest-item';
+          btn.setAttribute('role', 'option');
+          const name = document.createElement('span');
+          name.className = 'challenge-search-suggest-name';
+          name.innerHTML = highlightUsernameMatch(row.display_name || 'Player', query);
+          const meta = document.createElement('span');
+          meta.className = 'challenge-search-suggest-meta';
+          const relation = getFriendRelation(row.player_id);
+          meta.textContent =
+            relation === 'friends' || row.local_friend
+              ? 'Friend'
+              : row.high_score != null
+                ? `${Number(row.high_score) || 0} pts`
+                : '';
+          btn.appendChild(name);
+          btn.appendChild(meta);
+          btn.addEventListener('pointerdown', (event) => {
+            event.preventDefault();
+            showSelectedSearchPlayer(row);
+          });
+          btn.addEventListener('mouseenter', () => setPlayerSearchHighlight(index));
+          dom.challengeSearchSuggest.appendChild(btn);
+        });
+        dom.challengeSearchSuggest.classList.remove('hidden');
+        setPlayerSearchHighlight(0);
+      }
+
+      async function runPlayerSearch(options) {
+        if (!dom.challengeSearchList) return;
+        const suggest = Boolean(options && options.suggest);
+        if (!SquirrelApi.isConfigured()) {
+          if (!suggest) showToast('Connect online to search players.');
+          return;
+        }
         const q = (dom.challengePlayerSearchInput && dom.challengePlayerSearchInput.value) || '';
-        if (q.trim().length < 2) {
-          if (dom.challengeSearchHint) {
-            dom.challengeSearchHint.textContent = 'Type at least 2 letters of a username.';
+        const trimmed = q.trim();
+        if (trimmed.length < 1) {
+          hidePlayerSearchSuggestions();
+          if (!suggest) {
+            dom.challengeSearchList.textContent = '';
+            if (dom.challengeSearchHint) {
+              dom.challengeSearchHint.textContent = 'Type a username to see suggestions.';
+            }
           }
           return;
         }
-        if (dom.challengeSearchHint) dom.challengeSearchHint.textContent = 'Searching…';
-        let rows = [];
+        const seq = ++playerSearchSeq;
+        const localRows = localUsernameMatches(trimmed);
+        if (suggest) {
+          renderPlayerSearchSuggestions(localRows, trimmed);
+        } else if (dom.challengeSearchHint) {
+          dom.challengeSearchHint.textContent = 'Searching…';
+        }
+        let remoteRows = [];
         try {
-          rows = await SquirrelApi.searchPlayers(q, getOrCreatePlayerId());
+          remoteRows = await SquirrelApi.searchPlayers(trimmed, getOrCreatePlayerId(), suggest ? 8 : 12);
         } catch (e) {
           console.warn(e);
         }
+        if (seq !== playerSearchSeq) return;
+        const rows = mergeUsernameSuggestions(localRows, remoteRows, trimmed);
+        if (suggest) {
+          renderPlayerSearchSuggestions(rows, trimmed);
+          if (dom.challengeSearchHint && !dom.challengeSearchList.childElementCount) {
+            dom.challengeSearchHint.textContent = rows.length ? '' : 'No matching players.';
+          }
+          return;
+        }
+        hidePlayerSearchSuggestions();
+        dom.challengeSearchList.textContent = '';
         if (!rows.length) {
           if (dom.challengeSearchHint) dom.challengeSearchHint.textContent = 'No players found.';
           return;
         }
         if (dom.challengeSearchHint) {
-          dom.challengeSearchHint.textContent = `${rows.length} player${rows.length === 1 ? '' : 's'} found.`;
+          dom.challengeSearchHint.textContent = '';
         }
         rows.forEach((row) => {
           const relation = getFriendRelation(row.player_id);
           appendChallengeActionCard(dom.challengeSearchList, {
             title: row.display_name || 'Player',
-            subtitle: relation === 'friends' ? 'Friend' : `High score ${row.high_score || 0}`,
+            subtitle: relation === 'friends' || row.local_friend ? 'Friend' : `High score ${row.high_score || 0}`,
             primaryLabel: 'Challenge',
             onPrimary: () => void challengePlayerAndStart(row.player_id, row.display_name || 'Player'),
             secondaryLabel: relation === 'friends' || relation === 'pending_out' ? null : 'Add friend',
@@ -18957,6 +19219,17 @@
                 : () => void sendFriendRequestTo(row.player_id, row.display_name || 'Player')
           });
         });
+      }
+
+      function schedulePlayerSearchSuggestions() {
+        clearTimeout(playerSearchTimer);
+        const q = (dom.challengePlayerSearchInput && dom.challengePlayerSearchInput.value) || '';
+        if (!q.trim()) {
+          hidePlayerSearchSuggestions();
+          if (dom.challengeSearchHint) dom.challengeSearchHint.textContent = '';
+          return;
+        }
+        playerSearchTimer = setTimeout(() => void runPlayerSearch({ suggest: true }), 180);
       }
 
       async function refreshChallengeLobby() {
@@ -19058,6 +19331,7 @@
         }
         if (dom.closeChallengeOverlayButton) {
           dom.closeChallengeOverlayButton.addEventListener('click', () => {
+            hidePlayerSearchSuggestions();
             toggle(dom.challengeOverlay, false);
           });
         }
@@ -19126,13 +19400,36 @@
           dom.challengePlayerSearchButton.addEventListener('click', () => void runPlayerSearch());
         }
         if (dom.challengePlayerSearchInput) {
+          dom.challengePlayerSearchInput.addEventListener('input', () => schedulePlayerSearchSuggestions());
+          dom.challengePlayerSearchInput.addEventListener('focus', () => schedulePlayerSearchSuggestions());
           dom.challengePlayerSearchInput.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowDown' && playerSearchSuggestionsVisible()) {
+              event.preventDefault();
+              setPlayerSearchHighlight(playerSearchHighlightIndex + 1);
+              return;
+            }
+            if (event.key === 'ArrowUp' && playerSearchSuggestionsVisible()) {
+              event.preventDefault();
+              setPlayerSearchHighlight(playerSearchHighlightIndex - 1);
+              return;
+            }
             if (event.key === 'Enter') {
               event.preventDefault();
+              clearTimeout(playerSearchTimer);
+              if (playerSearchSuggestionsVisible() && lastPlayerSearchSuggestionRows[playerSearchHighlightIndex]) {
+                showSelectedSearchPlayer(lastPlayerSearchSuggestionRows[playerSearchHighlightIndex]);
+                return;
+              }
               void runPlayerSearch();
+            } else if (event.key === 'Escape') {
+              hidePlayerSearchSuggestions();
             }
           });
         }
+        document.addEventListener('pointerdown', (event) => {
+          const wrap = event.target && event.target.closest ? event.target.closest('.challenge-search-wrap') : null;
+          if (!wrap) hidePlayerSearchSuggestions();
+        });
 
         dom.levelSelectorButton.addEventListener('click', () => {
           openLevelSelector();

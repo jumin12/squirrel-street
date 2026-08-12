@@ -1245,18 +1245,29 @@ app.post('/api/players/claim-name', async (req, res) => {
 app.get('/api/players/search', async (req, res) => {
   if (!pool) return res.status(503).json({ error: 'Database not configured' });
   try {
-    const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+    const raw = typeof req.query.q === 'string' ? req.query.q.trim() : '';
     const exclude = typeof req.query.exclude === 'string' ? req.query.exclude : '';
-    if (q.length < 2) return res.json([]);
+    const limit = Math.min(12, Math.max(1, parseInt(req.query.limit, 10) || 8));
+    if (raw.length < 1) return res.json([]);
+    const safe = raw.replace(/[%_]/g, '').slice(0, 24);
+    if (!safe) return res.json([]);
     const { rows } = await pool.query(
       `SELECT player_id, display_name, high_score, highest_level, mp_wins, mp_losses
        FROM leaderboard
        WHERE display_name ILIKE $1
          AND ($2 = '' OR player_id <> $2)
          AND player_id NOT LIKE 'bot:%'
-       ORDER BY high_score DESC, highest_level DESC
-       LIMIT 20`,
-      [`%${q.replace(/[%_]/g, '')}%`, exclude]
+         AND LOWER(BTRIM(display_name)) <> 'player'
+       ORDER BY
+         CASE
+           WHEN LOWER(BTRIM(display_name)) = LOWER($3) THEN 0
+           WHEN LOWER(display_name) LIKE LOWER($4) THEN 1
+           ELSE 2
+         END,
+         high_score DESC,
+         highest_level DESC
+       LIMIT $5`,
+      [`%${safe}%`, exclude, safe, `${safe}%`, limit]
     );
     res.json(rows);
   } catch (e) {
