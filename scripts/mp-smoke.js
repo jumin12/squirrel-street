@@ -5,6 +5,8 @@ const path = require('path');
 const outDir = path.join(__dirname, '..', 'tmp-hud-shots');
 fs.mkdirSync(outDir, { recursive: true });
 
+const PORT = process.env.SMOKE_PORT || '8765';
+
 (async () => {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
@@ -18,7 +20,7 @@ fs.mkdirSync(outDir, { recursive: true });
     localStorage.setItem('squirrelStreet.hasSelectedControls', '1');
     localStorage.setItem('squirrelStreet.lastSeenVersion', '99.99');
   });
-  await page.goto('http://127.0.0.1:5173/', { waitUntil: 'domcontentloaded' });
+  await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#continueButton', { state: 'visible', timeout: 90000 });
   await page.click('#continueButton');
   await page.waitForSelector('#playButton', { state: 'visible' });
@@ -31,22 +33,16 @@ fs.mkdirSync(outDir, { recursive: true });
 
   await page.click('#challengeModeMenuButton');
   await page.waitForSelector('#challengeOverlay:not(.hidden)', { timeout: 10000 });
-  await page.waitForFunction(() => {
-    const el = document.getElementById('challengeHostCodeDisplay');
-    const t = (el && el.textContent) || '';
-    return t && !/opening|generating/i.test(t) && t.trim().length >= 4;
-  }, { timeout: 25000 }).catch(() => {});
-  await page.waitForTimeout(300);
-  const hostText = await page.locator('#challengeOverlay').innerText();
-  const hostPanel = await page.locator('#challengeHostPanel').isVisible().catch(() => false);
-  const startDisabled = await page.locator('#startHostedRunButton').isDisabled().catch(() => null);
-  const codeMatch = hostText.match(/\b[A-Z0-9]{5,8}\b/);
+  await page.waitForTimeout(400);
+  const overlayText = await page.locator('#challengeOverlay').innerText();
+  const findMatch = await page.locator('#challengeFindMatchButton').isVisible().catch(() => false);
+  const botEasy = await page.locator('#challengeBotEasyButton').isVisible().catch(() => false);
+  const waiting = await page.locator('#challengeWaitingSection').isVisible().catch(() => false);
+  const search = await page.locator('#challengePlayerSearchInput').isVisible().catch(() => false);
+  const hostTabGone = await page.locator('#challengeTabHost').count();
+  const joinTabGone = await page.locator('#challengeTabJoin').count();
+  const codeInputGone = await page.locator('#challengeCodeInput').count();
   await page.screenshot({ path: path.join(outDir, 'challenge-overlay.png') });
-
-  await page.click('#challengeTabJoin');
-  await page.waitForTimeout(250);
-  const joinVisible = await page.locator('#challengeJoinPanel').isVisible().catch(() => false);
-  await page.screenshot({ path: path.join(outDir, 'challenge-join.png') });
 
   await page.click('#closeChallengeOverlayButton');
   await page.waitForTimeout(200);
@@ -56,14 +52,20 @@ fs.mkdirSync(outDir, { recursive: true });
   await page.waitForTimeout(700);
   await page.screenshot({ path: path.join(outDir, 'stats-tab.png') });
 
+  const looksLikeRoomCode = /\bRoom code\b|\bHost\b|\bJoin run\b|\bABC123\b/i.test(overlayText);
+
   console.log(JSON.stringify({
     ver,
-    hostPanel,
-    joinVisible,
-    startDisabled,
-    roomCode: codeMatch && codeMatch[0],
+    findMatch,
+    botEasy,
+    waiting,
+    search,
+    hostTabGone,
+    joinTabGone,
+    codeInputGone,
+    looksLikeRoomCode,
     errors: errors.slice(0, 8),
-    hostSnippet: hostText.slice(0, 400)
+    overlaySnippet: overlayText.slice(0, 500)
   }, null, 2));
   await browser.close();
 })().catch((e) => {

@@ -31,6 +31,7 @@
     :root {
       scrollbar-color: #5D4037 rgba(0, 0, 0, 0.4);
       --app-height: 100vh;
+      --safe-top: env(safe-area-inset-top, 0px);
     }
 
     *::-webkit-scrollbar {
@@ -1713,10 +1714,45 @@
       color: #FFF;
     }
 
-    #challengeOverlay #challengeHostPanel.hidden,
-    #challengeOverlay #challengeJoinPanel.hidden,
+    .challenge-bot-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .challenge-bot-row .pill-button {
+      flex: 1 1 120px;
+      min-width: 0;
+      font-size: 0.38rem !important;
+    }
+
+    .challenge-quick-actions {
+      margin: 0 0 12px;
+    }
+
+    .challenge-search-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .challenge-search-row input {
+      flex: 1;
+      min-width: 0;
+      font-size: 0.48rem;
+      padding: 8px 10px;
+      border: 2px solid #5D4037;
+      background: rgba(0, 0, 0, 0.35);
+      color: #FFF;
+    }
+
     #challengeOverlay #challengeResumePanel.hidden,
-    #challengeOverlay #challengeActiveGamesSection.hidden {
+    #challengeOverlay #challengeActiveGamesSection.hidden,
+    #challengeOverlay #challengeInboxSection.hidden,
+    #challengeOverlay #challengeWaitingSection.hidden,
+    #challengeOverlay #challengeFriendsPlaySection.hidden,
+    #challengeOverlay #challengeSearchSection.hidden,
+    #challengeOverlay #challengeOfflineNote.hidden {
       display: none;
     }
 
@@ -4821,10 +4857,23 @@
     }
 
     /* HUD Top UI — art is 249×33; lock aspect ratio and pin numbers to well centers */
+    /* Cutout filler — height is 0 on phones without a camera/notch inset */
+    #gameScreen::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--safe-top, env(safe-area-inset-top, 0px));
+      background: #2b1810;
+      z-index: 99;
+      pointer-events: none;
+    }
+
     .hud {
       --hud-art-aspect: 249 / 33;
       position: absolute !important;
-      top: 0 !important; /* Flush to top of game screen */
+      top: var(--safe-top, env(safe-area-inset-top, 0px)) !important;
       left: 0 !important;
       right: 0 !important;
       transform: none !important;
@@ -4900,6 +4949,12 @@
         max-height: calc(var(--app-height) - 56px) !important;
         aspect-ratio: 9 / 16 !important;
         border: 4px solid #D2691E !important;
+      }
+      #gameScreen::before {
+        content: none;
+      }
+      #gameScreen .hud {
+        top: 0 !important;
       }
     }
 
@@ -5550,7 +5605,7 @@
   </script>
 </head>
 <body>
-  <div id="screenVersion" class="screen-version-label" aria-hidden="true">v2.16</div>
+  <div id="screenVersion" class="screen-version-label" aria-hidden="true">v2.17</div>
   <div id="preloadScreen" class="screen">
     <div class="logo">Squirrel Street</div>
     <div class="menu-card">
@@ -5632,8 +5687,8 @@
         <span class="play-mode-choice-desc">A classic run. Beat your high score.</span>
       </button>
       <button id="challengeModeMenuButton" class="button play-mode-choice">
-        <span class="play-mode-choice-title">Challenge a friend</span>
-        <span class="play-mode-choice-desc">Same seed. Play on your own time.</span>
+        <span class="play-mode-choice-title">Challenge</span>
+        <span class="play-mode-choice-desc">Friends, bots, or anyone waiting for a game.</span>
       </button>
       <button id="closePlayModeButton" class="pill-button ghost" style="width: 100%;">Back</button>
     </div>
@@ -5642,7 +5697,7 @@
   <div id="challengeOverlay" class="overlay hidden">
     <div class="modal challenge-modal" style="max-width: 520px; width: 94vw;">
       <div class="challenge-modal-header">
-        <h2>Challenge a friend</h2>
+        <h2>Challenges</h2>
       </div>
       <div class="challenge-modal-scroll">
         <div class="challenge-profile-corner" id="challengeProfileCorner">
@@ -5690,38 +5745,53 @@
           <p id="challengeActiveGamesHint" class="challenge-section-hint"></p>
           <div id="challengeActiveGamesList" class="challenge-matches-list"></div>
         </div>
-        <div class="pill-buttons challenge-top-actions">
-          <button type="button" id="challengeTabHost" class="pill-button selected">Host</button>
-          <button type="button" id="challengeTabJoin" class="pill-button">Join</button>
+        <div class="challenge-quick-actions">
+          <button type="button" id="challengeFindMatchButton" class="button challenge-start-run">Find a match</button>
+          <p class="challenge-section-hint">Play now. A rival can join on their own time.</p>
         </div>
-        <div id="challengeHostPanel">
-          <p id="challengeVersusHint" class="challenge-versus-hint"></p>
-          <div class="challenge-host-code-block">
-            <p class="challenge-code-label" id="challengeHostCodeLabel">Room code</p>
-            <p id="challengeHostCodeDisplay" class="challenge-code-value"></p>
-            <p id="challengeHostStatus" class="challenge-host-status"></p>
+        <div id="challengeBotSection" class="challenge-matches-section">
+          <div class="challenge-section-head">
+            <h3>Play a bot</h3>
           </div>
-          <div class="challenge-host-actions">
-            <button type="button" id="challengeCopyCodeButton" class="pill-button">Copy code</button>
-            <button type="button" id="challengeShareRoomButton" class="pill-button ghost">Share room</button>
+          <div class="challenge-bot-row">
+            <button type="button" id="challengeBotEasyButton" class="pill-button" data-bot="easy">Acorn Bot · Easy</button>
+            <button type="button" id="challengeBotMediumButton" class="pill-button" data-bot="medium">Street Bot · Medium</button>
+            <button type="button" id="challengeBotHardButton" class="pill-button" data-bot="hard">Forest Champ · Hard</button>
           </div>
-          <button type="button" id="startHostedRunButton" class="button challenge-start-run" disabled>Start run</button>
-          <p class="challenge-host-note">Starts from your Biomes checkpoint. Rival can join later.</p>
         </div>
-        <div id="challengeJoinPanel" class="hidden">
-          <label class="challenge-field-label" for="challengeCodeInput">Enter room code</label>
-          <input id="challengeCodeInput" maxlength="8" class="challenge-code-input" placeholder="ABC123" autocomplete="off" spellcheck="false">
-          <button id="joinChallengeButton" class="button challenge-start-run">Join run</button>
-          <p id="challengeJoinStatus" class="challenge-host-status"></p>
-          <details class="challenge-offline-details">
-            <summary>No code? Use a seed</summary>
-            <label style="display: block; margin-top: 8px;">Seed from host</label>
-            <input id="offlineChallengeSeed" type="number" min="1">
-            <label style="display: block; margin-top: 8px;">Starting level</label>
-            <input id="offlineChallengeStart" type="number" min="1" value="1">
-            <button id="offlineChallengeStartButton" type="button" class="button challenge-start-run" style="margin-top: 10px;">Start offline challenge</button>
-          </details>
+        <div id="challengeInboxSection" class="challenge-matches-section hidden">
+          <div class="challenge-section-head">
+            <h3>Incoming</h3>
+          </div>
+          <p id="challengeInboxHint" class="challenge-section-hint"></p>
+          <div id="challengeInboxList" class="challenge-matches-list"></div>
         </div>
+        <div id="challengeWaitingSection" class="challenge-matches-section">
+          <div class="challenge-section-head">
+            <h3>Waiting for a game</h3>
+          </div>
+          <p id="challengeWaitingHint" class="challenge-section-hint">Players looking for a rival.</p>
+          <div id="challengeWaitingList" class="challenge-matches-list"></div>
+        </div>
+        <div id="challengeFriendsPlaySection" class="challenge-matches-section">
+          <div class="challenge-section-head">
+            <h3>Friends</h3>
+          </div>
+          <p id="challengeFriendsPlayHint" class="challenge-section-hint"></p>
+          <div id="challengeFriendsPlayList" class="challenge-matches-list"></div>
+        </div>
+        <div id="challengeSearchSection" class="challenge-matches-section">
+          <div class="challenge-section-head">
+            <h3>Find a player</h3>
+          </div>
+          <div class="challenge-search-row">
+            <input id="challengePlayerSearchInput" maxlength="24" placeholder="Search username" autocomplete="off" spellcheck="false">
+            <button type="button" id="challengePlayerSearchButton" class="pill-button">Search</button>
+          </div>
+          <p id="challengeSearchHint" class="challenge-section-hint"></p>
+          <div id="challengeSearchList" class="challenge-matches-list"></div>
+        </div>
+        <p id="challengeOfflineNote" class="challenge-section-hint hidden">Online challenges need a connection. Solo is still available from Play.</p>
       </div>
       <div class="pill-buttons challenge-modal-footer">
         <button id="closeChallengeOverlayButton" class="pill-button ghost">Back</button>
@@ -6506,12 +6576,31 @@
         root.style.setProperty('--app-height', `${Math.round(viewportHeight)}px`);
       }
 
-      updateAppHeight();
-      window.addEventListener('resize', updateAppHeight);
-      window.addEventListener('orientationchange', updateAppHeight);
+      function syncSafeAreaInset() {
+        if (!document.body) return;
+        const probe = document.createElement('div');
+        probe.setAttribute('aria-hidden', 'true');
+        probe.style.cssText =
+          'position:fixed;top:0;left:0;width:0;visibility:hidden;pointer-events:none;height:env(safe-area-inset-top, 0px);';
+        document.body.appendChild(probe);
+        const px = probe.getBoundingClientRect().height;
+        probe.remove();
+        const inset = Number.isFinite(px) && px > 0.5 ? Math.round(px) : 0;
+        root.style.setProperty('--safe-top', inset + 'px');
+        root.classList.toggle('has-display-cutout', inset > 0);
+      }
+
+      function updateViewportMetrics() {
+        updateAppHeight();
+        syncSafeAreaInset();
+      }
+
+      updateViewportMetrics();
+      window.addEventListener('resize', updateViewportMetrics);
+      window.addEventListener('orientationchange', updateViewportMetrics);
       if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', updateAppHeight);
-        window.visualViewport.addEventListener('scroll', updateAppHeight);
+        window.visualViewport.addEventListener('resize', updateViewportMetrics);
+        window.visualViewport.addEventListener('scroll', updateViewportMetrics);
       }
 
       const canvas = document.getElementById('gameCanvas');
@@ -6983,11 +7072,6 @@
         challengeModeMenuButton: document.getElementById('challengeModeMenuButton'),
         closePlayModeButton: document.getElementById('closePlayModeButton'),
         challengeOverlay: document.getElementById('challengeOverlay'),
-        challengeTabHost: document.getElementById('challengeTabHost'),
-        challengeTabJoin: document.getElementById('challengeTabJoin'),
-        challengeHostPanel: document.getElementById('challengeHostPanel'),
-        challengeJoinPanel: document.getElementById('challengeJoinPanel'),
-        challengeVersusHint: document.getElementById('challengeVersusHint'),
         challengeResumePanel: document.getElementById('challengeResumePanel'),
         challengeResumeHint: document.getElementById('challengeResumeHint'),
         challengeContinueButton: document.getElementById('challengeContinueButton'),
@@ -7002,26 +7086,12 @@
         challengeProfileSkinImg: document.getElementById('challengeProfileSkinImg'),
         challengeDisplayNameInput: document.getElementById('challengeDisplayNameInput'),
         challengeSaveDisplayName: document.getElementById('challengeSaveDisplayName'),
-        challengeJoinDisplayNameInput: document.getElementById('challengeJoinDisplayNameInput'),
-        challengeJoinSaveDisplayName: document.getElementById('challengeJoinSaveDisplayName'),
         challengeCopyInviteButton: document.getElementById('challengeCopyInviteButton'),
         challengeShareInviteButton: document.getElementById('challengeShareInviteButton'),
-        challengeShareRoomButton: document.getElementById('challengeShareRoomButton'),
-        challengeCopyCodeButton: document.getElementById('challengeCopyCodeButton'),
-        challengeHostCodeLabel: document.getElementById('challengeHostCodeLabel'),
         challengeProfileShareInviteButton: document.getElementById('challengeProfileShareInviteButton'),
         challengeProfileFriends: document.getElementById('challengeProfileFriends'),
         challengeProfileFriendsList: document.getElementById('challengeProfileFriendsList'),
         challengeProfileAddFriendsBtn: document.getElementById('challengeProfileAddFriendsBtn'),
-        startHostedRunButton: document.getElementById('startHostedRunButton'),
-        challengeHostCodeDisplay: document.getElementById('challengeHostCodeDisplay'),
-        challengeHostStatus: document.getElementById('challengeHostStatus'),
-        challengeCodeInput: document.getElementById('challengeCodeInput'),
-        joinChallengeButton: document.getElementById('joinChallengeButton'),
-        challengeJoinStatus: document.getElementById('challengeJoinStatus'),
-        offlineChallengeSeed: document.getElementById('offlineChallengeSeed'),
-        offlineChallengeStart: document.getElementById('offlineChallengeStart'),
-        offlineChallengeStartButton: document.getElementById('offlineChallengeStartButton'),
         closeChallengeOverlayButton: document.getElementById('closeChallengeOverlayButton'),
         challengeBetweenLevelsOverlay: document.getElementById('challengeBetweenLevelsOverlay'),
         challengeBetweenLevelsTitle: document.getElementById('challengeBetweenLevelsTitle'),
@@ -7032,6 +7102,25 @@
         challengeActiveGamesHint: document.getElementById('challengeActiveGamesHint'),
         challengeActiveGamesList: document.getElementById('challengeActiveGamesList'),
         challengeRefreshActiveButton: document.getElementById('challengeRefreshActiveButton'),
+        challengeFindMatchButton: document.getElementById('challengeFindMatchButton'),
+        challengeBotEasyButton: document.getElementById('challengeBotEasyButton'),
+        challengeBotMediumButton: document.getElementById('challengeBotMediumButton'),
+        challengeBotHardButton: document.getElementById('challengeBotHardButton'),
+        challengeInboxSection: document.getElementById('challengeInboxSection'),
+        challengeInboxHint: document.getElementById('challengeInboxHint'),
+        challengeInboxList: document.getElementById('challengeInboxList'),
+        challengeWaitingSection: document.getElementById('challengeWaitingSection'),
+        challengeWaitingHint: document.getElementById('challengeWaitingHint'),
+        challengeWaitingList: document.getElementById('challengeWaitingList'),
+        challengeFriendsPlaySection: document.getElementById('challengeFriendsPlaySection'),
+        challengeFriendsPlayHint: document.getElementById('challengeFriendsPlayHint'),
+        challengeFriendsPlayList: document.getElementById('challengeFriendsPlayList'),
+        challengeSearchSection: document.getElementById('challengeSearchSection'),
+        challengePlayerSearchInput: document.getElementById('challengePlayerSearchInput'),
+        challengePlayerSearchButton: document.getElementById('challengePlayerSearchButton'),
+        challengeSearchHint: document.getElementById('challengeSearchHint'),
+        challengeSearchList: document.getElementById('challengeSearchList'),
+        challengeOfflineNote: document.getElementById('challengeOfflineNote'),
         levelSelectorButton: document.getElementById('levelSelectorButton'),
         achievementsButton: document.getElementById('achievementsButton'),
         dictionaryButton: document.getElementById('dictionaryButton'),
@@ -7231,6 +7320,7 @@
       let leaderboardChallengeTarget = null;
       let hostChallengePayload = null;
       let hostChallengeCreating = false;
+      let challengeActionInProgress = false;
 
       const STORAGE_KEYS = {
         highScore: 'squirrelStreet.highScore',
@@ -7393,11 +7483,6 @@
           effectiveFrom = null;
         }
 
-        if (challengeCode && dom.challengeCodeInput) {
-          dom.challengeCodeInput.value = challengeCode;
-          localStorage.removeItem(STORAGE_KEYS.pendingChallengeCode);
-        }
-
         if (effectiveFrom) {
           localStorage.removeItem(STORAGE_KEYS.pendingInviteFrom);
           let inviterName = 'A player';
@@ -7419,16 +7504,20 @@
           }
         }
 
-        if (challengeCode) {
+        if (challengeCode && SquirrelApi.isConfigured()) {
+          localStorage.removeItem(STORAGE_KEYS.pendingChallengeCode);
           setTimeout(() => {
             toggle(dom.playModeOverlay, false);
             toggle(dom.challengeOverlay, true);
             syncChallengeNameInputsFromStorage();
             refreshChallengeProfileCorner();
-            if (dom.challengeTabJoin) dom.challengeTabJoin.click();
-            if (dom.challengeJoinStatus) {
-              dom.challengeJoinStatus.textContent = 'Invite loaded. Tap Join run when you are ready.';
-            }
+            void startChallengeAsGuest(challengeCode);
+          }, 600);
+        } else if (challengeCode) {
+          localStorage.removeItem(STORAGE_KEYS.pendingChallengeCode);
+          setTimeout(() => {
+            openChallengeLobby();
+            showToast('Connect online to join that challenge.');
           }, 600);
         }
       }
@@ -7471,57 +7560,6 @@
             );
           });
         }
-        if (dom.challengeCopyCodeButton) {
-          dom.challengeCopyCodeButton.addEventListener('click', () => {
-            void copyCurrentChallengeCode();
-          });
-        }
-        if (dom.challengeHostCodeDisplay) {
-          dom.challengeHostCodeDisplay.addEventListener('click', () => {
-            void copyCurrentChallengeCode();
-          });
-        }
-        if (dom.challengeShareRoomButton) {
-          dom.challengeShareRoomButton.addEventListener('click', () => {
-            const payload = hostChallengePayload;
-            if (!payload) {
-              showToast('Room is still opening.');
-              return;
-            }
-            if (payload.code === 'offline') {
-              void copyTextToClipboard(String(payload.seed), 'Copied offline seed.');
-              return;
-            }
-            void shareGameLink(
-              buildChallengeInviteUrl(payload.code, getOrCreatePlayerId()),
-              'Squirrel Street Challenge',
-              `Join my Squirrel Street challenge! Code: ${payload.code}`
-            );
-          });
-        }
-      }
-
-      function getCurrentHostShareValue() {
-        const payload = hostChallengePayload;
-        if (!payload) return null;
-        if (payload.code === 'offline') return String(payload.seed);
-        return payload.code || null;
-      }
-
-      async function copyCurrentChallengeCode() {
-        const value = getCurrentHostShareValue();
-        if (!value) {
-          showToast('Room is still opening.');
-          return;
-        }
-        const msg = hostChallengePayload && hostChallengePayload.code === 'offline' ? 'Copied seed.' : 'Copied room code.';
-        await copyTextToClipboard(value, msg);
-      }
-
-      function updateChallengeRoomShareButton() {
-        const ready = Boolean(getCurrentHostShareValue());
-        if (dom.challengeShareRoomButton) dom.challengeShareRoomButton.disabled = !ready;
-        if (dom.challengeCopyCodeButton) dom.challengeCopyCodeButton.disabled = !ready;
       }
 
       function setChallengeProfilePanelOpen(open) {
@@ -7572,12 +7610,15 @@
         })();
       }
 
-      function updateStartHostedButtonState() {
-        const btn = dom.startHostedRunButton;
-        if (!btn) return;
-        const onHost = dom.challengeTabHost && dom.challengeTabHost.classList.contains('selected');
-        const ready = Boolean(hostChallengePayload);
-        btn.disabled = !onHost || !ready;
+      function isBotPlayerId(id) {
+        return typeof id === 'string' && id.indexOf('bot:') === 0;
+      }
+
+      function challengeStartLevel() {
+        try {
+          updateLevelDisplay();
+        } catch (e) {}
+        return Math.max(1, Math.floor(Number(currentSelectedLevel) || 1));
       }
 
       function getChallengeOpponentLabel(state, myPid) {
@@ -7590,7 +7631,7 @@
       }
 
       function buildOpponentFriendActionHtml(oppId, oppName) {
-        if (!oppId || !SquirrelApi.isConfigured()) return '';
+        if (!oppId || !SquirrelApi.isConfigured() || isBotPlayerId(oppId)) return '';
         const rel = getFriendRelation(oppId);
         const safeName = escapeHtml(oppName || 'Player');
         if (rel === 'friends') {
@@ -7673,10 +7714,7 @@
           btn.addEventListener('click', () => {
             const id = btn.getAttribute('data-opp-id');
             const fr = cachedFriendState.friends.find((f) => f.player_id === id);
-            leaderboardChallengeTarget = { id, name: (fr && fr.display_name) || 'Player' };
-            updateChallengeVersusHint();
-            if (dom.challengeTabHost) dom.challengeTabHost.click();
-            showToast(`Hosting vs ${leaderboardChallengeTarget.name}.`);
+            void challengePlayerAndStart(id, (fr && fr.display_name) || 'Player');
           });
         });
       }
@@ -7711,27 +7749,13 @@
           challengeBtn.className = 'pill-button ghost leaderboard-friend-btn';
           challengeBtn.textContent = 'Challenge';
           challengeBtn.addEventListener('click', () => {
-            leaderboardChallengeTarget = {
-              id: friend.player_id,
-              name: friend.display_name || 'Player'
-            };
-            updateChallengeVersusHint();
-            if (dom.challengeTabHost) dom.challengeTabHost.click();
+            void challengePlayerAndStart(friend.player_id, friend.display_name || 'Player');
           });
           actions.appendChild(challengeBtn);
           row.appendChild(name);
           row.appendChild(actions);
           dom.challengeProfileFriendsList.appendChild(row);
         });
-      }
-
-      function showChallengeHostTab() {
-        if (dom.challengeTabHost) dom.challengeTabHost.classList.add('selected');
-        if (dom.challengeTabJoin) dom.challengeTabJoin.classList.remove('selected');
-        if (dom.challengeHostPanel) dom.challengeHostPanel.classList.remove('hidden');
-        if (dom.challengeJoinPanel) dom.challengeJoinPanel.classList.add('hidden');
-        updateChallengeVersusHint();
-        updateStartHostedButtonState();
       }
 
       function hostChallengeDisplayNameForApi() {
@@ -8127,16 +8151,17 @@
           card.className = 'challenge-active-card';
           const left = document.createElement('div');
           left.className = 'challenge-active-card-info';
-          const opp =
-            row.host_id === pid
-              ? `vs ${escapeHtml(row.guest_name || 'Guest')}`
-              : `vs ${escapeHtml(row.host_name || 'Host')}`;
-          left.innerHTML = `<strong>${escapeHtml(row.code)}</strong><br>${opp}<br><span class="muted">Level ${escapeHtml(String(row.current_level ?? '?'))} · ${escapeHtml(String(row.host_total_points ?? 0))}–${escapeHtml(String(row.guest_total_points ?? 0))} pts · set ${escapeHtml(String(row.host_wins ?? 0))}–${escapeHtml(String(row.guest_wins ?? 0))}</span>`;
+          const waiting = row.host_id === pid && !row.guest_id;
+          const oppName = row.host_id === pid
+            ? (row.guest_name || (waiting ? 'Waiting for a rival' : 'Rival'))
+            : (row.host_name || 'Host');
+          const title = waiting ? 'Waiting for a rival' : `vs ${oppName}`;
+          left.innerHTML = `<strong>${escapeHtml(title)}</strong><br><span class="muted">Level ${escapeHtml(String(row.current_level ?? '?'))} · ${escapeHtml(String(row.host_total_points ?? 0))}–${escapeHtml(String(row.guest_total_points ?? 0))} pts · set ${escapeHtml(String(row.host_wins ?? 0))}–${escapeHtml(String(row.guest_wins ?? 0))}</span>`;
           const btn = document.createElement('button');
           btn.type = 'button';
           btn.className = 'pill-button';
           btn.style.fontSize = '0.38rem';
-          btn.textContent = 'Rejoin';
+          btn.textContent = waiting ? 'Play' : 'Rejoin';
           btn.addEventListener('click', () => void resumeOnlineChallenge({ code: row.code }));
           card.appendChild(left);
           card.appendChild(btn);
@@ -8178,12 +8203,6 @@
           if (!isHost && !isGuest) {
             clearChallengeResume();
             showToast('You are not part of that match.');
-            return;
-          }
-          if (isHost && !row.guest_id) {
-            clearChallengeResume();
-            showToast('No opponent has joined this match yet — share your room code first.');
-            void refreshActiveChallengesPanel();
             return;
           }
           if ((isHost && row.host_eliminated) || (isGuest && row.guest_eliminated)) {
@@ -8256,27 +8275,6 @@
         }
       }
 
-      function generateChallengeCode() {
-        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-        let s = '';
-        for (let i = 0; i < 6; i += 1) {
-          s += chars[Math.floor(Math.random() * chars.length)];
-        }
-        return s;
-      }
-
-      function applyHostChallengePayloadToUi(payload) {
-        if (!payload || !dom.challengeHostCodeDisplay) return;
-        const offline = payload.code === 'offline';
-        if (dom.challengeHostCodeLabel) {
-          dom.challengeHostCodeLabel.textContent = offline ? 'Offline seed' : 'Room code';
-        }
-        dom.challengeHostCodeDisplay.textContent = offline ? String(payload.seed) : payload.code;
-        dom.challengeHostCodeDisplay.classList.toggle('is-code', !offline);
-        updateStartHostedButtonState();
-        updateChallengeRoomShareButton();
-      }
-
       const SquirrelApi = (function createSquirrelApi() {
         function cfg() {
           return window.SQUIRREL_ONLINE || {};
@@ -8321,9 +8319,10 @@
             const data = await r.json().catch(() => ({}));
             return (data && data.display_name) || 'Player';
           },
-          async createChallenge(hostId, hostName, startLevel, reservedGuestId) {
+          async createChallenge(hostId, hostName, startLevel, options) {
             const root = apiRoot();
             if (!root) return null;
+            const opts = options && typeof options === 'object' ? options : { reservedGuestId: options };
             const r = await fetch(`${root}/challenges`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -8331,10 +8330,67 @@
                 host_id: hostId,
                 host_name: (hostName || 'Host').slice(0, 24),
                 start_level: Math.max(1, Math.floor(startLevel) || 1),
-                reserved_guest_id: reservedGuestId || undefined
+                reserved_guest_id: opts.reservedGuestId || undefined,
+                reserved_guest_name: opts.reservedGuestName || undefined,
+                open_to_public: Boolean(opts.openToPublic),
+                vs_bot: Boolean(opts.vsBot),
+                bot_difficulty: opts.botDifficulty || undefined
               })
             });
             if (!r.ok) return null;
+            return r.json();
+          },
+          async matchmakeChallenge(playerId, playerName, startLevel) {
+            const root = apiRoot();
+            if (!root || !playerId) return null;
+            const r = await fetch(`${root}/challenges/matchmake`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                player_id: playerId,
+                player_name: (playerName || 'Player').slice(0, 24),
+                start_level: Math.max(1, Math.floor(startLevel) || 1)
+              })
+            });
+            if (!r.ok) return null;
+            return r.json();
+          },
+          async fetchWaitingChallenges(playerId, limit = 12) {
+            const root = apiRoot();
+            if (!root) return [];
+            const lim = Math.max(1, Math.min(20, Math.floor(limit) || 12));
+            const q = playerId ? `playerId=${encodeURIComponent(playerId)}&limit=${lim}` : `limit=${lim}`;
+            const r = await fetch(`${root}/challenges/waiting?${q}`);
+            if (!r.ok) return [];
+            return r.json();
+          },
+          async fetchChallengeInbox(playerId) {
+            const root = apiRoot();
+            if (!root || !playerId) return [];
+            const r = await fetch(`${root}/challenges/inbox/${encodeURIComponent(playerId)}`);
+            if (!r.ok) return [];
+            return r.json();
+          },
+          async declineChallenge(code, playerId) {
+            const root = apiRoot();
+            if (!root || !code || !playerId) return { ok: false };
+            const r = await fetch(`${root}/challenges/${encodeURIComponent(code.trim().toUpperCase())}/decline`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ player_id: playerId })
+            });
+            const data = await r.json().catch(() => ({}));
+            return { ok: r.ok, ...data };
+          },
+          async searchPlayers(query, excludeId) {
+            const root = apiRoot();
+            if (!root) return [];
+            const q = String(query || '').trim();
+            if (q.length < 2) return [];
+            const params = new URLSearchParams({ q });
+            if (excludeId) params.set('exclude', excludeId);
+            const r = await fetch(`${root}/players/search?${params.toString()}`);
+            if (!r.ok) return [];
             return r.json();
           },
           async joinChallenge(code, guestId, guestName) {
@@ -8576,18 +8632,8 @@
             challengeBtn.className = 'pill-button ghost leaderboard-friend-btn';
             challengeBtn.textContent = 'Challenge';
             challengeBtn.addEventListener('click', () => {
-              leaderboardChallengeTarget = {
-                id: friend.player_id,
-                name: friend.display_name || 'Player'
-              };
               toggle(dom.achievementsOverlay, false);
-              toggle(dom.challengeOverlay, true);
-              syncChallengeNameInputsFromStorage();
-              refreshChallengeProfileCorner();
-              void refreshActiveChallengesPanel();
-              if (dom.challengeTabHost) dom.challengeTabHost.click();
-              updateChallengeVersusHint();
-              showToast(`Hosting vs ${friend.display_name || 'Player'}.`);
+              void challengePlayerAndStart(friend.player_id, friend.display_name || 'Player');
             });
             actions.appendChild(challengeBtn);
             row.appendChild(name);
@@ -11355,6 +11401,16 @@
       // Changelog Data
       const CHANGELOG = [
         {
+          version: '2.17',
+          date: '2026-08-12',
+          changes: [
+            'Top HUD drops below the camera/notch only on phones that report a cutout — iPhone SE and similar stay flush',
+            'Challenges work like other word games: find a match, join people waiting, challenge friends, or play a bot',
+            'Search players by username — no more room codes, hosting, or join codes',
+            'Incoming challenges can be played or declined; your matches stay at the top to rejoin'
+          ]
+        },
+        {
           version: '2.16',
           date: '2026-08-12',
           changes: [
@@ -11602,7 +11658,7 @@
         }
       ];
       
-      const CURRENT_VERSION = '2.16';
+      const CURRENT_VERSION = '2.17';
       const LAST_SEEN_VERSION_KEY = 'squirrelStreet.lastSeenVersion';
 
       function checkChangelogBadge() {
@@ -12496,22 +12552,12 @@
           nameBtn.className = 'leaderboard-name-btn';
           nameBtn.textContent = row.display_name || 'Player';
           nameBtn.title =
-            isYou ? 'This is you' : 'Challenge this player (they must join with your code)';
+            isYou ? 'This is you' : 'Challenge this player';
           nameBtn.disabled = isYou;
           if (!isYou) {
             nameBtn.addEventListener('click', () => {
-              leaderboardChallengeTarget = {
-                id: row.player_id,
-                name: row.display_name || 'Player'
-              };
               toggle(dom.achievementsOverlay, false);
-              toggle(dom.challengeOverlay, true);
-              syncChallengeNameInputsFromStorage();
-              refreshChallengeProfileCorner();
-              void refreshActiveChallengesPanel();
-              if (dom.challengeTabHost) dom.challengeTabHost.click();
-              updateChallengeVersusHint();
-              showToast(`Hosting vs ${row.display_name}.`);
+              void challengePlayerAndStart(row.player_id, row.display_name || 'Player');
             });
           }
           nameRow.appendChild(nameBtn);
@@ -12634,12 +12680,7 @@
       }
 
       function updateChallengeVersusHint() {
-        if (!dom.challengeVersusHint) return;
-        if (leaderboardChallengeTarget) {
-          dom.challengeVersusHint.textContent = `Vs ${leaderboardChallengeTarget.name} — only they can join this room.`;
-        } else {
-          dom.challengeVersusHint.textContent = '';
-        }
+        return;
       }
 
       function beginGameFromMenu(startLevel, runOptions) {
@@ -18380,83 +18421,366 @@
         }
       });
 
-      async function createHostedChallengeRoom(forceNew) {
-        updateLevelDisplay();
-        const startLevel = currentSelectedLevel;
-        if (dom.challengeHostStatus) dom.challengeHostStatus.textContent = '';
-        if (forceNew) hostChallengePayload = null;
-        updateStartHostedButtonState();
+      function appendChallengeActionCard(listEl, opts) {
+        if (!listEl) return;
+        const card = document.createElement('div');
+        card.className = 'challenge-active-card';
+        const left = document.createElement('div');
+        left.className = 'challenge-active-card-info';
+        left.innerHTML = `<strong>${escapeHtml(opts.title || 'Player')}</strong>${
+          opts.subtitle ? `<br><span class="muted">${escapeHtml(opts.subtitle)}</span>` : ''
+        }`;
+        const actions = document.createElement('div');
+        actions.className = 'friend-row-actions';
+        if (opts.primaryLabel) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'pill-button';
+          btn.style.fontSize = '0.38rem';
+          btn.textContent = opts.primaryLabel;
+          btn.addEventListener('click', opts.onPrimary);
+          actions.appendChild(btn);
+        }
+        if (opts.secondaryLabel) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'pill-button ghost';
+          btn.style.fontSize = '0.38rem';
+          btn.textContent = opts.secondaryLabel;
+          btn.addEventListener('click', opts.onSecondary);
+          actions.appendChild(btn);
+        }
+        card.appendChild(left);
+        card.appendChild(actions);
+        listEl.appendChild(card);
+      }
 
-        if (!forceNew && hostChallengePayload) {
-          applyHostChallengePayloadToUi(hostChallengePayload);
+      function requireOnlineChallenges() {
+        if (SquirrelApi.isConfigured()) return true;
+        showToast('Connect online to play challenges.');
+        return false;
+      }
+
+      function beginChallengeRun(row, role) {
+        const seedNum = Number(row && row.seed);
+        const sl = Math.max(
+          1,
+          Math.floor(Number(row && (row.start_level != null ? row.start_level : row.current_level)) || 1)
+        );
+        if (!row || !row.code || !Number.isFinite(seedNum)) {
+          showToast('Could not start that match.');
           return;
         }
+        const opp =
+          role === 'host'
+            ? row.guest_name || (row.reserved_guest_id ? 'your rival' : 'a waiting rival')
+            : row.host_name || 'Host';
+        showToast(`Challenge vs ${opp}`);
+        beginGameFromMenu(sl, {
+          runSeed: seedNum,
+          challenge: { code: row.code, role: role || 'host' }
+        });
+      }
 
-        if (!SquirrelApi.isConfigured()) {
-          if (dom.challengeHostCodeDisplay) {
-            dom.challengeHostCodeDisplay.textContent = '';
-            dom.challengeHostCodeDisplay.classList.remove('is-code');
-          }
-          const seed = Math.floor(100000 + Math.random() * 899899999);
-          hostChallengePayload = {
-            startLevel,
-            seed,
-            code: 'offline',
-            role: 'host'
-          };
-          applyHostChallengePayloadToUi(hostChallengePayload);
-          if (dom.challengeHostStatus) {
-            dom.challengeHostStatus.textContent =
-              'Offline: share this seed. Rival enters it under Join → No code? Use a seed.';
-          }
-          return;
-        }
-
-        if (hostChallengeCreating) return;
-        hostChallengeCreating = true;
+      async function startChallengeAsGuest(code) {
+        if (!requireOnlineChallenges()) return;
+        const norm = String(code || '').trim().toUpperCase();
+        if (!norm) return;
+        if (challengeActionInProgress) return;
+        challengeActionInProgress = true;
         try {
-          if (dom.challengeHostCodeDisplay) {
-            dom.challengeHostCodeDisplay.textContent = 'Opening room…';
-            dom.challengeHostCodeDisplay.classList.remove('is-code');
+          const preview = await SquirrelApi.getChallenge(norm);
+          if (!preview || preview.status !== 'active') {
+            showToast('That challenge is no longer available.');
+            void refreshChallengeLobby();
+            return;
           }
-          if (dom.challengeHostStatus) dom.challengeHostStatus.textContent = '';
-          const reserved =
-            leaderboardChallengeTarget && leaderboardChallengeTarget.id
-              ? leaderboardChallengeTarget.id
-              : undefined;
-          const reservedName =
-            leaderboardChallengeTarget && leaderboardChallengeTarget.name
-              ? leaderboardChallengeTarget.name
-              : 'your opponent';
+          const myName = hostChallengeDisplayNameForApi();
+          const hostNm = (preview.host_name || '').trim().toLowerCase();
+          if (hostNm && myName.trim().toLowerCase() === hostNm) {
+            setChallengeProfilePanelOpen(true);
+            showToast('Your name matches theirs. Change it in Your profile, then try again.');
+            return;
+          }
+          const row = await SquirrelApi.joinChallenge(norm, getOrCreatePlayerId(), myName);
+          if (!row) {
+            showToast('Could not join that game.');
+            return;
+          }
+          beginChallengeRun(row, 'guest');
+        } catch (e) {
+          console.warn(e);
+          showToast('Could not join that game.');
+        } finally {
+          challengeActionInProgress = false;
+        }
+      }
+
+      async function startHostedChallengeAndPlay(options) {
+        if (!requireOnlineChallenges()) return;
+        if (challengeActionInProgress) return;
+        challengeActionInProgress = true;
+        try {
           const created = await SquirrelApi.createChallenge(
             getOrCreatePlayerId(),
             hostChallengeDisplayNameForApi(),
-            startLevel,
-            reserved
+            challengeStartLevel(),
+            options || {}
           );
           if (!created || !created.code) {
-            if (dom.challengeHostStatus) {
-              dom.challengeHostStatus.textContent = 'Could not create a room. Try again in a moment.';
-            }
+            showToast('Could not start that challenge.');
             return;
           }
-          hostChallengePayload = {
-            startLevel,
-            seed: Number(created.seed),
-            code: created.code,
-            role: 'host'
-          };
-          applyHostChallengePayloadToUi(hostChallengePayload);
-          if (dom.challengeHostStatus) {
-            dom.challengeHostStatus.textContent = reserved
-              ? `Only ${reservedName} can join.`
-              : '';
-          }
-          leaderboardChallengeTarget = null;
-          updateChallengeVersusHint();
+          beginChallengeRun(created, 'host');
+        } catch (e) {
+          console.warn(e);
+          showToast('Could not start that challenge.');
         } finally {
-          hostChallengeCreating = false;
+          challengeActionInProgress = false;
         }
+      }
+
+      async function challengePlayerAndStart(targetId, targetName) {
+        if (!targetId || targetId === getOrCreatePlayerId() || isBotPlayerId(targetId)) return;
+        if (!requireOnlineChallenges()) return;
+        const pid = getOrCreatePlayerId();
+        const name = targetName || 'Player';
+        try {
+          const [inbox, active] = await Promise.all([
+            SquirrelApi.fetchChallengeInbox(pid),
+            SquirrelApi.fetchActiveChallenges(pid)
+          ]);
+          const incoming = (inbox || []).find((row) => row.host_id === targetId);
+          if (incoming && incoming.code) {
+            await startChallengeAsGuest(incoming.code);
+            return;
+          }
+          const existing = (active || []).find(
+            (row) =>
+              (row.host_id === pid && (row.guest_id === targetId || row.reserved_guest_id === targetId)) ||
+              (row.guest_id === pid && row.host_id === targetId)
+          );
+          if (existing && existing.guest_id) {
+            await resumeOnlineChallenge({ code: existing.code });
+            return;
+          }
+          if (existing && existing.host_id === pid && !existing.guest_id) {
+            await resumeOnlineChallenge({ code: existing.code });
+            return;
+          }
+        } catch (e) {
+          console.warn(e);
+        }
+        showToast(`Challenging ${name}…`);
+        await startHostedChallengeAndPlay({
+          reservedGuestId: targetId,
+          reservedGuestName: name
+        });
+      }
+
+      async function findRandomMatch() {
+        if (!requireOnlineChallenges()) return;
+        if (challengeActionInProgress) return;
+        challengeActionInProgress = true;
+        try {
+          showToast('Finding a match…');
+          const row = await SquirrelApi.matchmakeChallenge(
+            getOrCreatePlayerId(),
+            hostChallengeDisplayNameForApi(),
+            challengeStartLevel()
+          );
+          if (!row || !row.code) {
+            showToast('Could not find a match. Try again.');
+            return;
+          }
+          beginChallengeRun(row, row.role === 'guest' ? 'guest' : 'host');
+        } catch (e) {
+          console.warn(e);
+          showToast('Could not find a match.');
+        } finally {
+          challengeActionInProgress = false;
+        }
+      }
+
+      async function startBotMatch(difficulty) {
+        const label =
+          difficulty === 'easy' ? 'Acorn Bot' : difficulty === 'hard' ? 'Forest Champ' : 'Street Bot';
+        showToast(`Challenging ${label}…`);
+        await startHostedChallengeAndPlay({
+          vsBot: true,
+          botDifficulty: difficulty || 'medium'
+        });
+      }
+
+      async function refreshChallengeWaitingList() {
+        if (!dom.challengeWaitingList) return;
+        dom.challengeWaitingList.textContent = '';
+        if (!SquirrelApi.isConfigured()) {
+          if (dom.challengeWaitingHint) {
+            dom.challengeWaitingHint.textContent = 'Connect online to see players waiting for a game.';
+          }
+          return;
+        }
+        let rows = [];
+        try {
+          rows = await SquirrelApi.fetchWaitingChallenges(getOrCreatePlayerId());
+        } catch (e) {
+          console.warn(e);
+        }
+        if (!rows.length) {
+          if (dom.challengeWaitingHint) {
+            dom.challengeWaitingHint.textContent = 'Nobody is waiting right now. Find a match or challenge a friend.';
+          }
+          return;
+        }
+        if (dom.challengeWaitingHint) {
+          dom.challengeWaitingHint.textContent = 'Tap Join to play against them.';
+        }
+        rows.forEach((row) => {
+          appendChallengeActionCard(dom.challengeWaitingList, {
+            title: row.host_name || 'Player',
+            subtitle: `Starting level ${row.start_level || 1}`,
+            primaryLabel: 'Join',
+            onPrimary: () => void startChallengeAsGuest(row.code)
+          });
+        });
+      }
+
+      async function refreshChallengeInbox() {
+        if (!dom.challengeInboxList) return;
+        dom.challengeInboxList.textContent = '';
+        if (!SquirrelApi.isConfigured()) {
+          if (dom.challengeInboxSection) dom.challengeInboxSection.classList.add('hidden');
+          return;
+        }
+        let rows = [];
+        try {
+          rows = await SquirrelApi.fetchChallengeInbox(getOrCreatePlayerId());
+        } catch (e) {
+          console.warn(e);
+        }
+        if (!rows.length) {
+          if (dom.challengeInboxSection) dom.challengeInboxSection.classList.add('hidden');
+          return;
+        }
+        if (dom.challengeInboxSection) dom.challengeInboxSection.classList.remove('hidden');
+        if (dom.challengeInboxHint) {
+          dom.challengeInboxHint.textContent = 'Someone challenged you. Play your turn whenever you want.';
+        }
+        const pid = getOrCreatePlayerId();
+        rows.forEach((row) => {
+          appendChallengeActionCard(dom.challengeInboxList, {
+            title: row.host_name || 'Player',
+            subtitle: `Challenged you · level ${row.start_level || 1}`,
+            primaryLabel: 'Play',
+            onPrimary: () => void startChallengeAsGuest(row.code),
+            secondaryLabel: 'Decline',
+            onSecondary: () => {
+              void (async () => {
+                const res = await SquirrelApi.declineChallenge(row.code, pid);
+                if (res.ok) {
+                  showToast('Challenge declined.');
+                  void refreshChallengeLobby();
+                } else {
+                  showToast('Could not decline.');
+                }
+              })();
+            }
+          });
+        });
+      }
+
+      async function refreshChallengeFriendsPlayList() {
+        if (!dom.challengeFriendsPlayList) return;
+        dom.challengeFriendsPlayList.textContent = '';
+        if (!SquirrelApi.isConfigured()) {
+          if (dom.challengeFriendsPlayHint) {
+            dom.challengeFriendsPlayHint.textContent = 'Connect online to challenge friends.';
+          }
+          return;
+        }
+        await refreshFriendsPanel();
+        if (!cachedFriendState.friends.length) {
+          if (dom.challengeFriendsPlayHint) {
+            dom.challengeFriendsPlayHint.textContent = 'No friends yet — search a username or add someone from the chart.';
+          }
+          return;
+        }
+        if (dom.challengeFriendsPlayHint) {
+          dom.challengeFriendsPlayHint.textContent = 'Challenge a friend. They can play their turn later.';
+        }
+        cachedFriendState.friends.forEach((friend) => {
+          appendChallengeActionCard(dom.challengeFriendsPlayList, {
+            title: friend.display_name || 'Player',
+            primaryLabel: 'Challenge',
+            onPrimary: () => void challengePlayerAndStart(friend.player_id, friend.display_name || 'Player')
+          });
+        });
+      }
+
+      async function runPlayerSearch() {
+        if (!dom.challengeSearchList) return;
+        dom.challengeSearchList.textContent = '';
+        if (!requireOnlineChallenges()) return;
+        const q = (dom.challengePlayerSearchInput && dom.challengePlayerSearchInput.value) || '';
+        if (q.trim().length < 2) {
+          if (dom.challengeSearchHint) {
+            dom.challengeSearchHint.textContent = 'Type at least 2 letters of a username.';
+          }
+          return;
+        }
+        if (dom.challengeSearchHint) dom.challengeSearchHint.textContent = 'Searching…';
+        let rows = [];
+        try {
+          rows = await SquirrelApi.searchPlayers(q, getOrCreatePlayerId());
+        } catch (e) {
+          console.warn(e);
+        }
+        if (!rows.length) {
+          if (dom.challengeSearchHint) dom.challengeSearchHint.textContent = 'No players found.';
+          return;
+        }
+        if (dom.challengeSearchHint) {
+          dom.challengeSearchHint.textContent = `${rows.length} player${rows.length === 1 ? '' : 's'} found.`;
+        }
+        rows.forEach((row) => {
+          const relation = getFriendRelation(row.player_id);
+          appendChallengeActionCard(dom.challengeSearchList, {
+            title: row.display_name || 'Player',
+            subtitle: relation === 'friends' ? 'Friend' : `High score ${row.high_score || 0}`,
+            primaryLabel: 'Challenge',
+            onPrimary: () => void challengePlayerAndStart(row.player_id, row.display_name || 'Player'),
+            secondaryLabel: relation === 'friends' || relation === 'pending_out' ? null : 'Add friend',
+            onSecondary:
+              relation === 'friends' || relation === 'pending_out'
+                ? null
+                : () => void sendFriendRequestTo(row.player_id, row.display_name || 'Player')
+          });
+        });
+      }
+
+      async function refreshChallengeLobby() {
+        const online = SquirrelApi.isConfigured();
+        if (dom.challengeOfflineNote) {
+          dom.challengeOfflineNote.classList.toggle('hidden', online);
+        }
+        refreshChallengeResumeUi();
+        refreshChallengeProfileCorner();
+        await Promise.all([
+          refreshActiveChallengesPanel(),
+          refreshChallengeInbox(),
+          refreshChallengeWaitingList(),
+          refreshChallengeFriendsPlayList()
+        ]);
+      }
+
+      function openChallengeLobby() {
+        toggle(dom.playModeOverlay, false);
+        toggle(dom.challengeOverlay, true);
+        syncChallengeNameInputsFromStorage();
+        setChallengeProfilePanelOpen(false);
+        refreshChallengeProfileCorner();
+        void refreshChallengeLobby();
       }
 
       function bindUI() {
@@ -18484,40 +18808,12 @@
         }
         if (dom.challengeModeMenuButton) {
           dom.challengeModeMenuButton.addEventListener('click', () => {
-            toggle(dom.playModeOverlay, false);
-            toggle(dom.challengeOverlay, true);
-            if (dom.challengeHostStatus) dom.challengeHostStatus.textContent = '';
-            if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = '';
-            syncChallengeNameInputsFromStorage();
-            updateChallengeVersusHint();
-            refreshChallengeResumeUi();
-            setChallengeProfilePanelOpen(false);
-            refreshChallengeProfileCorner();
-            void refreshFriendsPanel();
-            void refreshActiveChallengesPanel();
-            showChallengeHostTab();
-            void createHostedChallengeRoom(false);
+            openChallengeLobby();
           });
         }
         if (dom.closeChallengeOverlayButton) {
           dom.closeChallengeOverlayButton.addEventListener('click', () => {
-            hostChallengePayload = null;
-            updateStartHostedButtonState();
             toggle(dom.challengeOverlay, false);
-          });
-        }
-        if (dom.challengeTabHost && dom.challengeTabJoin && dom.challengeHostPanel && dom.challengeJoinPanel) {
-          dom.challengeTabHost.addEventListener('click', () => {
-            showChallengeHostTab();
-            void createHostedChallengeRoom(false);
-          });
-          dom.challengeTabJoin.addEventListener('click', () => {
-            dom.challengeTabJoin.classList.add('selected');
-            dom.challengeTabHost.classList.remove('selected');
-            dom.challengeJoinPanel.classList.remove('hidden');
-            dom.challengeHostPanel.classList.add('hidden');
-            updateStartHostedButtonState();
-            if (dom.challengeCodeInput) dom.challengeCodeInput.focus();
           });
         }
         if (dom.challengeProfileAddFriendsBtn) {
@@ -18554,18 +18850,6 @@
             syncChallengeNameInputsFromStorage();
             if (dom.statsDisplayNameInput) dom.statsDisplayNameInput.value = loadDisplayName();
             showToast('Display name saved');
-            if (dom.challengeTabHost && dom.challengeTabHost.classList.contains('selected')) {
-              void createHostedChallengeRoom(true);
-            }
-          });
-        }
-        if (dom.challengeJoinSaveDisplayName) {
-          dom.challengeJoinSaveDisplayName.addEventListener('click', () => {
-            const v = dom.challengeJoinDisplayNameInput ? dom.challengeJoinDisplayNameInput.value : '';
-            saveDisplayName(v);
-            syncChallengeNameInputsFromStorage();
-            if (dom.statsDisplayNameInput) dom.statsDisplayNameInput.value = loadDisplayName();
-            showToast('Display name saved');
           });
         }
         if (dom.challengeContinueButton) {
@@ -18583,82 +18867,25 @@
           });
         }
         if (dom.challengeRefreshActiveButton) {
-          dom.challengeRefreshActiveButton.addEventListener('click', () => void refreshActiveChallengesPanel());
+          dom.challengeRefreshActiveButton.addEventListener('click', () => void refreshChallengeLobby());
         }
-
-        if (dom.startHostedRunButton) {
-          dom.startHostedRunButton.addEventListener('click', () => {
-            if (!hostChallengePayload) {
-              showToast('Room is still opening — wait a second.');
-              return;
-            }
-            const p = hostChallengePayload;
-            beginGameFromMenu(p.startLevel, { runSeed: p.seed, challenge: { code: p.code, role: p.role } });
-          });
+        if (dom.challengeFindMatchButton) {
+          dom.challengeFindMatchButton.addEventListener('click', () => void findRandomMatch());
         }
-        if (dom.joinChallengeButton) {
-          dom.joinChallengeButton.addEventListener('click', async () => {
-            const code = (dom.challengeCodeInput.value || '').trim().toUpperCase();
-            if (code.length < 4) {
-              if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = 'Enter the host’s room code.';
-              return;
-            }
-            if (!SquirrelApi.isConfigured()) {
-              if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = 'Online rooms need a connection. Use a seed below if you have one.';
-              return;
-            }
-            if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = 'Checking code…';
-            const preview = await SquirrelApi.getChallenge(code);
-            if (!preview || preview.status !== 'active') {
-              if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = 'That code is invalid or the match already finished.';
-              return;
-            }
-            const guestTryName = joinChallengeDisplayNameForApi();
-            const hostNm = (preview.host_name || '').trim().toLowerCase();
-            if (hostNm && guestTryName.trim().toLowerCase() === hostNm) {
-              setChallengeProfilePanelOpen(true);
-              if (dom.challengeDisplayNameInput) {
-                try { dom.challengeDisplayNameInput.focus(); } catch (e) {}
-              }
-              if (dom.challengeJoinStatus) {
-                dom.challengeJoinStatus.textContent =
-                  'Your name matches the host. Change it in Your profile, then join.';
-              }
-              return;
-            }
-            if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = 'Joining…';
-            const row = await SquirrelApi.joinChallenge(code, getOrCreatePlayerId(), guestTryName);
-            if (!row) {
-              if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = 'Could not join. Check the code, or the room may be full.';
-              return;
-            }
-            const seedNum = Number(row.seed);
-            const sl = Math.max(
-              1,
-              Math.floor(Number(row.start_level != null ? row.start_level : row.current_level) || 1)
-            );
-            if (!Number.isFinite(seedNum)) {
-              if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = 'Invalid challenge data.';
-              return;
-            }
-            saveDisplayName(guestTryName);
-            syncChallengeNameInputsFromStorage();
-            showToast(`Joined ${code}`);
-            beginGameFromMenu(sl, { runSeed: seedNum, challenge: { code, role: 'guest' } });
-          });
+        ['challengeBotEasyButton', 'challengeBotMediumButton', 'challengeBotHardButton'].forEach((key) => {
+          const btn = dom[key];
+          if (!btn) return;
+          btn.addEventListener('click', () => void startBotMatch(btn.getAttribute('data-bot') || 'medium'));
+        });
+        if (dom.challengePlayerSearchButton) {
+          dom.challengePlayerSearchButton.addEventListener('click', () => void runPlayerSearch());
         }
-        if (dom.offlineChallengeStartButton) {
-          dom.offlineChallengeStartButton.addEventListener('click', () => {
-            const seed = Number(dom.offlineChallengeSeed && dom.offlineChallengeSeed.value);
-            const start = Math.max(1, Math.floor(Number(dom.offlineChallengeStart && dom.offlineChallengeStart.value) || 1));
-            if (!Number.isFinite(seed) || seed <= 0) {
-              if (dom.challengeJoinStatus) dom.challengeJoinStatus.textContent = 'Enter the seed number from the host.';
-              return;
+        if (dom.challengePlayerSearchInput) {
+          dom.challengePlayerSearchInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              void runPlayerSearch();
             }
-            beginGameFromMenu(start, {
-              runSeed: Math.floor(seed),
-              challenge: { code: 'offline', role: 'guest' }
-            });
           });
         }
 

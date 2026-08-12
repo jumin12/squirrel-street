@@ -116,7 +116,17 @@ const migrateChallengeCols = [
   'ALTER TABLE challenges ADD COLUMN IF NOT EXISTS host_eliminated_lives INT',
   'ALTER TABLE challenges ADD COLUMN IF NOT EXISTS guest_eliminated_lives INT',
   'ALTER TABLE challenges ADD COLUMN IF NOT EXISTS last_rejoin_player_id TEXT',
-  'ALTER TABLE challenges ADD COLUMN IF NOT EXISTS last_rejoin_at TIMESTAMPTZ'
+  'ALTER TABLE challenges ADD COLUMN IF NOT EXISTS last_rejoin_at TIMESTAMPTZ',
+  'ALTER TABLE challenges ADD COLUMN IF NOT EXISTS vs_bot BOOLEAN NOT NULL DEFAULT FALSE',
+  'ALTER TABLE challenges ADD COLUMN IF NOT EXISTS bot_difficulty TEXT',
+  'ALTER TABLE challenges ADD COLUMN IF NOT EXISTS open_to_public BOOLEAN NOT NULL DEFAULT FALSE',
+  `UPDATE challenges
+     SET open_to_public = TRUE
+   WHERE status = 'active'
+     AND guest_id IS NULL
+     AND reserved_guest_id IS NULL
+     AND COALESCE(vs_bot, FALSE) = FALSE
+     AND COALESCE(open_to_public, FALSE) = FALSE`
 ];
 
 const migrateChallengeRoundCols = [
@@ -238,8 +248,72 @@ function rowToChallenge(r, rounds = []) {
     guest_eliminated_lives: r.guest_eliminated_lives != null ? Number(r.guest_eliminated_lives) : null,
     last_rejoin_player_id: r.last_rejoin_player_id || null,
     last_rejoin_at: r.last_rejoin_at || null,
+    vs_bot: Boolean(r.vs_bot),
+    bot_difficulty: r.bot_difficulty || null,
+    open_to_public: Boolean(r.open_to_public),
     rounds: payloadRounds
   };
+}
+
+const BOT_PROFILES = {
+  easy: { id: 'bot:easy', name: 'Acorn Bot', multiplier: 0.62 },
+  medium: { id: 'bot:medium', name: 'Street Bot', multiplier: 0.88 },
+  hard: { id: 'bot:hard', name: 'Forest Champ', multiplier: 1.12 }
+};
+
+function isBotPlayerId(id) {
+  return typeof id === 'string' && id.startsWith('bot:');
+}
+
+function challengeIsBot(row) {
+  return Boolean(row && (row.vs_bot || isBotPlayerId(row.guest_id)));
+}
+
+function normalizeBotDifficulty(raw) {
+  const d = String(raw || '').toLowerCase();
+  return BOT_PROFILES[d] ? d : 'medium';
+}
+
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function next() {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function botScoreForLevel(row, level) {
+  const diff = normalizeBotDifficulty(row && row.bot_difficulty);
+  const profile = BOT_PROFILES[diff];
+  const rng = mulberry32((Number(row.seed) ^ (Math.floor(Number(level) || 1) * 2654435761)) >>> 0);
+  const base = 90 + Math.max(1, Math.floor(Number(level) || 1)) * 28;
+  const noise = 0.82 + rng() * 0.36;
+  const pts = Math.max(20, Math.round(base * profile.multiplier * noise));
+  const wordScale = diff === 'hard' ? 1.25 : diff === 'easy' ? 0.8 : 1;
+  const wordsLv = Math.max(1, Math.min(6, Math.round((2 + rng() * 3) * wordScale)));
+  const lives = diff === 'hard' ? (rng() > 0.45 ? 3 : 2) : diff === 'easy' ? (rng() > 0.7 ? 2 : 1) : 2;
+  return { pts, wordsLv, lives, wordsSpelled: wordsLv };
+}
+
+async function maybeSubmitBotForLevel(client, challengeId, level, eliminated) {
+  const { rows } = await client.query('SELECT * FROM challenges WHERE id = $1 FOR UPDATE', [challengeId]);
+  const cur = rows[0];
+  if (!cur || !challengeIsBot(cur) || !cur.guest_id || cur.guest_eliminated) return;
+  const score = botScoreForLevel(cur, level);
+  await submitChallengeScore(
+    client,
+    cur,
+    cur.guest_id,
+    level,
+    score.pts,
+    score.wordsSpelled,
+    Boolean(eliminated),
+    eliminated ? 0 : score.lives,
+    score.wordsLv
+  );
 }
 
 async function resolveStoredRounds(client, challengeId) {
@@ -440,6 +514,7 @@ async function finalizeMatchIfNeeded(client, row) {
   );
 
   async function touchPlayer(pid, wonInc, lostInc, pts, words) {
+    if (!pid || isBotPlayerId(pid)) return;
     await client.query(
       `INSERT INTO leaderboard (player_id, display_name, words_spelled, mp_wins, mp_losses, mp_total_score, mp_words_spelled, updated_at)
        VALUES ($1, 'Player', $2, $3, $4, $5, $2, NOW())
@@ -552,13 +627,28 @@ app.post('/api/leaderboard', async (req, res) => {
 app.post('/api/challenges', async (req, res) => {
   if (!pool) return res.status(503).json({ error: 'Database not configured' });
   try {
-    const { host_id, host_name, start_level, reserved_guest_id, reserved_guest_name } = req.body || {};
+    const {
+      host_id,
+      host_name,
+      start_level,
+      reserved_guest_id,
+      reserved_guest_name,
+      open_to_public,
+      vs_bot,
+      bot_difficulty
+    } = req.body || {};
     if (!host_id || typeof host_id !== 'string') {
       return res.status(400).json({ error: 'host_id required' });
     }
     const sl = Math.max(1, Math.floor(Number(start_level) || 1));
     const seed = ((Math.random() * 0x7fffffff) | 0) >>> 0;
     const id = `c_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+    const vsBot = Boolean(vs_bot);
+    const difficulty = vsBot ? normalizeBotDifficulty(bot_difficulty) : null;
+    const bot = vsBot ? BOT_PROFILES[difficulty] : null;
+    const reservedId =
+      !vsBot && reserved_guest_id && typeof reserved_guest_id === 'string' ? reserved_guest_id : null;
+    const openPublic = vsBot ? false : reservedId ? false : open_to_public !== false;
     let code = randomCode();
     for (let attempt = 0; attempt < 8; attempt++) {
       try {
@@ -566,8 +656,10 @@ app.post('/api/challenges', async (req, res) => {
           `INSERT INTO challenges (
             id, code, seed, start_level, current_level,
             host_id, host_name, reserved_guest_id,
+            guest_id, guest_name,
+            vs_bot, bot_difficulty, open_to_public,
             host_wins, guest_wins, status, updated_at
-          ) VALUES ($1, $2, $3, $4, $4, $5, $6, $7, 0, 0, 'active', NOW())`,
+          ) VALUES ($1, $2, $3, $4, $4, $5, $6, $7, $8, $9, $10, $11, $12, 0, 0, 'active', NOW())`,
           [
             id,
             code,
@@ -575,16 +667,19 @@ app.post('/api/challenges', async (req, res) => {
             sl,
             host_id,
             (host_name || 'Host').toString().slice(0, 24),
-            reserved_guest_id && typeof reserved_guest_id === 'string' ? reserved_guest_id : null
+            reservedId,
+            bot ? bot.id : null,
+            bot ? bot.name : null,
+            vsBot,
+            difficulty,
+            openPublic
           ]
         );
+        const created = await pool.query('SELECT * FROM challenges WHERE code = $1', [code]);
         return res.json({
-          code,
-          seed,
-          start_level: sl,
-          current_level: sl,
-          reserved_guest_id: reserved_guest_id || null,
-          reserved_guest_name: reserved_guest_name ? String(reserved_guest_name).slice(0, 24) : null
+          ...rowToChallenge(created.rows[0], []),
+          reserved_guest_name: reserved_guest_name ? String(reserved_guest_name).slice(0, 24) : null,
+          role: 'host'
         });
       } catch (e) {
         if (e.code === '23505') code = randomCode();
@@ -609,13 +704,17 @@ app.post('/api/challenges/join', async (req, res) => {
     if (!row) return res.status(404).json({ error: 'not_found' });
     if (row.status !== 'active') return res.status(410).json({ error: 'challenge_inactive' });
     if (row.guest_id && row.guest_id !== guest_id) return res.status(403).json({ error: 'challenge_full' });
+    if (row.host_id === guest_id) return res.status(403).json({ error: 'cannot_join_own' });
+    if (challengeIsBot(row) && row.guest_id) return res.status(403).json({ error: 'challenge_full' });
     if (row.reserved_guest_id && row.reserved_guest_id !== guest_id) {
       return res.status(403).json({ error: 'wrong_opponent' });
     }
 
     if (!row.guest_id) {
       await pool.query(
-        `UPDATE challenges SET guest_id = $1, guest_name = $2, updated_at = NOW() WHERE code = $3`,
+        `UPDATE challenges
+         SET guest_id = $1, guest_name = $2, open_to_public = FALSE, updated_at = NOW()
+         WHERE code = $3`,
         [guest_id, (guest_name || 'Guest').toString().slice(0, 24), c]
       );
     }
@@ -665,18 +764,28 @@ app.get('/api/challenges/active/:playerId', async (req, res) => {
     const limit = Math.min(20, Math.max(1, parseInt(req.query.limit, 10) || 10));
     const { rows } = await pool.query(
       `SELECT code, seed, start_level, current_level,
-              host_id, host_name, guest_id, guest_name,
+              host_id, host_name, guest_id, guest_name, reserved_guest_id,
               host_wins, guest_wins,
               host_total_points, guest_total_points,
               host_words_accum, guest_words_accum,
               host_eliminated, guest_eliminated,
+              vs_bot, bot_difficulty, open_to_public,
               status, updated_at
        FROM challenges
        WHERE status = 'active'
-         AND guest_id IS NOT NULL
          AND (
-           (host_id = $1 AND host_eliminated = FALSE)
-           OR (guest_id = $1 AND guest_eliminated = FALSE)
+           (
+             guest_id IS NOT NULL
+             AND (
+               (host_id = $1 AND host_eliminated = FALSE)
+               OR (guest_id = $1 AND guest_eliminated = FALSE)
+             )
+           )
+           OR (
+             host_id = $1
+             AND guest_id IS NULL
+             AND host_eliminated = FALSE
+           )
          )
        ORDER BY updated_at DESC
        LIMIT $2`,
@@ -686,6 +795,165 @@ app.get('/api/challenges/active/:playerId', async (req, res) => {
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'active_list_failed' });
+  }
+});
+
+app.get('/api/challenges/waiting', async (req, res) => {
+  if (!pool) return res.status(503).json({ error: 'Database not configured' });
+  try {
+    await expireInactiveChallenges();
+    const playerId = typeof req.query.playerId === 'string' ? req.query.playerId : '';
+    const limit = Math.min(20, Math.max(1, parseInt(req.query.limit, 10) || 12));
+    const { rows } = await pool.query(
+      `SELECT code, seed, start_level, current_level, host_id, host_name, created_at, updated_at
+       FROM challenges
+       WHERE status = 'active'
+         AND guest_id IS NULL
+         AND COALESCE(vs_bot, FALSE) = FALSE
+         AND COALESCE(open_to_public, FALSE) = TRUE
+         AND ($1 = '' OR host_id <> $1)
+         AND reserved_guest_id IS NULL
+       ORDER BY updated_at DESC
+       LIMIT $2`,
+      [playerId, limit]
+    );
+    res.json(rows);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'waiting_list_failed' });
+  }
+});
+
+app.get('/api/challenges/inbox/:playerId', async (req, res) => {
+  if (!pool) return res.status(503).json({ error: 'Database not configured' });
+  try {
+    await expireInactiveChallenges();
+    const playerId = req.params.playerId;
+    if (!playerId || typeof playerId !== 'string') {
+      return res.status(400).json({ error: 'player_id required' });
+    }
+    const { rows } = await pool.query(
+      `SELECT code, seed, start_level, current_level, host_id, host_name,
+              reserved_guest_id, created_at, updated_at
+       FROM challenges
+       WHERE status = 'active'
+         AND guest_id IS NULL
+         AND COALESCE(vs_bot, FALSE) = FALSE
+         AND reserved_guest_id = $1
+       ORDER BY updated_at DESC
+       LIMIT 20`,
+      [playerId]
+    );
+    res.json(rows);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'inbox_failed' });
+  }
+});
+
+app.post('/api/challenges/matchmake', async (req, res) => {
+  if (!pool) return res.status(503).json({ error: 'Database not configured' });
+  const client = await pool.connect();
+  try {
+    const { player_id, player_name, start_level } = req.body || {};
+    if (!player_id || typeof player_id !== 'string') {
+      return res.status(400).json({ error: 'player_id required' });
+    }
+    const sl = Math.max(1, Math.floor(Number(start_level) || 1));
+    const name = (player_name || 'Player').toString().slice(0, 24);
+
+    await client.query('BEGIN');
+    await expireInactiveChallenges(client);
+    const { rows } = await client.query(
+      `SELECT * FROM challenges
+       WHERE status = 'active'
+         AND guest_id IS NULL
+         AND COALESCE(vs_bot, FALSE) = FALSE
+         AND COALESCE(open_to_public, FALSE) = TRUE
+         AND host_id <> $1
+         AND reserved_guest_id IS NULL
+       ORDER BY updated_at ASC
+       LIMIT 1
+       FOR UPDATE SKIP LOCKED`,
+      [player_id]
+    );
+    if (rows[0]) {
+      const row = rows[0];
+      await client.query(
+        `UPDATE challenges
+         SET guest_id = $1, guest_name = $2, open_to_public = FALSE, updated_at = NOW()
+         WHERE id = $3`,
+        [player_id, name, row.id]
+      );
+      await client.query('COMMIT');
+      const joined = await pool.query('SELECT * FROM challenges WHERE id = $1', [row.id]);
+      const rounds = await getRecentRounds(pool, row.id);
+      return res.json({ ...rowToChallenge(joined.rows[0], rounds), role: 'guest' });
+    }
+
+    const seed = ((Math.random() * 0x7fffffff) | 0) >>> 0;
+    const id = `c_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+    let code = randomCode();
+    let created = null;
+    for (let attempt = 0; attempt < 8; attempt++) {
+      try {
+        await client.query(
+          `INSERT INTO challenges (
+            id, code, seed, start_level, current_level,
+            host_id, host_name, open_to_public, vs_bot,
+            host_wins, guest_wins, status, updated_at
+          ) VALUES ($1, $2, $3, $4, $4, $5, $6, TRUE, FALSE, 0, 0, 'active', NOW())`,
+          [id, code, seed, sl, player_id, name]
+        );
+        created = { code };
+        break;
+      } catch (e) {
+        if (e.code === '23505') code = randomCode();
+        else throw e;
+      }
+    }
+    if (!created) {
+      await client.query('ROLLBACK');
+      return res.status(500).json({ error: 'could_not_create_code' });
+    }
+    await client.query('COMMIT');
+    const fresh = await pool.query('SELECT * FROM challenges WHERE code = $1', [code]);
+    return res.json({ ...rowToChallenge(fresh.rows[0], []), role: 'host' });
+  } catch (e) {
+    try {
+      await client.query('ROLLBACK');
+    } catch (_) {}
+    console.error(e);
+    res.status(500).json({ error: 'matchmake_failed' });
+  } finally {
+    client.release();
+  }
+});
+
+app.post('/api/challenges/:code/decline', async (req, res) => {
+  if (!pool) return res.status(503).json({ error: 'Database not configured' });
+  try {
+    const c = req.params.code.trim().toUpperCase();
+    const { player_id } = req.body || {};
+    if (!player_id || typeof player_id !== 'string') {
+      return res.status(400).json({ error: 'player_id required' });
+    }
+    const { rows } = await pool.query('SELECT * FROM challenges WHERE code = $1', [c]);
+    const row = rows[0];
+    if (!row) return res.status(404).json({ error: 'not_found' });
+    if (row.status !== 'active') return res.status(410).json({ error: 'inactive' });
+    if (row.reserved_guest_id !== player_id) return res.status(403).json({ error: 'not_reserved' });
+    if (row.guest_id) return res.status(409).json({ error: 'already_joined' });
+    await pool.query(
+      `UPDATE challenges
+       SET reserved_guest_id = NULL, open_to_public = TRUE, updated_at = NOW()
+       WHERE code = $1`,
+      [c]
+    );
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'decline_failed' });
   }
 });
 
@@ -705,7 +973,11 @@ app.post('/api/challenges/:code/rejoin', async (req, res) => {
     const isGuest = row.guest_id === player_id;
     if (!isHost && !isGuest) return res.status(403).json({ error: 'not_in_challenge' });
     if (isHost && !row.guest_id) {
-      return res.status(400).json({ error: 'no_opponent' });
+      await pool.query(
+        `UPDATE challenges SET last_rejoin_player_id = $1, last_rejoin_at = NOW(), updated_at = NOW() WHERE code = $2`,
+        [player_id, c]
+      );
+      return res.json({ ok: true, waiting: true });
     }
     await pool.query(
       `UPDATE challenges SET last_rejoin_player_id = $1, last_rejoin_at = NOW(), updated_at = NOW() WHERE code = $2`,
@@ -760,6 +1032,9 @@ app.post('/api/challenges/:code/round', async (req, res) => {
       return res.status(410).json({ error: 'inactive' });
     }
     await submitChallengeScore(client, row, player_id, lvl, pts, words, false, lives_remaining, words_this_level);
+    if (!isBotPlayerId(player_id)) {
+      await maybeSubmitBotForLevel(client, row.id, lvl, false);
+    }
     const { rows: rows3 } = await client.query('SELECT * FROM challenges WHERE id = $1 FOR UPDATE', [row.id]);
     const cur = rows3[0];
     await finalizeMatchIfNeeded(client, cur);
@@ -829,6 +1104,9 @@ app.post('/api/challenges/:code/eliminate', async (req, res) => {
     }
 
     await submitChallengeScore(client, row, player_id, lvl, pts, words, true, lives_remaining, words_this_level);
+    if (!isBotPlayerId(player_id)) {
+      await maybeSubmitBotForLevel(client, row.id, lvl, true);
+    }
     const { rows: rows3 } = await client.query('SELECT * FROM challenges WHERE id = $1 FOR UPDATE', [row.id]);
     const cur = rows3[0];
     await finalizeMatchIfNeeded(client, cur);
@@ -848,6 +1126,29 @@ app.post('/api/challenges/:code/eliminate', async (req, res) => {
     res.status(500).json({ error: 'eliminate_failed' });
   } finally {
     client.release();
+  }
+});
+
+app.get('/api/players/search', async (req, res) => {
+  if (!pool) return res.status(503).json({ error: 'Database not configured' });
+  try {
+    const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+    const exclude = typeof req.query.exclude === 'string' ? req.query.exclude : '';
+    if (q.length < 2) return res.json([]);
+    const { rows } = await pool.query(
+      `SELECT player_id, display_name, high_score, highest_level, mp_wins, mp_losses
+       FROM leaderboard
+       WHERE display_name ILIKE $1
+         AND ($2 = '' OR player_id <> $2)
+         AND player_id NOT LIKE 'bot:%'
+       ORDER BY high_score DESC, highest_level DESC
+       LIMIT 20`,
+      [`%${q.replace(/[%_]/g, '')}%`, exclude]
+    );
+    res.json(rows);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'player_search_failed' });
   }
 });
 

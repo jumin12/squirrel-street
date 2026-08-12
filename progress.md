@@ -22,6 +22,13 @@ Original prompt: if the user selects the host button it should automatically gen
 - Versions: in-game **v2.16**, package **2.16.0**, Play `VERSION_CODE=41` / `VERSION_NAME=2.16.0`, iOS build 41.
 - Android sync: `npm run android:sync` from repo root.
 
+## 2026-08-12 — Cutout HUD + matchmaking lobby + v2.17
+- Top HUD uses `env(safe-area-inset-top)` only. Phones with no camera inset (SE, etc.) stay flush at `top: 0`. Notched/punch-hole phones shift the bar down and fill the gap with the same wood color. Desktop playfield stays unpadded.
+- Challenge lobby no longer uses room codes, Host/Join, or offline seeds. Players can find a match, join people waiting, challenge friends, search usernames, play bots, and accept/decline incoming challenges. Internal match `code` is still used by the API.
+- Server: waiting list, inbox, matchmake, player search, bot opponents with auto-scored rounds, and host rejoin while waiting for a rival.
+- Versions: in-game **v2.17**, package **2.17.0**, Play `VERSION_CODE=42` / `VERSION_NAME=2.17.0`, iOS build 42.
+- Android sync: `npm run android:sync` from repo root.
+
 ## TODOs / next
 - Live two-device challenge playtest (host share ? join ? between-level Continue).
 - Facebook friends remain API/invite based; no Facebook SDK in this pass.
