@@ -4686,8 +4686,15 @@
     .pause-buttons {
       display: flex;
       flex-direction: column;
+      align-items: center;
       gap: 10px;
       padding: 16px 20px 20px;
+    }
+
+    .pause-buttons .img-btn {
+      width: 240px;
+      max-width: 100%;
+      margin: 0;
     }
 
     .pause-buttons .pill-button {
@@ -4932,9 +4939,42 @@
       gap: 12px !important;
       align-items: center;
     }
-    .menu-buttons .img-btn {
+    .menu-buttons .img-btn,
+    .plank-stack .img-btn {
       width: 260px; /* Default width for menu buttons */
       max-width: 85vw;
+    }
+
+    .plank-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .plank-stack .img-btn {
+      margin: 0;
+    }
+
+    .play-mode-choice-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      margin: 0 0 8px;
+    }
+
+    .play-mode-choice-wrap .play-mode-choice-desc {
+      margin: 6px 0 0;
+      text-align: center;
+    }
+
+    .play-mode-modal .img-btn {
+      width: 260px;
+      max-width: 85vw;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     /* Main Menu Logo */
@@ -5704,7 +5744,7 @@
   </script>
 </head>
 <body>
-  <div id="screenVersion" class="screen-version-label" aria-hidden="true">v2.18</div>
+  <div id="screenVersion" class="screen-version-label" aria-hidden="true">v2.19</div>
   <div id="preloadScreen" class="screen">
     <div class="logo">Squirrel Street</div>
     <div class="menu-card">
@@ -5781,15 +5821,24 @@
     <div class="modal play-mode-modal">
       <h2>Play</h2>
       <p class="play-mode-lead">Choose how you want to run the forest.</p>
-      <button id="soloRunButton" class="button play-mode-choice">
-        <span class="play-mode-choice-title">Solo</span>
+      <div class="play-mode-choice-wrap">
+        <button id="soloRunButton" class="img-btn" type="button">
+          <img src="art/ui/soloup.png" class="btn-up" alt="Solo">
+          <img src="art/ui/solodown.png" class="btn-down" alt="Solo">
+        </button>
         <span class="play-mode-choice-desc">A classic run. Beat your high score.</span>
-      </button>
-      <button id="challengeModeMenuButton" class="button play-mode-choice">
-        <span class="play-mode-choice-title">Challenge</span>
+      </div>
+      <div class="play-mode-choice-wrap">
+        <button id="challengeModeMenuButton" class="img-btn" type="button">
+          <img src="art/ui/challengeup.png" class="btn-up" alt="Challenge">
+          <img src="art/ui/challengedown.png" class="btn-down" alt="Challenge">
+        </button>
         <span class="play-mode-choice-desc">Friends, bots, or anyone waiting for a game.</span>
+      </div>
+      <button id="closePlayModeButton" class="img-btn" type="button">
+        <img src="art/ui/backup.png" class="btn-up" alt="Back">
+        <img src="art/ui/backdown.png" class="btn-down" alt="Back">
       </button>
-      <button id="closePlayModeButton" class="pill-button ghost" style="width: 100%;">Back</button>
     </div>
   </div>
 
@@ -5998,14 +6047,17 @@
       </div>
 
       <div class="pause-buttons">
-        <button id="resumeButton" class="pill-button">
-           Resume Run
+        <button id="resumeButton" class="img-btn" type="button">
+          <img src="art/ui/resumeup.png" class="btn-up" alt="Resume">
+          <img src="art/ui/resumedown.png" class="btn-down" alt="Resume">
         </button>
-        <button id="pauseSettingsButton" class="pill-button ghost">
-           Settings
+        <button id="pauseSettingsButton" class="img-btn" type="button">
+          <img src="art/ui/settingsup.png" class="btn-up" alt="Settings">
+          <img src="art/ui/settingsdown.png" class="btn-down" alt="Settings">
         </button>
-        <button id="exitButton" class="pill-button ghost">
-           Exit To Menu
+        <button id="exitButton" class="img-btn" type="button">
+          <img src="art/ui/exitup.png" class="btn-up" alt="Exit">
+          <img src="art/ui/exitdown.png" class="btn-down" alt="Exit">
         </button>
       </div>
     </div>
@@ -6036,12 +6088,14 @@
           <span>Diamonds earned this run will still be kept!</span>
         </div>
       </div>
-      <div class="exit-confirm-buttons">
-        <button id="confirmExitBtn" class="pill-button">
-          Yes, Exit
+      <div class="exit-confirm-buttons plank-stack">
+        <button id="confirmExitBtn" class="img-btn" type="button">
+          <img src="art/ui/exitup.png" class="btn-up" alt="Exit">
+          <img src="art/ui/exitdown.png" class="btn-down" alt="Exit">
         </button>
-        <button id="cancelExitBtn" class="pill-button ghost">
-          Keep Playing
+        <button id="cancelExitBtn" class="img-btn" type="button">
+          <img src="art/ui/keepup.png" class="btn-up" alt="Keep">
+          <img src="art/ui/keepdown.png" class="btn-down" alt="Keep">
         </button>
       </div>
     </div>
@@ -6128,13 +6182,16 @@
           Diamonds Earned
         </div>
       </div>
-      <div class="pill-buttons" style="margin-top: 20px;">
+      <div class="pill-buttons plank-stack" style="margin-top: 20px;">
         <button id="buyLifeButton" class="pill-button" style="background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);">
           <img src="art/acorns/acorn-diamond.png" alt="" class="currency-icon" style="width: 28px; height: 28px; vertical-align: middle; margin-right: 6px;">
           Buy Life (100)
         </button>
         <button id="gameOverRestart" class="pill-button hidden" style="display: none;">Run Again</button>
-        <button id="gameOverMenu" class="pill-button ghost">Back To Menu</button>
+        <button id="gameOverMenu" class="img-btn" type="button">
+          <img src="art/ui/menuup.png" class="btn-up" alt="Menu">
+          <img src="art/ui/menudown.png" class="btn-down" alt="Menu">
+        </button>
       </div>
     </div>
   </div>
@@ -6551,16 +6608,32 @@
     <div id="optionsOverlay" class="overlay hidden">
      <div class="modal" style="max-width: 340px; width: 88vw; padding: 24px 20px;">
         <h2 style="margin-bottom: 20px;">Options</h2>
-       <div class="menu-buttons" style="width: 100%; gap: 16px;">
-          <button id="optionsSettingsButton" class="button">Settings</button>
-          <button id="optionsHowToButton" class="button">How To Play</button>
-          <button id="optionsDictionaryButton" class="button">Dictionary</button>
-          <button id="creditsButton" class="button">Credits</button>
-            <button id="changelogButton" class="button" style="position: relative;">
-               Change Log
-               <img id="changelogBadge" src="art/acorns/acorn-red.png" class="notification-icon hidden" alt="!" />
-            </button>
-         <button id="closeOptionsButton" class="pill-button ghost">Back</button>
+       <div class="menu-buttons plank-stack" style="width: 100%; gap: 12px;">
+          <button id="optionsSettingsButton" class="img-btn" type="button">
+            <img src="art/ui/settingsup.png" class="btn-up" alt="Settings">
+            <img src="art/ui/settingsdown.png" class="btn-down" alt="Settings">
+          </button>
+          <button id="optionsHowToButton" class="img-btn" type="button">
+            <img src="art/ui/howtoup.png" class="btn-up" alt="How To">
+            <img src="art/ui/howtodown.png" class="btn-down" alt="How To">
+          </button>
+          <button id="optionsDictionaryButton" class="img-btn" type="button">
+            <img src="art/ui/dictionaryup.png" class="btn-up" alt="Dictionary">
+            <img src="art/ui/dictionarydown.png" class="btn-down" alt="Dictionary">
+          </button>
+          <button id="creditsButton" class="img-btn" type="button">
+            <img src="art/ui/creditsup.png" class="btn-up" alt="Credits">
+            <img src="art/ui/creditsdown.png" class="btn-down" alt="Credits">
+          </button>
+          <button id="changelogButton" class="img-btn" type="button" style="position: relative;">
+            <img src="art/ui/changelogup.png" class="btn-up" alt="Changes">
+            <img src="art/ui/changelogdown.png" class="btn-down" alt="Changes">
+            <img id="changelogBadge" src="art/acorns/acorn-red.png" class="notification-icon hidden" alt="!" />
+          </button>
+          <button id="closeOptionsButton" class="img-btn" type="button">
+            <img src="art/ui/backup.png" class="btn-up" alt="Back">
+            <img src="art/ui/backdown.png" class="btn-down" alt="Back">
+          </button>
         </div>
       </div>
     </div>
@@ -6638,8 +6711,11 @@
         </p>
       </div>
       
-      <div class="pill-buttons" style="margin-top: 20px;">
-        <button id="closeSettingsButton" class="pill-button ghost">Close</button>
+      <div class="plank-stack" style="margin-top: 20px;">
+        <button id="closeSettingsButton" class="img-btn" type="button">
+          <img src="art/ui/backup.png" class="btn-up" alt="Back">
+          <img src="art/ui/backdown.png" class="btn-down" alt="Back">
+        </button>
       </div>
     </div>
   </div>
@@ -7484,7 +7560,8 @@
         localMpStats: 'squirrelStreet.localMpStats',
         challengeResume: 'squirrelStreet.challengeResume',
         pendingInviteFrom: 'squirrelStreet.pendingInviteFrom',
-        pendingChallengeCode: 'squirrelStreet.pendingChallengeCode'
+        pendingChallengeCode: 'squirrelStreet.pendingChallengeCode',
+        seenChallengeNotifs: 'squirrelStreet.seenChallengeNotifs'
       };
 
       function getOrCreatePlayerId() {
@@ -11663,6 +11740,16 @@
       // Changelog Data
       const CHANGELOG = [
         {
+          version: '2.19',
+          date: '2026-08-19',
+          changes: [
+            'Play menu Back button returns to the main menu',
+            'Music pauses when the app is minimized and resumes when you come back',
+            'Status-bar notifications use an acorn icon',
+            'You get a notification when someone challenges you'
+          ]
+        },
+        {
           version: '2.18',
           date: '2026-08-12',
           changes: [
@@ -11929,7 +12016,7 @@
         }
       ];
       
-      const CURRENT_VERSION = '2.18';
+      const CURRENT_VERSION = '2.19';
       const LAST_SEEN_VERSION_KEY = 'squirrelStreet.lastSeenVersion';
 
       function checkChangelogBadge() {
@@ -12011,6 +12098,57 @@
         if (dom.toggleMusic) dom.toggleMusic.checked = settings.musicEnabled;
         if (dom.toggleSplat) dom.toggleSplat.checked = settings.splatEnabled;
         if (dom.toggleHorn) dom.toggleHorn.checked = settings.hornEnabled;
+      }
+
+      function pauseForegroundAudio() {
+        const music = document.getElementById('bgMusic');
+        if (music && !music.paused) {
+          music.pause();
+        }
+        if (audioCtx && audioCtx.state === 'running') {
+          audioCtx.suspend().catch(() => {});
+        }
+        Object.values(soundRegistry).forEach((entry) => {
+          if (entry && entry.type === 'html5' && entry.pool) {
+            entry.pool.forEach((audio) => {
+              if (audio && !audio.paused) audio.pause();
+            });
+          }
+        });
+      }
+
+      function resumeForegroundAudio() {
+        const settings = loadSettings();
+        if (audioCtx && audioCtx.state === 'suspended') {
+          audioCtx.resume().catch(() => {});
+        }
+        const music = document.getElementById('bgMusic');
+        if (
+          music &&
+          musicShouldBePlaying &&
+          settings.soundEnabled &&
+          settings.musicEnabled
+        ) {
+          music.muted = false;
+          music.play().catch(() => {});
+        }
+      }
+
+      function bindAppAudioLifecycle() {
+        document.addEventListener('visibilitychange', () => {
+          if (document.hidden) pauseForegroundAudio();
+          else resumeForegroundAudio();
+        });
+        window.addEventListener('pagehide', pauseForegroundAudio);
+        const App = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+        if (App && typeof App.addListener === 'function') {
+          App.addListener('appStateChange', (state) => {
+            if (state && state.isActive) resumeForegroundAudio();
+            else pauseForegroundAudio();
+          });
+          App.addListener('pause', pauseForegroundAudio);
+          App.addListener('resume', resumeForegroundAudio);
+        }
       }
 
       function applyControlType() {
@@ -18972,6 +19110,81 @@
         });
       }
 
+      function loadSeenChallengeNotifs() {
+        try {
+          const raw = JSON.parse(localStorage.getItem(STORAGE_KEYS.seenChallengeNotifs) || '[]');
+          return Array.isArray(raw) ? raw.filter(Boolean) : [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function saveSeenChallengeNotifs(codes) {
+        const unique = [];
+        const seen = {};
+        (codes || []).forEach((code) => {
+          if (!code || seen[code]) return;
+          seen[code] = true;
+          unique.push(code);
+        });
+        localStorage.setItem(STORAGE_KEYS.seenChallengeNotifs, JSON.stringify(unique.slice(-40)));
+      }
+
+      async function checkIncomingChallengeNotifications(options) {
+        const seedOnly = Boolean(options && options.seedOnly);
+        if (!SquirrelApi.isConfigured() || !hasChosenDisplayName()) return;
+        let rows = [];
+        try {
+          rows = await SquirrelApi.fetchChallengeInbox(getOrCreatePlayerId());
+        } catch (e) {
+          return;
+        }
+        if (!Array.isArray(rows)) return;
+        const currentCodes = rows.map((row) => row.code).filter(Boolean);
+        const seen = loadSeenChallengeNotifs();
+        if (seedOnly || !seen.length) {
+          saveSeenChallengeNotifs(currentCodes.concat(seen));
+          return;
+        }
+        const seenSet = {};
+        seen.forEach((code) => {
+          seenSet[code] = true;
+        });
+        const fresh = rows.filter((row) => row.code && !seenSet[row.code]);
+        fresh.forEach((row) => {
+          const name = row.host_name || 'A player';
+          if (typeof window.notifySquirrelChallenge === 'function') {
+            void window.notifySquirrelChallenge(name, row.code);
+          }
+          showToast(`${name} challenged you!`);
+        });
+        if (fresh.length) {
+          saveSeenChallengeNotifs(seen.concat(currentCodes));
+        }
+      }
+
+      function startIncomingChallengeWatcher() {
+        void checkIncomingChallengeNotifications({ seedOnly: true });
+        if (startIncomingChallengeWatcher.timer) {
+          clearInterval(startIncomingChallengeWatcher.timer);
+        }
+        startIncomingChallengeWatcher.timer = setInterval(() => {
+          void checkIncomingChallengeNotifications();
+        }, 45000);
+        document.addEventListener('visibilitychange', () => {
+          if (!document.hidden) void checkIncomingChallengeNotifications();
+        });
+        const App = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+        if (App && typeof App.addListener === 'function') {
+          App.addListener('resume', () => {
+            void checkIncomingChallengeNotifications();
+          });
+          App.addListener('appStateChange', (state) => {
+            if (state && state.isActive) void checkIncomingChallengeNotifications();
+          });
+        }
+      }
+
       async function refreshChallengeFriendsPlayList() {
         if (!dom.challengeFriendsPlayList) return;
         dom.challengeFriendsPlayList.textContent = '';
@@ -19327,6 +19540,11 @@
         if (dom.challengeModeMenuButton) {
           dom.challengeModeMenuButton.addEventListener('click', () => {
             openChallengeLobby();
+          });
+        }
+        if (dom.closePlayModeButton) {
+          dom.closePlayModeButton.addEventListener('click', () => {
+            toggle(dom.playModeOverlay, false);
           });
         }
         if (dom.closeChallengeOverlayButton) {
@@ -19939,7 +20157,7 @@
           }
 
           const settings = loadSettings();
-          if (settings.soundEnabled) {
+          if (settings.soundEnabled && settings.musicEnabled) {
             bgMusic.volume = Math.min(1, (settings.volume / 100) * 0.35);
             bgMusic.muted = false;
             try {
@@ -19978,6 +20196,11 @@
           levelPreviewRenderer.setDictionary(dictionaryWords);
         }
         bindUI();
+        bindAppAudioLifecycle();
+        window.addEventListener('squirrel-open-challenges', () => {
+          openChallengeLobby();
+        });
+        startIncomingChallengeWatcher();
         void processPendingInviteOnReady();
         refreshChallengeResumeUi();
         initCarSkinShop(true);
@@ -20187,16 +20410,61 @@
   <script>
     // Notification Logic
     (function() {
-      function initNotifications() {
-        const Capacitor = window.Capacitor;
-        if (!Capacitor) {
-          console.warn('Capacitor not found');
-          return;
+      const SMALL_ICON = 'ic_stat_acorn';
+      const ICON_COLOR = '#C4A35A';
+
+      function plugins() {
+        return (window.Capacitor && window.Capacitor.Plugins) || {};
+      }
+
+      function withIcon(notification) {
+        return Object.assign({
+          smallIcon: SMALL_ICON,
+          iconColor: ICON_COLOR
+        }, notification);
+      }
+
+      async function ensurePermission(LocalNotifications) {
+        const perm = await LocalNotifications.checkPermissions();
+        if (perm.display === 'granted') return true;
+        if (perm.display === 'denied') return false;
+        const req = await LocalNotifications.requestPermissions();
+        return req.display === 'granted';
+      }
+
+      function challengeNotifId(code) {
+        const raw = String(code || 'challenge');
+        let hash = 0;
+        for (let i = 0; i < raw.length; i++) hash = (hash + raw.charCodeAt(i) * (i + 1)) % 800;
+        return 2000 + hash;
+      }
+
+      window.notifySquirrelChallenge = async function(hostName, code) {
+        const LocalNotifications = plugins().LocalNotifications;
+        if (!LocalNotifications) return false;
+        try {
+          if (!(await ensurePermission(LocalNotifications))) return false;
+          await LocalNotifications.schedule({
+            notifications: [
+              withIcon({
+                title: 'Squirrel Street',
+                body: (hostName || 'A player') + ' challenged you!',
+                id: challengeNotifId(code),
+                schedule: { at: new Date(Date.now() + 400) },
+                extra: { type: 'challenge', code: code || '' }
+              })
+            ]
+          });
+          return true;
+        } catch (err) {
+          console.warn('Challenge notification failed:', err);
+          return false;
         }
-        
-        // Use Plugins.LocalNotifications if available
-        const LocalNotifications = Capacitor.Plugins.LocalNotifications;
-        const App = Capacitor.Plugins.App;
+      };
+
+      function initNotifications() {
+        const LocalNotifications = plugins().LocalNotifications;
+        const App = plugins().App;
 
         if (!LocalNotifications) {
             console.warn('LocalNotifications plugin not found');
@@ -20205,47 +20473,31 @@
 
         async function scheduleNotifications() {
           try {
-            const perm = await LocalNotifications.checkPermissions();
+            if (!(await ensurePermission(LocalNotifications))) return;
             
-            if (perm.display === 'denied') {
-                return;
-            }
-
-            if (perm.display !== 'granted') {
-               const req = await LocalNotifications.requestPermissions();
-               if (req.display !== 'granted') return;
-            }
-            
-            // Cancel existing notifications
+            // Cancel existing reminder notifications
             await LocalNotifications.cancel({ notifications: [{ id: 1001 }, { id: 1002 }] });
 
             const now = Date.now();
             const twelveHours = 12 * 60 * 60 * 1000;
             const twentyFourHours = 24 * 60 * 60 * 1000;
 
-            // Schedule notifications
             await LocalNotifications.schedule({
               notifications: [
-                {
+                withIcon({
                   title: 'Squirrel Street',
                   body: 'Come back and collect more acorns!',
                   id: 1001,
                   schedule: { at: new Date(now + twelveHours) },
-                  sound: null,
-                  attachments: null,
-                  actionTypeId: "",
-                  extra: null
-                },
-                {
+                  extra: { type: 'reminder' }
+                }),
+                withIcon({
                   title: 'Daily Reward Ready!',
                   body: 'Your daily reward is waiting for you.',
                   id: 1002,
                   schedule: { at: new Date(now + twentyFourHours) },
-                  sound: null,
-                  attachments: null,
-                  actionTypeId: "",
-                  extra: null
-                }
+                  extra: { type: 'daily' }
+                })
               ]
             });
             console.log('Notifications scheduled for 12h and 24h');
@@ -20254,26 +20506,33 @@
           }
         }
         
-        // Expose a test function globally
+        if (LocalNotifications.addListener) {
+          LocalNotifications.addListener('localNotificationActionPerformed', (event) => {
+            const extra = event && event.notification && event.notification.extra;
+            if (extra && extra.type === 'challenge') {
+              window.dispatchEvent(new CustomEvent('squirrel-open-challenges'));
+            }
+          });
+        }
+
         window.testNotification = async function() {
             try {
-                 const perm = await LocalNotifications.requestPermissions();
-                 if (perm.display !== 'granted') return;
+                 if (!(await ensurePermission(LocalNotifications))) return;
                  
                  await LocalNotifications.schedule({
                     notifications: [
-                        {
+                        withIcon({
                             title: 'Squirrel Street',
                             body: 'Test: 5s Notification',
                             id: 123,
                             schedule: { at: new Date(Date.now() + 5000) }
-                        },
-                        {
+                        }),
+                        withIcon({
                             title: 'Squirrel Street',
                             body: 'Test: 10s Notification (Daily Reward)',
                             id: 124,
                             schedule: { at: new Date(Date.now() + 10000) }
-                        }
+                        })
                     ]
                  });
                  console.log('Test notifications scheduled');
@@ -20284,23 +20543,17 @@
             }
         };
 
-        // Run scheduler
         scheduleNotifications();
 
-        // Reschedule on resume
-        if (App) {
+        if (App && App.addListener) {
             App.addListener('resume', () => {
-                 console.log('App resumed, delaying notification reschedule to reduce lag');
-                 // Delay by 10 seconds to allow game to resume smoothly
                  setTimeout(() => {
-                     console.log('Executing delayed notification reschedule');
                      scheduleNotifications();
                  }, 10000);
             });
         }
       }
 
-      // Initialize when ready
       if (window.Capacitor) {
         initNotifications();
       } else {

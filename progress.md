@@ -36,6 +36,25 @@ Original prompt: if the user selects the host button it should automatically gen
 - Versions: in-game **v2.18**, package **2.18.0**, Play `VERSION_CODE=43` / `VERSION_NAME=2.18.0`, iOS build 43.
 - Android sync: `npm run android:sync` from repo root.
 
+## 2026-08-12 — Play target API 36 (Capacitor 8)
+- Android wrapper upgraded Capacitor 7 ? 8 so Google Play updates can target Android 16 (API 36) before the Aug 31, 2026 deadline.
+- `compileSdk` / `targetSdk` are 36; `minSdk` is 24. Play `VERSION_CODE=44`, still marketing **2.18.0** / in-game **v2.18**.
+- Debug APK compiled successfully with `targetSdkVersion=36`.
+- Android sync: `npm run android:sync` from repo root, then Android Studio **Build > Generate Signed Bundle/APK**.
+
+## 2026-08-19 — Play Back, background music, challenge notifications + v2.19
+- Play overlay Back button now closes Solo/Challenge chooser.
+- Music and Web Audio pause when the app is minimized (`visibilitychange` + Capacitor pause) and resume on return.
+- Android status-bar notification icon is a white acorn (`ic_stat_acorn`); reminder + challenge notifications use it.
+- Inbox is polled so a new incoming challenge fires a local notification.
+- Versions: in-game **v2.19**, package **2.19.0**, Play `VERSION_CODE=45` / `VERSION_NAME=2.19.0`, iOS build 45.
+- Android sync: `npm run android:sync` from repo root.
+
+## 2026-08-19 — Wood plank menu buttons
+- Generated matching wood-plank art from `playup`/`playdown` + `letters-numbers.png` (`scripts/make-menu-planks.py`).
+- Play chooser, pause, exit confirm, game-over Menu, Options, and Settings Back now use the same img-btn plank style as the main menu.
+- New assets in `art/ui/`: solo, challenge, back, resume, exit, keep, menu, howto, dictionary, credits, changelog, continue (up/down).
+
 ## TODOs / next
 - Live two-device challenge playtest (host share ? join ? between-level Continue).
 - Facebook friends remain API/invite based; no Facebook SDK in this pass.

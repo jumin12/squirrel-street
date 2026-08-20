@@ -162,8 +162,33 @@ if (!fs.existsSync(capRoot)) {
   process.exit(1);
 }
 
+function syncAndroidNotificationAssets() {
+  const srcDir = path.join(repoRoot, 'android-res');
+  const destRes = path.join(capRoot, 'android', 'app', 'src', 'main', 'res');
+  if (fs.existsSync(srcDir) && fs.existsSync(destRes)) {
+    fs.cpSync(srcDir, destRes, { recursive: true, force: true });
+    console.log('[android-cap-sync] copied android-res into Android res/');
+  }
+
+  const cfgPath = path.join(capRoot, 'capacitor.config.json');
+  if (!fs.existsSync(cfgPath)) return;
+  try {
+    const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+    cfg.plugins = cfg.plugins || {};
+    cfg.plugins.LocalNotifications = Object.assign({}, cfg.plugins.LocalNotifications, {
+      smallIcon: 'ic_stat_acorn',
+      iconColor: '#C4A35A'
+    });
+    fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2) + '\n');
+    console.log('[android-cap-sync] set LocalNotifications smallIcon to ic_stat_acorn');
+  } catch (e) {
+    console.warn('[android-cap-sync] Could not patch capacitor.config.json', e);
+  }
+}
+
 copyWebAssetsFromRepo();
 applyPlayVersionsToAndroidProject();
+syncAndroidNotificationAssets();
 
 const result = spawnSync('npx', ['cap', 'sync', 'android'], {
   cwd: capRoot,
