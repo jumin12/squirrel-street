@@ -7,53 +7,48 @@ Original prompt: if the user selects the host button it should automatically gen
 - Version bumped to in-game v2.4, package 2.4.0, and Android VERSION_CODE 29 / VERSION_NAME 2.4.0.
 - Verification: server syntax passes with `node --check server/index.js`; lints show no errors. Playwright CLI captured and inspected the preload screenshot successfully. The bundled skill client could not run directly on this Windows/CommonJS project because Node treated its ES module script as CommonJS.
 
-## 2026-07-17 — HUD alignment + v2.14
+## 2026-07-17 ï¿½ HUD alignment + v2.14
 - Fixed top HUD: aspect-locked `topui.png` (249/33), absolute % well centers, DOM order Level?Score?High?Lives.
-- Verified visually via Playwright on iPhone SE/12/14 Pro Max, Pixel 5, Galaxy S9+, 320/390/430 widths — aspect ~7.546 and well % stable (13/35/60/78).
+- Verified visually via Playwright on iPhone SE/12/14 Pro Max, Pixel 5, Galaxy S9+, 320/390/430 widths ï¿½ aspect ~7.546 and well % stable (13/35/60/78).
 - Challenge Mode now calls `createHostedChallengeRoom(false)` on open; live API returned codes (e.g. L7MBXT, S4EGU9).
 - Versions: in-game **v2.14**, package **2.14.0**, Play `VERSION_CODE=39` / `VERSION_NAME=2.14.0`, iOS build 39.
 - Android sync: `npm run android:sync` from repo root.
 - Helper scripts: `scripts/hud-visual-check.js`, `scripts/mp-smoke.js` (local QA; screenshots under `tmp-hud-shots/`).
 
-## 2026-08-12 — Challenge lobby / stats UX + v2.16
+## 2026-08-12 ï¿½ Challenge lobby / stats UX + v2.16
 - Rebuilt Play, Challenge, Stats, and between-level screens to match the wood/gold UI (removed slate-blue overlay look and competing Host/Join/Start row).
 - Host: big room code + Copy/Share + full-width Start run. Join: code + Join run. Profile/name/invites live in one profile panel. Active matches sit at the top when present.
 - Stats: tile grid for wins/losses/pts/words, Win/Loss history cards, player-facing copy.
 - Versions: in-game **v2.16**, package **2.16.0**, Play `VERSION_CODE=41` / `VERSION_NAME=2.16.0`, iOS build 41.
 - Android sync: `npm run android:sync` from repo root.
 
-## 2026-08-12 — Cutout HUD + matchmaking lobby + v2.17
+## 2026-08-12 ï¿½ Cutout HUD + matchmaking lobby + v2.17
 - Top HUD uses `env(safe-area-inset-top)` only. Phones with no camera inset (SE, etc.) stay flush at `top: 0`. Notched/punch-hole phones shift the bar down and fill the gap with the same wood color. Desktop playfield stays unpadded.
 - Challenge lobby no longer uses room codes, Host/Join, or offline seeds. Players can find a match, join people waiting, challenge friends, search usernames, play bots, and accept/decline incoming challenges. Internal match `code` is still used by the API.
 - Server: waiting list, inbox, matchmake, player search, bot opponents with auto-scored rounds, and host rejoin while waiting for a rival.
 - Versions: in-game **v2.17**, package **2.17.0**, Play `VERSION_CODE=42` / `VERSION_NAME=2.17.0`, iOS build 42.
 - Android sync: `npm run android:sync` from repo root.
 
-## 2026-08-12 — Unique usernames, match history, 2-day expiry + v2.18
+## 2026-08-12 ï¿½ Unique usernames, match history, 2-day expiry + v2.18
 - Challenges expire after 2 days of inactivity (server + local resume window).
 - Challenge lobby has a Previous matches button with win/loss/tie results.
 - First-time players must create a unique username before Play or Challenges. Duplicate names are rejected online.
 - Versions: in-game **v2.18**, package **2.18.0**, Play `VERSION_CODE=43` / `VERSION_NAME=2.18.0`, iOS build 43.
 - Android sync: `npm run android:sync` from repo root.
 
-## 2026-08-12 — Play target API 36 (Capacitor 8)
+## 2026-08-12 ï¿½ Play target API 36 (Capacitor 8)
 - Android wrapper upgraded Capacitor 7 ? 8 so Google Play updates can target Android 16 (API 36) before the Aug 31, 2026 deadline.
 - `compileSdk` / `targetSdk` are 36; `minSdk` is 24. Play `VERSION_CODE=44`, still marketing **2.18.0** / in-game **v2.18**.
 - Debug APK compiled successfully with `targetSdkVersion=36`.
 - Android sync: `npm run android:sync` from repo root, then Android Studio **Build > Generate Signed Bundle/APK**.
 
-## 2026-08-19 — Play Back, background music, challenge notifications + v2.19
+## 2026-08-19 ï¿½ Play Back, background music, challenge notifications + v2.19
 - Play overlay Back button now closes Solo/Challenge chooser.
 - Music and Web Audio pause when the app is minimized (`visibilitychange` + Capacitor pause) and resume on return.
 - Android status-bar notification icon is a white acorn (`ic_stat_acorn`); reminder + challenge notifications use it.
 - Inbox is polled so a new incoming challenge fires a local notification.
 - Versions: in-game **v2.19**, package **2.19.0**, Play `VERSION_CODE=45` / `VERSION_NAME=2.19.0`, iOS build 45.
 - Android sync: `npm run android:sync` from repo root.
-
-## 2026-08-19 — Wood plank menu buttons
-- Generated matching wood-plank art from `playup`/`playdown` + `letters-numbers.png` (`scripts/make-menu-planks.py`).
-- Play chooser, pause, exit confirm, game-over Menu, Options, and Settings Back now use the same img-btn plank style as the main menu.
-- New assets in `art/ui/`: solo, challenge, back, resume, exit, keep, menu, howto, dictionary, credits, changelog, continue (up/down).
 
 ## TODOs / next
 - Live two-device challenge playtest (host share ? join ? between-level Continue).

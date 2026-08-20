@@ -4686,15 +4686,8 @@
     .pause-buttons {
       display: flex;
       flex-direction: column;
-      align-items: center;
       gap: 10px;
       padding: 16px 20px 20px;
-    }
-
-    .pause-buttons .img-btn {
-      width: 240px;
-      max-width: 100%;
-      margin: 0;
     }
 
     .pause-buttons .pill-button {
@@ -4939,42 +4932,9 @@
       gap: 12px !important;
       align-items: center;
     }
-    .menu-buttons .img-btn,
-    .plank-stack .img-btn {
+    .menu-buttons .img-btn {
       width: 260px; /* Default width for menu buttons */
       max-width: 85vw;
-    }
-
-    .plank-stack {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-      width: 100%;
-    }
-
-    .plank-stack .img-btn {
-      margin: 0;
-    }
-
-    .play-mode-choice-wrap {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      width: 100%;
-      margin: 0 0 8px;
-    }
-
-    .play-mode-choice-wrap .play-mode-choice-desc {
-      margin: 6px 0 0;
-      text-align: center;
-    }
-
-    .play-mode-modal .img-btn {
-      width: 260px;
-      max-width: 85vw;
-      margin-left: auto;
-      margin-right: auto;
     }
 
     /* Main Menu Logo */
@@ -5821,24 +5781,15 @@
     <div class="modal play-mode-modal">
       <h2>Play</h2>
       <p class="play-mode-lead">Choose how you want to run the forest.</p>
-      <div class="play-mode-choice-wrap">
-        <button id="soloRunButton" class="img-btn" type="button">
-          <img src="art/ui/soloup.png" class="btn-up" alt="Solo">
-          <img src="art/ui/solodown.png" class="btn-down" alt="Solo">
-        </button>
+      <button id="soloRunButton" class="button play-mode-choice">
+        <span class="play-mode-choice-title">Solo</span>
         <span class="play-mode-choice-desc">A classic run. Beat your high score.</span>
-      </div>
-      <div class="play-mode-choice-wrap">
-        <button id="challengeModeMenuButton" class="img-btn" type="button">
-          <img src="art/ui/challengeup.png" class="btn-up" alt="Challenge">
-          <img src="art/ui/challengedown.png" class="btn-down" alt="Challenge">
-        </button>
-        <span class="play-mode-choice-desc">Friends, bots, or anyone waiting for a game.</span>
-      </div>
-      <button id="closePlayModeButton" class="img-btn" type="button">
-        <img src="art/ui/backup.png" class="btn-up" alt="Back">
-        <img src="art/ui/backdown.png" class="btn-down" alt="Back">
       </button>
+      <button id="challengeModeMenuButton" class="button play-mode-choice">
+        <span class="play-mode-choice-title">Challenge</span>
+        <span class="play-mode-choice-desc">Friends, bots, or anyone waiting for a game.</span>
+      </button>
+      <button id="closePlayModeButton" class="pill-button ghost" style="width: 100%;">Back</button>
     </div>
   </div>
 
@@ -6047,17 +5998,14 @@
       </div>
 
       <div class="pause-buttons">
-        <button id="resumeButton" class="img-btn" type="button">
-          <img src="art/ui/resumeup.png" class="btn-up" alt="Resume">
-          <img src="art/ui/resumedown.png" class="btn-down" alt="Resume">
+        <button id="resumeButton" class="pill-button">
+           Resume Run
         </button>
-        <button id="pauseSettingsButton" class="img-btn" type="button">
-          <img src="art/ui/settingsup.png" class="btn-up" alt="Settings">
-          <img src="art/ui/settingsdown.png" class="btn-down" alt="Settings">
+        <button id="pauseSettingsButton" class="pill-button ghost">
+           Settings
         </button>
-        <button id="exitButton" class="img-btn" type="button">
-          <img src="art/ui/exitup.png" class="btn-up" alt="Exit">
-          <img src="art/ui/exitdown.png" class="btn-down" alt="Exit">
+        <button id="exitButton" class="pill-button ghost">
+           Exit To Menu
         </button>
       </div>
     </div>
@@ -6088,14 +6036,12 @@
           <span>Diamonds earned this run will still be kept!</span>
         </div>
       </div>
-      <div class="exit-confirm-buttons plank-stack">
-        <button id="confirmExitBtn" class="img-btn" type="button">
-          <img src="art/ui/exitup.png" class="btn-up" alt="Exit">
-          <img src="art/ui/exitdown.png" class="btn-down" alt="Exit">
+      <div class="exit-confirm-buttons">
+        <button id="confirmExitBtn" class="pill-button">
+          Yes, Exit
         </button>
-        <button id="cancelExitBtn" class="img-btn" type="button">
-          <img src="art/ui/keepup.png" class="btn-up" alt="Keep">
-          <img src="art/ui/keepdown.png" class="btn-down" alt="Keep">
+        <button id="cancelExitBtn" class="pill-button ghost">
+          Keep Playing
         </button>
       </div>
     </div>
@@ -6182,16 +6128,13 @@
           Diamonds Earned
         </div>
       </div>
-      <div class="pill-buttons plank-stack" style="margin-top: 20px;">
+      <div class="pill-buttons" style="margin-top: 20px;">
         <button id="buyLifeButton" class="pill-button" style="background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);">
           <img src="art/acorns/acorn-diamond.png" alt="" class="currency-icon" style="width: 28px; height: 28px; vertical-align: middle; margin-right: 6px;">
           Buy Life (100)
         </button>
         <button id="gameOverRestart" class="pill-button hidden" style="display: none;">Run Again</button>
-        <button id="gameOverMenu" class="img-btn" type="button">
-          <img src="art/ui/menuup.png" class="btn-up" alt="Menu">
-          <img src="art/ui/menudown.png" class="btn-down" alt="Menu">
-        </button>
+        <button id="gameOverMenu" class="pill-button ghost">Back To Menu</button>
       </div>
     </div>
   </div>
@@ -6608,32 +6551,16 @@
     <div id="optionsOverlay" class="overlay hidden">
      <div class="modal" style="max-width: 340px; width: 88vw; padding: 24px 20px;">
         <h2 style="margin-bottom: 20px;">Options</h2>
-       <div class="menu-buttons plank-stack" style="width: 100%; gap: 12px;">
-          <button id="optionsSettingsButton" class="img-btn" type="button">
-            <img src="art/ui/settingsup.png" class="btn-up" alt="Settings">
-            <img src="art/ui/settingsdown.png" class="btn-down" alt="Settings">
-          </button>
-          <button id="optionsHowToButton" class="img-btn" type="button">
-            <img src="art/ui/howtoup.png" class="btn-up" alt="How To">
-            <img src="art/ui/howtodown.png" class="btn-down" alt="How To">
-          </button>
-          <button id="optionsDictionaryButton" class="img-btn" type="button">
-            <img src="art/ui/dictionaryup.png" class="btn-up" alt="Dictionary">
-            <img src="art/ui/dictionarydown.png" class="btn-down" alt="Dictionary">
-          </button>
-          <button id="creditsButton" class="img-btn" type="button">
-            <img src="art/ui/creditsup.png" class="btn-up" alt="Credits">
-            <img src="art/ui/creditsdown.png" class="btn-down" alt="Credits">
-          </button>
-          <button id="changelogButton" class="img-btn" type="button" style="position: relative;">
-            <img src="art/ui/changelogup.png" class="btn-up" alt="Changes">
-            <img src="art/ui/changelogdown.png" class="btn-down" alt="Changes">
-            <img id="changelogBadge" src="art/acorns/acorn-red.png" class="notification-icon hidden" alt="!" />
-          </button>
-          <button id="closeOptionsButton" class="img-btn" type="button">
-            <img src="art/ui/backup.png" class="btn-up" alt="Back">
-            <img src="art/ui/backdown.png" class="btn-down" alt="Back">
-          </button>
+       <div class="menu-buttons" style="width: 100%; gap: 16px;">
+          <button id="optionsSettingsButton" class="button">Settings</button>
+          <button id="optionsHowToButton" class="button">How To Play</button>
+          <button id="optionsDictionaryButton" class="button">Dictionary</button>
+          <button id="creditsButton" class="button">Credits</button>
+            <button id="changelogButton" class="button" style="position: relative;">
+               Change Log
+               <img id="changelogBadge" src="art/acorns/acorn-red.png" class="notification-icon hidden" alt="!" />
+            </button>
+         <button id="closeOptionsButton" class="pill-button ghost">Back</button>
         </div>
       </div>
     </div>
@@ -6711,11 +6638,8 @@
         </p>
       </div>
       
-      <div class="plank-stack" style="margin-top: 20px;">
-        <button id="closeSettingsButton" class="img-btn" type="button">
-          <img src="art/ui/backup.png" class="btn-up" alt="Back">
-          <img src="art/ui/backdown.png" class="btn-down" alt="Back">
-        </button>
+      <div class="pill-buttons" style="margin-top: 20px;">
+        <button id="closeSettingsButton" class="pill-button ghost">Close</button>
       </div>
     </div>
   </div>
